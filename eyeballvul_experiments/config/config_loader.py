@@ -13,6 +13,7 @@ with open(PARENT_DIR / "config.toml", "rb") as f:
 class Paths(NamedTuple):
     chunks: Path
     plots: Path
+    results: Path
 
 
 class Config:
@@ -21,6 +22,7 @@ class Config:
     paths = Paths(
         chunks=data_path / "chunks",
         plots=data_path / "plots",
+        results=data_path / "results",
     )
 
 
