@@ -7,6 +7,8 @@ import pandas as pd
 import seaborn as sns
 from eyeballvul import EyeballvulRevision, get_commits, get_revision
 
+from eyeballvul_experiments.config.config_loader import Config
+
 
 def repo_size_histogram():
     commits = get_commits()
@@ -35,4 +37,4 @@ def repo_size_histogram():
     # Remove the horizontal lines for the left y axis
     ax.grid(which="both", axis="y", linestyle="")
 
-    plt.show()
+    plt.savefig(Config.paths.plots / "repo_size_histogram.png")
