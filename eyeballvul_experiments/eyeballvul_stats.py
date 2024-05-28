@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -223,6 +223,50 @@ def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
         f.write("\n")
 
 
+def fraction_of_benchmark_after_knowledge_cutoffs_by_context_window(info: list[tuple[str, int]]):
+    """
+    Save the following dictionary to Config.paths.results / "fraction_of_benchmark_after_knowledge_cutoffs_by_context_window.json":
+
+    {
+      date: {
+          context_window: {
+              "commits": [number, fraction] of commits after the date and with repo size smaller than the context window,
+              "vulns": [number, fraction] of vulnerabilities that were published after the date and have at least one commit with repo size smaller than the context window
+          }
+      }
+    }
+    for each date (ISO 8601 string) and context window (in tokens) provided as input.
+    """
+    commits = get_commits()
+    revisions = [get_revision(commit) for commit in commits]
+    commit_to_size = {commit: revision.size for commit, revision in zip(commits, revisions)}
+    vulns = get_vulns()
+    result: dict[str, dict[int, dict[str, Any]]] = {}
+    for date_str, context_window in info:
+        context_window_bytes = 4 * context_window
+        date = datetime.fromisoformat(date_str)
+        commits_after_and_below = sum(
+            revision.date > date and revision.size < context_window_bytes for revision in revisions
+        )
+        vulns_after_and_below = sum(
+            vuln.published > date
+            and any(commit_to_size[commit] < context_window_bytes for commit in vuln.commits)
+            for vuln in vulns
+        )
+        result.setdefault(date_str, {})
+        result[date_str][context_window] = {
+            "commits": [commits_after_and_below, commits_after_and_below / len(commits)],
+            "vulns": [vulns_after_and_below, vulns_after_and_below / len(vulns)],
+        }
+    with open(
+        Config.paths.results
+        / "fraction_of_benchmark_after_knowledge_cutoffs_by_context_window.json",
+        "w",
+    ) as f:
+        json.dump(result, f, indent=2)
+        f.write("\n")
+
+
 if __name__ == "__main__":
     plot_repo_size_histogram()
     fraction_of_benchmark_covered_by_context_window(
@@ -240,5 +284,14 @@ if __name__ == "__main__":
             "2023-11-01",  # GPT-4o, "October 2023" as of 2024-05-28
             "2023-12-01",  # Gemini, "November 2023" as of 2024-05-28
             "2024-01-01",  # gpt-4-turbo-2024-04-09, "December 2023" as of 2024-05-28
+        ]
+    )
+    fraction_of_benchmark_after_knowledge_cutoffs_by_context_window(
+        [
+            ("2023-09-01", 200000),  # Claude 3
+            ("2023-11-01", 128000),  # GPT-4o
+            ("2023-12-01", 1000000),  # Gemini 1.5 Pro (1M)
+            ("2023-12-01", 10000000),  # Gemini 1.5 Pro (10M)
+            ("2024-01-01", 128000),  # gpt-4-turbo-2024-04-09
         ]
     )
