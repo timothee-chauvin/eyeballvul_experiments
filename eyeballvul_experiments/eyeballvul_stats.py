@@ -11,9 +11,9 @@ from eyeballvul import EyeballvulRevision, get_commits, get_revision, get_vulns
 from eyeballvul_experiments.config.config_loader import Config
 
 
-def repo_size_histogram():
+def plot_repo_size_histogram():
     commits = get_commits()
-    sizes = sorted([cast(EyeballvulRevision, get_revision(commit)).size for commit in commits])
+    sizes = sorted([get_revision(commit).size for commit in commits])
     df = pd.DataFrame({"sizes": sizes})
     df["log_sizes"] = np.log10(df["sizes"])
     df["cumulative_sum"] = df["sizes"].cumsum()
