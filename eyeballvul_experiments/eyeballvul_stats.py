@@ -85,9 +85,9 @@ def fraction_of_benchmark_covered_by_context_window(
 
     {
       context_window: {
-          "commits": fraction of the number of commits for which the repo size is smaller than the context window,
-          "vuln_occurrences": fraction of the number of vulnerability occurrences (i.e. vulnerability x revision) for which the repo size is smaller than the context window,
-          "vulns": fraction of the number of vulnerabilities which have at least one commit for which the repo size is smaller than the context window,
+          "commits": [number, fraction] of the number of commits for which the repo size is smaller than the context window,
+          "vuln_occurrences": [number, fraction] of vulnerability occurrences (i.e. vulnerability x revision) for which the repo size is smaller than the context window,
+          "vulns": [number, fraction] of vulnerabilities which have at least one commit for which the repo size is smaller than the context window,
           "size": fraction of the benchmark size (sum of the sizes of each commit) that is smaller than the context window,
         }
     }
@@ -119,9 +119,12 @@ def fraction_of_benchmark_covered_by_context_window(
         )
         size_below = sum([size for size in commit_sizes if size < context_window_bytes])
         result[context_window] = {
-            "commits": commits_below / len(commits),
-            "vuln_occurrences": vuln_occurrences_below / len(vuln_occurrence_sizes),
-            "vulns": vuln_smallest_commit_below / len(vulns),
+            "commits": [commits_below, commits_below / len(commits)],
+            "vuln_occurrences": [
+                vuln_occurrences_below,
+                vuln_occurrences_below / len(vuln_occurrence_sizes),
+            ],
+            "vulns": [vuln_smallest_commit_below, vuln_smallest_commit_below / len(vulns)],
             "size": size_below / benchmark_size,
         }
     with open(
@@ -194,8 +197,8 @@ def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
 
     {
       date: {
-          "commits": fraction of the number of commits after the date,
-          "vulns": fraction of the number of vulnerabilities that were published after the date
+          "commits": [number, fraction] of commits after the date,
+          "vulns": [number, fraction] of vulnerabilities that were published after the date
         }
     }
     for each date provided as input (as ISO 8601 strings)
@@ -210,8 +213,8 @@ def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
         commits_after = sum(commit_date > date for commit_date in commit_dates)
         vulns_after = sum(vuln_date > date for vuln_date in vuln_dates)
         result[date_str] = {
-            "commits": commits_after / len(commits),
-            "vulns": vulns_after / len(vulns),
+            "commits": [commits_after, commits_after / len(commits)],
+            "vulns": [vulns_after, vulns_after / len(vulns)],
         }
     with open(
         Config.paths.results / "fraction_of_benchmark_after_knowledge_cutoffs.json", "w"
