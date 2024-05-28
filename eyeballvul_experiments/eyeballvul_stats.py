@@ -128,3 +128,60 @@ def fraction_of_benchmark_covered_by_context_window(
     ) as f:
         json.dump(result, f, indent=2)
         f.write("\n")
+
+
+def plot_commits_and_vulns_by_date():
+    commits = get_commits()
+    commit_dates = [get_revision(commit).date for commit in commits]
+    vulns = get_vulns()
+    vuln_dates = [vuln.published for vuln in vulns]
+    commit_df = pd.DataFrame({"commit_date": commit_dates})
+    vuln_df = pd.DataFrame({"vuln_date": vuln_dates})
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Histogram(
+            x=commit_df["commit_date"],
+            name="Number of commits",
+            xbins=dict(size="M1"),
+            opacity=0.5,
+            marker=dict(color="rgb(138, 146, 251)", line=dict(color="white", width=1)),
+        )
+    )
+
+    fig.add_trace(
+        go.Histogram(
+            x=vuln_df["vuln_date"],
+            name="Number of vulnerabilities",
+            xbins=dict(size="M1"),
+            opacity=0.5,
+            marker=dict(color="rgb(255, 0, 0)", line=dict(color="white", width=1)),
+        )
+    )
+
+    fig.update_xaxes(
+        ticks="outside",
+        ticklabelmode="period",
+        tickcolor="black",
+        ticklen=10,
+        dtick="M12",
+        tickangle=-45,
+        minor=dict(
+            ticklen=4,
+            dtick="M1",
+            griddash="dot",
+            gridcolor="white",
+        ),
+    )
+
+    fig.update_layout(
+        barmode="overlay",
+        template="plotly_white",
+        legend=dict(
+            x=0.01, y=0.99, bgcolor="rgba(255, 255, 255, 0)", bordercolor="rgba(255, 255, 255, 0)"
+        ),
+        font_size=35,
+    )
+
+    fig.write_image(Config.paths.plots / "commits_and_vulns_by_date.png", width=1920, height=1080)
