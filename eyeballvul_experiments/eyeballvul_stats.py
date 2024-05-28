@@ -2,19 +2,18 @@
 
 import json
 from datetime import datetime
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from eyeballvul import EyeballvulRevision, get_commits, get_revision, get_vulns
+from eyeballvul import get_revisions, get_vulns
 
 from eyeballvul_experiments.config.config_loader import Config
 
 
 def plot_repo_size_histogram():
-    commits = get_commits()
-    sizes = sorted([get_revision(commit).size for commit in commits])
+    sizes = sorted([revision.size for revision in get_revisions()])
     df = pd.DataFrame({"sizes": sizes})
     df["log_sizes"] = np.log10(df["sizes"])
     df["cumulative_sum"] = df["sizes"].cumsum()
@@ -98,10 +97,8 @@ def fraction_of_benchmark_covered_by_context_window(
     This function assumes that 1 token = 4 bytes.
     """
     context_windows_bytes = [context_window * 4 for context_window in context_windows]
-    commits = get_commits()
-    commit_to_size = {
-        commit: cast(EyeballvulRevision, get_revision(commit)).size for commit in commits
-    }
+    revisions = get_revisions()
+    commit_to_size = {revision.commit: revision.size for revision in revisions}
 
     vulns = get_vulns()
     vuln_occurrence_sizes = [commit_to_size[commit] for vuln in vulns for commit in vuln.commits]
@@ -119,7 +116,7 @@ def fraction_of_benchmark_covered_by_context_window(
         )
         size_below = sum([size for size in commit_sizes if size < context_window_bytes])
         result[context_window] = {
-            "commits": [commits_below, commits_below / len(commits)],
+            "commits": [commits_below, commits_below / len(revisions)],
             "vuln_occurrences": [
                 vuln_occurrences_below,
                 vuln_occurrences_below / len(vuln_occurrence_sizes),
@@ -135,8 +132,8 @@ def fraction_of_benchmark_covered_by_context_window(
 
 
 def plot_commits_and_vulns_by_date():
-    commits = get_commits()
-    commit_dates = [get_revision(commit).date for commit in commits]
+    revisions = get_revisions()
+    commit_dates = [revision.date for revision in revisions]
     vulns = get_vulns()
     vuln_dates = [vuln.published for vuln in vulns]
     commit_df = pd.DataFrame({"commit_date": commit_dates})
@@ -203,8 +200,8 @@ def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
     }
     for each date provided as input (as ISO 8601 strings)
     """
-    commits = get_commits()
-    commit_dates = [get_revision(commit).date for commit in commits]
+    revisions = get_revisions()
+    commit_dates = [revision.date for revision in revisions]
     vulns = get_vulns()
     vuln_dates = [vuln.published for vuln in vulns]
     result = {}
@@ -213,7 +210,7 @@ def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
         commits_after = sum(commit_date > date for commit_date in commit_dates)
         vulns_after = sum(vuln_date > date for vuln_date in vuln_dates)
         result[date_str] = {
-            "commits": [commits_after, commits_after / len(commits)],
+            "commits": [commits_after, commits_after / len(revisions)],
             "vulns": [vulns_after, vulns_after / len(vulns)],
         }
     with open(
@@ -237,9 +234,8 @@ def fraction_of_benchmark_after_knowledge_cutoffs_by_context_window(info: list[t
     }
     for each date (ISO 8601 string) and context window (in tokens) provided as input.
     """
-    commits = get_commits()
-    revisions = [get_revision(commit) for commit in commits]
-    commit_to_size = {commit: revision.size for commit, revision in zip(commits, revisions)}
+    revisions = get_revisions()
+    commit_to_size = {revision.commit: revision.size for revision in revisions}
     vulns = get_vulns()
     result: dict[str, dict[int, dict[str, Any]]] = {}
     for date_str, context_window in info:
@@ -255,7 +251,7 @@ def fraction_of_benchmark_after_knowledge_cutoffs_by_context_window(info: list[t
         )
         result.setdefault(date_str, {})
         result[date_str][context_window] = {
-            "commits": [commits_after_and_below, commits_after_and_below / len(commits)],
+            "commits": [commits_after_and_below, commits_after_and_below / len(revisions)],
             "vulns": [vulns_after_and_below, vulns_after_and_below / len(vulns)],
         }
     with open(
