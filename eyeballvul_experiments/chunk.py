@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import dataclass
 
 from typeguard import typechecked
@@ -9,6 +10,7 @@ from eyeballvul_experiments.util import get_str_weak_hash
 
 @dataclass
 class File:
+    # Filename relative to the repository root.
     filename: str
     contents: str
 
@@ -17,27 +19,40 @@ class File:
         return f"<><><>CONTENTS OF {self.filename}:<><><>\n{self.contents}\n"
 
 
-@dataclass
 @typechecked
 class Chunk:
     """Chunk of a repository."""
 
-    files: list[File]
-    repo_url: str
-    commit: str
-    # What fraction of the full repository is included in the chunk, in terms of file contents.
-    fraction_included: float
+    def __init__(self, repo_url: str, commit: str, repo_size: int):
+        self.files: list[File] = []
+        self.repo_url: str = repo_url
+        self.commit: str = commit
+        self.repo_size: int = repo_size
 
     def __len__(self) -> int:
         """Length of the chunk as seen by the model."""
         return len(self.format_prefix()) + sum(len(file.format()) for file in self.files)
 
-    def would_overflow(self, new_file: File, max_size: int) -> int:
-        """Would adding `new_file` to the chunk exceed the maximum size?"""
-        return len(self) + len(new_file.format()) > max_size
+    def shrink(self) -> list[File]:
+        """
+        Shrink the chunk by at least one file (starting from the end), and at most 5% of its size.
+
+        Return the list of files removed (kept in order).
+        """
+        initial_length = len(self)
+        removed_files: list[File] = []
+        while len(self) > 0.95 * initial_length:
+            removed_files.insert(0, self.files.pop())
+        logging.info(f"Shrunk chunk {self.get_hash()} from {initial_length} to {len(self)}.")
+        return removed_files
 
     def format_prefix(self) -> str:
-        return f"<><><>Fraction of the full repository included below: {self.fraction_included:.1%}<><><>\n"
+        """
+        Prefix for the chunk, as seen by the model.
+
+        The percentage always has the same width (6 characters).
+        """
+        return f"<><><>Fraction of the full repository included below: {self.fraction_included():6.1%}<><><>\n"
 
     def full_str(self) -> str:
         """Full string representation of the chunk, as seen by the model."""
@@ -46,6 +61,9 @@ class Chunk:
     def get_hash(self) -> str:
         return get_str_weak_hash(self.full_str())
 
+    def fraction_included(self) -> float:
+        return sum(len(file.contents) for file in self.files) / self.repo_size
+
     def log(self) -> None:
         directory = Config.paths.chunks
         json_dict = {
@@ -53,7 +71,7 @@ class Chunk:
             "repo_url": self.repo_url,
             "commit": self.commit,
             "length": len(self),
-            "fraction_included": self.fraction_included,
+            "fraction_included": self.fraction_included(),
             "filenames": sorted(file.filename for file in self.files),
         }
         with open(directory / f"{self.get_hash()}.json", "w") as f:
