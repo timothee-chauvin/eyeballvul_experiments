@@ -5,14 +5,13 @@ from datetime import datetime
 from typing import NamedTuple
 
 import yaml
-from eyeballvul import score
+from eyeballvul import EyeballvulScore, compute_score
 from litellm import model_cost
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typeguard import typechecked
 
 from eyeballvul_experiments.config.config_loader import Config
 from eyeballvul_experiments.lead import Lead
-from eyeballvul_experiments.score import Score
 from eyeballvul_experiments.util import get_str_weak_hash
 
 
@@ -47,12 +46,19 @@ class Attempt(BaseModel):
     chunk_hashes: list[str] = []
     responses: list[Response] = []
     leads: list[Lead] = []
-    scores: list[Score] = []
+    scores: list[EyeballvulScore] = []
     # Note: usage and score only apply to the initial queries, not the scoring queries.
     usage: Usage = Usage(0, 0)
     # Cost in USD as of running, based on usage.
     cost: float = 0.0
     version: str = "0.1.0"
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @field_serializer("scores")
+    def serialize_scores(self, scores: list[EyeballvulScore], _info):
+        return [score.to_dict() for score in scores]
 
     def parse(self):
         """Parse `self.responses` to populate `self.leads`, overwriting it if it already exists."""
@@ -86,8 +92,8 @@ class Attempt(BaseModel):
         Only leads marked as `very promising` are considered.
         """
         kept_leads = [lead for lead in self.leads if lead.classification == "very promising"]
-        stats, mapping = score(self.commit, [lead.format() for lead in kept_leads])
-        self.scores.append(Score(stats=stats, mapping=mapping, date=datetime.now()))
+        score = compute_score(self.commit, [lead.format() for lead in kept_leads])
+        self.scores.append(score)
 
     def update_usage_and_cost(self, usage: Usage):
         self.usage = self.usage.plus(usage)
