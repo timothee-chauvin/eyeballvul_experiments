@@ -23,7 +23,7 @@ def plot_repo_size_histogram():
     fig.add_trace(
         go.Histogram(
             x=df["log_sizes"],
-            name="Number of commits",
+            name="Number of revisions",
             nbinsx=100,
             opacity=0.75,
             marker=dict(color="rgb(138, 146, 251)", line=dict(color="white", width=0.5)),
@@ -55,7 +55,7 @@ def plot_repo_size_histogram():
             type="linear",
         ),
         yaxis=dict(
-            title="Number of commits",
+            title="Number of revisions",
             gridcolor="rgba(138, 146, 251, 0.15)",
             griddash="dash",
         ),
@@ -144,7 +144,7 @@ def plot_commits_and_vulns_by_date():
     fig.add_trace(
         go.Histogram(
             x=commit_df["commit_date"],
-            name="Number of commits",
+            name="Number of revisions",
             xbins=dict(size="M1"),
             opacity=0.5,
             marker=dict(color="rgb(138, 146, 251)", line=dict(color="white", width=1)),
