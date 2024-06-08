@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import mimetypes
 import subprocess
@@ -16,6 +17,12 @@ from eyeballvul_experiments.config.config_loader import Config
 from eyeballvul_experiments.llm_gateway.gateway_interface import Usage
 
 logging.basicConfig(level=logging.INFO)
+
+
+class RepositoryTooLargeError(Exception):
+    def __init__(self, message, repo_size):
+        super().__init__(message)
+        self.repo_size = repo_size
 
 
 @typechecked
@@ -56,18 +63,18 @@ def get_files_in_repo(repo_dir: Path) -> list[File]:
     files: list[File] = []
     for filename in filenames_unfiltered:
         if not keep_file_based_on_filename(filename):
-            logging.info(f"Not keeping {filename} based on filename")
+            logging.debug(f"Not keeping {filename} based on filename")
             continue
         try:
             with open(repo_dir / filename) as f:
                 contents = f.read()
         except UnicodeDecodeError:
-            logging.info(f"Not keeping {filename} based on UnicodeDecodeError")
+            logging.debug(f"Not keeping {filename} based on UnicodeDecodeError")
             continue
         if not keep_file_based_on_contents(repo_dir / filename, contents):
-            logging.info(f"Not keeping {filename} based on contents")
+            logging.debug(f"Not keeping {filename} based on contents")
             continue
-        logging.info(f"Keeping {filename}")
+        logging.debug(f"Keeping {filename}")
         files.append(File(filename=str(filename), contents=contents))
     return files
 
@@ -138,7 +145,7 @@ async def query_model(
     files = get_files_in_repo(repo_dir)
     included_repo_size = sum(len(file.contents) for file in files)
     if included_repo_size > max_size_bytes:
-        raise ValueError(f"Repository size {included_repo_size} exceeds {max_size_bytes} bytes.")
+        raise RepositoryTooLargeError("Repository too large", included_repo_size)
     while files:
         chunk = create_chunk_initial_guess(files, revision, max_size_bytes, included_repo_size)
         files = files[len(chunk.files) :]
@@ -169,26 +176,106 @@ async def query_model(
 
 @typechecked
 async def handle_repo(
-    repo_url: str, revisions: list[EyeballvulRevision], model: str, max_size_bytes: int
-) -> None:
-    """Handle all the given `revisions` of the repository at `repo_url`."""
+    repo_url: str,
+    revisions: list[EyeballvulRevision],
+    models: list[str],
+    max_size_bytes: int,
+    attempts_by_commit: dict[str, list[Attempt]],
+    cache: dict[str, int],
+) -> float:
+    """
+    Handle all the given `revisions` of the repository at `repo_url`, for all `models`.
+
+    Return the total cost used in new invocations of models.
+    """
+    models_by_revision: dict[str, list[str]] = {}
+    for revision in revisions:
+        for model in models:
+            if not already_attempted(attempts_by_commit, revision.commit, model):
+                models_by_revision.setdefault(revision.commit, []).append(model)
+    if not models_by_revision:
+        logging.info(f"No new attempts to make for {repo_url}.")
+        return 0.0
+    total_cost = 0.0
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_dir = Path(temp_dir)
         subprocess.check_call(["git", "clone", repo_url, str(repo_dir)])
         for revision in revisions:
-            try:
-                attempt = await query_model(model, revision, repo_dir, max_size_bytes)
-                attempt.parse()
-                attempt.add_score()
-                attempt.log()
-            except ValueError:
-                logging.warning(f"Skipping revision {revision.commit} because it is too large.")
+            if cache.get(revision.commit, 0) > max_size_bytes:
+                logging.info(
+                    f"Skipping revision {revision.commit} because it is too large (size {cache[revision.commit]})."
+                )
+                continue
+            for model in models_by_revision.get(revision.commit, []):
+                try:
+                    attempt = await query_model(model, revision, repo_dir, max_size_bytes)
+                    attempt.parse()
+                    attempt.add_score()
+                    attempt.log()
+                    total_cost += attempt.cost()
+                except RepositoryTooLargeError as e:
+                    logging.warning(
+                        f"Skipping revision {revision.commit} because it is too large (size {e.repo_size})."
+                    )
+                    cache[revision.commit] = e.repo_size
+                    write_cache(cache)
+    return total_cost
+
+
+def get_attempts_by_commit() -> dict[str, list[Attempt]]:
+    """Return a dictionary of attempts, grouped by commit."""
+    attempts_by_commit: dict[str, list[Attempt]] = {}
+    for attempt_file in Config.paths.attempts.glob("*.json"):
+        with open(attempt_file) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        attempts_by_commit.setdefault(attempt.commit, []).append(attempt)
+    return attempts_by_commit
+
+
+def already_attempted(
+    attempts_by_commit: dict[str, list[Attempt]], commit: str, model: str
+) -> bool:
+    """Return whether the given `commit` has already been attempted with the given `model`."""
+    return any(attempt.model == model for attempt in attempts_by_commit.get(commit, []))
+
+
+def cost_of_past_attempts(attempts_by_commit: dict[str, list[Attempt]]) -> float:
+    """Return the total cost of all past attempts."""
+    return sum(attempt.cost() for attempts in attempts_by_commit.values() for attempt in attempts)
+
+
+def read_cache() -> dict[str, int]:
+    """Read the cache of repository sizes."""
+    try:
+        with open(Config.paths.cache / "cache.json") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def write_cache(cache: dict[str, int]) -> None:
+    """Write the cache of repository sizes."""
+    with open(Config.paths.cache / "cache.json", "w") as f:
+        json.dump(cache, f, indent=2)
+        f.write("\n")
 
 
 async def main():
-    model = "claude-3-opus-20240307"
+    models = [
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307",
+        "gpt-4-turbo-2024-04-09",
+        "gpt-4o-2024-05-13",
+    ]
     cutoff_date = "2023-09-01"
     max_size_bytes = 600_000
+
+    cache = read_cache()
+
+    attempts_by_commit = get_attempts_by_commit()
+    total_cost = cost_of_past_attempts(attempts_by_commit)
+    logging.info(f"Total cost of past attempts: ${total_cost}")
     revisions_after = [
         revision for revision in get_revisions(after=cutoff_date) if revision.size < max_size_bytes
     ]
@@ -198,7 +285,8 @@ async def main():
     revisions_after_by_repo = dict(sorted(revisions_after_by_repo.items()))
 
     for repo_url, revisions in revisions_after_by_repo.items():
-        await handle_repo(repo_url, revisions, model, max_size_bytes)
+        logging.info(f"Handling {repo_url}...")
+        await handle_repo(repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache)
         if input("Continue? [Y/n]") == "n":
             break
 

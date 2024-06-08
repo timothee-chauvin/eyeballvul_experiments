@@ -24,6 +24,7 @@ class Paths(NamedTuple):
     attempts: Path
     plots: Path
     results: Path
+    cache: Path
 
 
 class Config:
@@ -39,6 +40,7 @@ class Config:
         attempts=data_path / "attempts",
         plots=data_path / "plots",
         results=data_path / "results",
+        cache=data_path / "cache",
     )
 
 

@@ -74,6 +74,10 @@ class Attempt(BaseModel):
         score = compute_score(self.commit, [lead.format() for lead in kept_leads])
         self.scores.append(score)
 
+    def cost(self):
+        """Total cost of all responses."""
+        return sum(response.usage.cost for response in self.responses)
+
     def get_hash(self):
         """Hash based only on the responses, so it doesn't change when e.g. new scores are added."""
         return get_str_weak_hash(
