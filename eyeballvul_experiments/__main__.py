@@ -98,7 +98,12 @@ def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
     response = completion(
         model=model,
         messages=[
-            {"role": "user", "content": Config.instruction_template.format(chunk=chunk.full_str())}
+            {
+                "role": "user",
+                "content": Config.instruction_template.format(
+                    cwe_list=Config.cwe_list, chunk=chunk.full_str()
+                ),
+            }
         ],
     )
     usage = Usage(response.usage.prompt_tokens, response.usage.completion_tokens)

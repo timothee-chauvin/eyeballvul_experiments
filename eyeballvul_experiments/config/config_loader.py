@@ -12,6 +12,9 @@ with open(PARENT_DIR / "config.toml", "rb") as fb:
 with open(PARENT_DIR / "instruction_template.txt") as f:
     instruction_template = f.read()
 
+with open(PARENT_DIR / "cwe_list.txt") as f:
+    cwe_list = f.read()
+
 
 class Paths(NamedTuple):
     chunks: Path
@@ -25,6 +28,7 @@ class Config:
     exclude_files_above = config["exclude_files_above"]
     exclude_extensions = config["exclude_extensions"]
     instruction_template = instruction_template
+    cwe_list = cwe_list
 
     paths = Paths(
         chunks=data_path / "chunks",
