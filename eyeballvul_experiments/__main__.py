@@ -191,11 +191,12 @@ async def handle_repo(
     max_size_bytes: int,
     attempts_by_commit: dict[str, list[Attempt]],
     cache: dict[str, int],
-) -> float:
+) -> tuple[float, dict[str, int]]:
     """
     Handle all the given `revisions` of the repository at `repo_url`, for all `models`.
 
-    Return the total cost used in new invocations of models.
+    Return the total cost used in new invocations of models, and a cache update dictionary (possibly
+    empty).
     """
     models_by_revision: dict[str, list[str]] = {}
     for revision in revisions:
@@ -204,8 +205,9 @@ async def handle_repo(
                 models_by_revision.setdefault(revision.commit, []).append(model)
     if not models_by_revision:
         logging.info(f"No new attempts to make for {repo_url}.")
-        return 0.0
+        return 0.0, {}
     total_cost = 0.0
+    cache_update = {}
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_dir = Path(temp_dir)
         subprocess.check_call(["git", "clone", repo_url, str(repo_dir)])
@@ -227,9 +229,8 @@ async def handle_repo(
                     logging.warning(
                         f"Skipping revision {revision.commit} because it is too large (size {e.repo_size})."
                     )
-                    cache[revision.commit] = e.repo_size
-                    write_cache(cache)
-    return total_cost
+                    cache_update[revision.commit] = e.repo_size
+    return total_cost, cache_update
 
 
 def get_attempts_by_commit() -> dict[str, list[Attempt]]:
@@ -297,15 +298,18 @@ async def main():
 
     for repo_url, revisions in revisions_after_by_repo.items():
         logging.info(f"Handling {repo_url}...")
-        total_cost += await handle_repo(
+        repo_cost, cache_update = await handle_repo(
             repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache
         )
+        total_cost += repo_cost
+        if cache_update:
+            logging.info("Updating cache.")
+            cache.update(cache_update)
+            write_cache(cache)
         logging.info(f"Total cost so far: ${total_cost:.2f}")
         if total_cost > cost_limit:
             logging.info(f"Cost limit reached: ${total_cost:.2f}")
             return
-        if input("Continue? [Y/n]") == "n":
-            break
 
 
 if __name__ == "__main__":
