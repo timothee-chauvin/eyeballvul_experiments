@@ -218,6 +218,7 @@ async def handle_repo(
             for model in models_by_revision.get(revision.commit, []):
                 try:
                     attempt = await query_model(model, revision, repo_dir, max_size_bytes)
+                    attempt.log()  # in case something goes wrong later...
                     attempt.parse()
                     attempt.add_score()
                     attempt.log()
