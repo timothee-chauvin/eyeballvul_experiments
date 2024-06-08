@@ -8,13 +8,12 @@ from datetime import datetime
 from pathlib import Path
 
 from eyeballvul import EyeballvulRevision, get_revisions
-from litellm.exceptions import ContextWindowExceededError
 from typeguard import typechecked
 
 from eyeballvul_experiments.attempt import Attempt, SimpleResponse
 from eyeballvul_experiments.chunk import Chunk, File
 from eyeballvul_experiments.config.config_loader import Config
-from eyeballvul_experiments.llm_gateway.gateway_interface import Usage
+from eyeballvul_experiments.llm_gateway.gateway_interface import ContextWindowExceededError, Usage
 
 logging.basicConfig(level=logging.INFO)
 
