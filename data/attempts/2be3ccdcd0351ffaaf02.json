@@ -1,0 +1,93 @@
+{
+  "commit": "76eaee88733885092db19807c23f024b5a1f5bca",
+  "repo_url": "https://github.com/apostrophecms/sanitize-html",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "ab93dafa774218bbe1c0"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Unescaped user input can lead to Cross-Site Scripting (XSS)\n    analysis: |\n      The `sanitizeHtml` function does not properly escape user input in some cases, which can allow an attacker to inject malicious JavaScript code. For example, the function does not properly handle double `<` characters, so an input like `<<img src=\"javascript:evil\"/>` would not be fully sanitized. \n\n      This can lead to a cross-site scripting vulnerability if the incompletely sanitized HTML is rendered to a page. An attacker could craft malicious HTML to steal session cookies, modify page appearance, redirect to phishing sites, etc.\n\n      The unescaped characters like quotes can break out of the HTML context. The sanitizer needs more robust output encoding to prevent XSS via malicious inputs.\n    cwe: CWE-79\n    function_names:\n      - sanitizeHtml\n    filenames:\n      - index.js\n    classification: very promising\n\n  - headline: Lack of input validation allows bypassing sanitization via character encoding \n    analysis: |\n      The `sanitizeHtml` function attempts to block JavaScript links using a regular expression. However, it only checks for character codes 1-32 in decimal. An attacker could use other encodings like hex (`&#x6a;`) or HTML entities (`&jscr;`) to represent the characters of \"javascript\" and bypass this check.\n\n      For example, an input like:\n      `<a href=\"&#x6a;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3a;alert(1)\">link</a>`\n      would be considered valid by sanitizeHtml, allowing the injection of JavaScript code.\n\n      Proper output encoding and validation of URLs as a whole is needed, rather than just filtering a regex. All parts of the URL should be validated to ensure only http/https links are allowed if that is the intent.\n    cwe: CWE-20\n    function_names:\n      - sanitizeHtml\n    filenames:\n      - index.js\n    classification: very promising\n\n  - headline: Invocation of allowedSchemes check after transformations may introduce vulnerabilities\n    analysis: |\n      The `sanitizeHtml` function first does tag transformations in `transformTags` and then later validates URLs against `allowedSchemes`. However, the `transformTags` could introduce new URLs that bypass the scheme validation.\n      \n      For example, the default `allowedSchemes` includes 'http'. A tag transformation could change an attribute to an 'https' URL which would then be allowed. But the intent seems to be strictly validating allowable URL schemes.\n\n      The scheme checks should be done after transformations to prevent the introduction of unintended URL schemes. Otherwise security bugs could creep in as new transformations are added.\n    cwe: CWE-20\n    function_names:\n      - sanitizeHtml\n    filenames:\n      - index.js\n    classification: slightly promising\n\n  - headline: External function passed as parser option may be exploitable\n    analysis: |\n      The `sanitizeHtml` function accepts an options object that can specify a custom `parser` function to use instead of the default `htmlparser`. This parser option is not validated.\n\n      If an attacker can control the options passed to `sanitizeHtml`, they may be able to provide a malicious `parser` function. That function could return unsafe HTML or introduce vulnerabilities.\n\n      All options should be validated, not just `allowedTags` and `allowedAttributes`. Allowing custom parsing routines is dangerous without strict validation.\n    cwe: CWE-94\n    function_names:\n      - sanitizeHtml\n    filenames:\n      - index.js\n    classification: slightly promising\n\n  - headline: Regular expression denial of service (ReDoS)\n    analysis: |\n      Several regular expressions are constructed by concatenating strings and user input, such as:  \n      ```js\n      new RegExp('^(' + globRegex.join('|') + ')$')\n      ```\n\n      If the input used to construct these regular expressions is very long or contains many alternations `|`, it can cause an exponential backtracking issue leading to very long execution times. An attacker may be able to provide such inputs to cause a denial-of-service by making the server unresponsive.\n        \n      Safe regular expression techniques should be used, potentially with explicit timeouts, to avoid this ReDoS issue. Limiting the size of inputs and sanitizing any characters with special meaning in regexes can also help mitigate it.\n    cwe: CWE-1333\n    function_names:\n      - sanitizeHtml\n    filenames:\n      - index.js\n    classification: slightly promising\n\n  - headline: Incomplete sanitization may lead to DOM clobbering issues\n    analysis: |\n      The `index.js` code attempts to sanitize certain HTML tags and attributes to prevent cross-site scripting issues. However, it does not consider DOM clobbering vulnerabilities.\n\n      For example, it allows arbitrary `data-*` attributes on `<a>` tags. This can lead to DOM clobbering if the page uses `getElementById`, `getElementsByTagName` etc and an attacker injects an element like `<a id=\"myAnchor\" data-myAnchor=\"clobbered!\">`.\n\n      The sanitizer should either disallow potentially dangerous attributes like `id`, `name`, `data-*` completely, or ensure their values are strictly validated to prevent clobbering. Failure to do so can allow attackers to modify page behavior.\n    cwe: CWE-1321\n    function_names:\n      - sanitizeHtml  \n    filenames:\n      - index.js\n    classification: slightly promising\n```",
+      "date": "2024-06-08T22:34:24.253084",
+      "usage": {
+        "prompt_tokens": 13474,
+        "completion_tokens": 1362,
+        "cost": 0.30426
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unescaped user input can lead to Cross-Site Scripting (XSS)",
+      "analysis": "The sanitizeHtml function does not properly escape user input in some cases, which can allow an attacker to inject malicious JavaScript code. For example, the function does not properly handle double < characters, so an input like <<img src=\"javascript:evil\"/> would not be fully sanitized. \n\nThis can lead to a cross-site scripting vulnerability if the incompletely sanitized HTML is rendered to a page. An attacker could craft malicious HTML to steal session cookies, modify page appearance, redirect to phishing sites, etc.\n\nThe unescaped characters like quotes can break out of the HTML context. The sanitizer needs more robust output encoding to prevent XSS via malicious inputs.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "sanitizeHtml"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Lack of input validation allows bypassing sanitization via character encoding",
+      "analysis": "The sanitizeHtml function attempts to block JavaScript links using a regular expression. However, it only checks for character codes 1-32 in decimal. An attacker could use other encodings like hex (&#x6a;) or HTML entities (&jscr;) to represent the characters of \"javascript\" and bypass this check.\n\nFor example, an input like:\n<a href=\"&#x6a;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3a;alert(1)\">link</a>\nwould be considered valid by sanitizeHtml, allowing the injection of JavaScript code.\n\nProper output encoding and validation of URLs as a whole is needed, rather than just filtering a regex. All parts of the URL should be validated to ensure only http/https links are allowed if that is the intent.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "sanitizeHtml"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Invocation of allowedSchemes check after transformations may introduce vulnerabilities",
+      "analysis": "The sanitizeHtml function first does tag transformations in transformTags and then later validates URLs against allowedSchemes. However, the transformTags could introduce new URLs that bypass the scheme validation.\n\nFor example, the default allowedSchemes includes 'http'. A tag transformation could change an attribute to an 'https' URL which would then be allowed. But the intent seems to be strictly validating allowable URL schemes.\n\nThe scheme checks should be done after transformations to prevent the introduction of unintended URL schemes. Otherwise security bugs could creep in as new transformations are added.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "sanitizeHtml"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "External function passed as parser option may be exploitable",
+      "analysis": "The sanitizeHtml function accepts an options object that can specify a custom parser function to use instead of the default htmlparser. This parser option is not validated.\n\nIf an attacker can control the options passed to sanitizeHtml, they may be able to provide a malicious parser function. That function could return unsafe HTML or introduce vulnerabilities.\n\nAll options should be validated, not just allowedTags and allowedAttributes. Allowing custom parsing routines is dangerous without strict validation.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "sanitizeHtml"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 4,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "0": "CVE-2017-16016"
+      },
+      "vuln_dates": {
+        "CVE-2022-25887": "2022-08-30T05:15:07",
+        "CVE-2021-26539": "2021-02-08T17:15:13",
+        "CVE-2021-26540": "2021-02-08T17:15:13",
+        "CVE-2024-21501": "2024-02-24T05:15:44",
+        "CVE-2017-16016": "2018-06-04T19:29:01"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
