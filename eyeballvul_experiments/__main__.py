@@ -280,6 +280,7 @@ async def main():
     ]
     cutoff_date = "2023-09-01"
     max_size_bytes = 600_000
+    cost_limit = 100
 
     cache = read_cache()
 
@@ -300,6 +301,9 @@ async def main():
             repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache
         )
         logging.info(f"Total cost so far: ${total_cost:.2f}")
+        if total_cost > cost_limit:
+            logging.info(f"Cost limit reached: ${total_cost:.2f}")
+            return
         if input("Continue? [Y/n]") == "n":
             break
 
