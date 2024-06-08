@@ -51,6 +51,7 @@ class Attempt(BaseModel):
     usage: Usage = Usage(0, 0)
     # Cost in USD as of running, based on usage.
     cost: float = 0.0
+    instruction_template_hash: str = get_str_weak_hash(Config.instruction_template)
     version: str = "0.1.0"
 
     class Config:
