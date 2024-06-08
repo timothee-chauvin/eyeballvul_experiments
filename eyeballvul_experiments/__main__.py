@@ -101,6 +101,7 @@ async def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
                 ),
             }
         ],
+        num_retries=3,
     )
     return (response.choices[0].message.content, response.usage)
 

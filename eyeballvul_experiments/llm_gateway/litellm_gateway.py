@@ -13,9 +13,9 @@ from eyeballvul_experiments.llm_gateway.gateway_interface import (
 
 class LiteLLMGateway(GatewayInterface):
     @staticmethod
-    async def acompletion(model: str, messages: list[dict]) -> Response:
+    async def acompletion(model: str, messages: list[dict], num_retries: int = 0) -> Response:
         try:
-            response = await acompletion(model=model, messages=messages)
+            response = await acompletion(model=model, messages=messages, num_retries=num_retries)
         except LiteLLMContextWindowExceededError as e:
             raise ContextWindowExceededError(e)
         prompt_cost, completion_cost = cost_per_token(
