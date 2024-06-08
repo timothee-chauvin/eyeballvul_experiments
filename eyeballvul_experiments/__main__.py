@@ -270,7 +270,7 @@ def read_cache() -> dict[str, int]:
 def write_cache(cache: dict[str, int]) -> None:
     """Write the cache of repository sizes."""
     with open(Config.paths.cache / "cache.json", "w") as f:
-        json.dump(cache, f, indent=2)
+        json.dump(cache, f, indent=2, sort_keys=True)
         f.write("\n")
 
 
