@@ -18,6 +18,10 @@ from eyeballvul_experiments.llm_gateway.gateway_interface import Usage
 
 logging.basicConfig(level=logging.INFO)
 
+# Avoid seeing the info logs from these libraries
+logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 class RepositoryTooLargeError(Exception):
     def __init__(self, message, repo_size):
@@ -141,7 +145,12 @@ async def query_model(
         repo_url=revision.repo_url,
         model=model,
     )
-    subprocess.check_call(["git", "checkout", revision.commit], cwd=repo_dir)
+    subprocess.check_call(
+        ["git", "checkout", revision.commit],
+        cwd=repo_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     files = get_files_in_repo(repo_dir)
     included_repo_size = sum(len(file.contents) for file in files)
     if included_repo_size > max_size_bytes:
@@ -275,7 +284,7 @@ async def main():
 
     attempts_by_commit = get_attempts_by_commit()
     total_cost = cost_of_past_attempts(attempts_by_commit)
-    logging.info(f"Total cost of past attempts: ${total_cost}")
+    logging.info(f"Total cost of past attempts: ${total_cost:.2f}")
     revisions_after = [
         revision for revision in get_revisions(after=cutoff_date) if revision.size < max_size_bytes
     ]
@@ -286,7 +295,10 @@ async def main():
 
     for repo_url, revisions in revisions_after_by_repo.items():
         logging.info(f"Handling {repo_url}...")
-        await handle_repo(repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache)
+        total_cost += await handle_repo(
+            repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache
+        )
+        logging.info(f"Total cost so far: ${total_cost:.2f}")
         if input("Continue? [Y/n]") == "n":
             break
 
