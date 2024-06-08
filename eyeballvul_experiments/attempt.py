@@ -5,7 +5,7 @@ from datetime import datetime
 
 import yaml
 from eyeballvul import EyeballvulScore, compute_score
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel
 from typeguard import typechecked
 
 from eyeballvul_experiments.config.config_loader import Config
@@ -36,15 +36,8 @@ class Attempt(BaseModel):
     responses: list[SimpleResponse] = []
     leads: list[Lead] = []
     scores: list[EyeballvulScore] = []
-    instruction_template_hash: str = get_str_weak_hash(Config.instruction_template)
+    instruction_template_hash: str = get_str_weak_hash(Config.instruction_template)[:20]
     version: str = "0.1.0"
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    @field_serializer("scores")
-    def serialize_scores(self, scores: list[EyeballvulScore], _info):
-        return [score.to_dict() for score in scores]
 
     def parse(self):
         """Parse `self.responses` to populate `self.leads`, overwriting it if it already exists."""
