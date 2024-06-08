@@ -2,36 +2,25 @@ import json
 import logging
 import re
 from datetime import datetime
-from typing import NamedTuple
 
 import yaml
 from eyeballvul import EyeballvulScore, compute_score
-from litellm import model_cost
 from pydantic import BaseModel, field_serializer
 from typeguard import typechecked
 
 from eyeballvul_experiments.config.config_loader import Config
 from eyeballvul_experiments.lead import Lead
+from eyeballvul_experiments.llm_gateway.gateway_interface import Usage
 from eyeballvul_experiments.util import get_str_weak_hash
 
 
-class Response(BaseModel):
+class SimpleResponse(BaseModel):
     content: str
     date: datetime
+    usage: Usage
 
 
-class Usage(NamedTuple):
-    input_tokens: int
-    output_tokens: int
-
-    # Not overwriting __add__ because it would have a different signature than the usual one for tuples, so would be confusing.
-    def plus(self, other: "Usage") -> "Usage":
-        return Usage(
-            input_tokens=self.input_tokens + other.input_tokens,
-            output_tokens=self.output_tokens + other.output_tokens,
-        )
-
-
+@typechecked
 class Attempt(BaseModel):
     """
     Attempt of a model on a given commit.
@@ -44,13 +33,9 @@ class Attempt(BaseModel):
     repo_url: str
     model: str
     chunk_hashes: list[str] = []
-    responses: list[Response] = []
+    responses: list[SimpleResponse] = []
     leads: list[Lead] = []
     scores: list[EyeballvulScore] = []
-    # Note: usage and score only apply to the initial queries, not the scoring queries.
-    usage: Usage = Usage(0, 0)
-    # Cost in USD as of running, based on usage.
-    cost: float = 0.0
     instruction_template_hash: str = get_str_weak_hash(Config.instruction_template)
     version: str = "0.1.0"
 
@@ -68,7 +53,7 @@ class Attempt(BaseModel):
             self.leads += self._parse_response(response)
 
     @staticmethod
-    def _parse_response(response: Response) -> list[Lead]:
+    def _parse_response(response: SimpleResponse) -> list[Lead]:
         try:
             yaml_content = extract_yaml_from_str(response.content)
         except ValueError:
@@ -95,13 +80,6 @@ class Attempt(BaseModel):
         kept_leads = [lead for lead in self.leads if lead.classification == "very promising"]
         score = compute_score(self.commit, [lead.format() for lead in kept_leads])
         self.scores.append(score)
-
-    def update_usage_and_cost(self, usage: Usage):
-        self.usage = self.usage.plus(usage)
-        self.cost = (
-            model_cost[self.model]["input_cost_per_token"] * self.usage.input_tokens
-            + model_cost[self.model]["output_cost_per_token"] * self.usage.output_tokens
-        )
 
     def get_hash(self):
         """Hash based only on the responses, so it doesn't change when e.g. new scores are added."""

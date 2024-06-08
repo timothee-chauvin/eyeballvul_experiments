@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import mimetypes
 import subprocess
@@ -5,14 +6,14 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from eyeballvul import EyeballvulRevision, get_commits, get_revision
-from litellm import completion, model_cost
+from eyeballvul import EyeballvulRevision, get_revisions
 from litellm.exceptions import ContextWindowExceededError
 from typeguard import typechecked
 
-from eyeballvul_experiments.attempt import Attempt, Response, Usage
+from eyeballvul_experiments.attempt import Attempt, SimpleResponse
 from eyeballvul_experiments.chunk import Chunk, File
 from eyeballvul_experiments.config.config_loader import Config
+from eyeballvul_experiments.llm_gateway.gateway_interface import Usage
 
 logging.basicConfig(level=logging.INFO)
 
@@ -71,31 +72,16 @@ def get_files_in_repo(repo_dir: Path) -> list[File]:
     return files
 
 
-def fake_completion(chunk: Chunk):
-    if len(chunk) > 128000 * 4:
-        raise ValueError()
-    return ["vul1", "vul2"], (len(chunk), 0)
-
-
-def parse_response(response: str) -> list[str]:
-    """
-    Parse the model's response into a list of leads.
-
-    Raise ValueError if the response can't be parsed.
-    """
-    return []  # TODO
-
-
 @typechecked
-def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
+async def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
     """
     Run `model` on the given `chunk`, and return a tuple of:
 
     - the response from the model
-    - a tuple (input tokens used, output tokens used)
+    - the Usage object extracted from the response
     """
     logging.info(f"Querying model {model} on chunk {chunk.get_hash()}...")
-    response = completion(
+    response = await Config.gateway.acompletion(
         model=model,
         messages=[
             {
@@ -106,8 +92,7 @@ def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
             }
         ],
     )
-    usage = Usage(response.usage.prompt_tokens, response.usage.completion_tokens)
-    return (response.choices[0].message.content, usage)
+    return (response.choices[0].message.content, response.usage)
 
 
 def create_chunk_initial_guess(
@@ -128,9 +113,12 @@ def create_chunk_initial_guess(
     return chunk
 
 
-def query_model(model: str, revision: EyeballvulRevision, repo_dir: Path) -> Attempt:
+async def query_model(
+    model: str, revision: EyeballvulRevision, repo_dir: Path, max_size_bytes: int
+) -> Attempt:
     """
-    Run `model` on the repository at `commit`, and return a new `Attempt` object (not yet scored).
+    Run `model` on the repository at `commit`, and return a new `Attempt` object (not yet scored),
+    unless the repository exceeds `max_size_bytes`.
 
     The model may be queried multiple times on chunks of the repository at that commit if the repository exceeds the model's context length.
 
@@ -146,21 +134,23 @@ def query_model(model: str, revision: EyeballvulRevision, repo_dir: Path) -> Att
         repo_url=revision.repo_url,
         model=model,
     )
-    max_context_bytes = int(model_cost[model]["max_input_tokens"] * 4)
     subprocess.check_call(["git", "checkout", revision.commit], cwd=repo_dir)
     files = get_files_in_repo(repo_dir)
     included_repo_size = sum(len(file.contents) for file in files)
+    if included_repo_size > max_size_bytes:
+        raise ValueError(f"Repository size {included_repo_size} exceeds {max_size_bytes} bytes.")
     while files:
-        chunk = create_chunk_initial_guess(files, revision, max_context_bytes, included_repo_size)
+        chunk = create_chunk_initial_guess(files, revision, max_size_bytes, included_repo_size)
         files = files[len(chunk.files) :]
         move_to_next_chunk = False
         while not move_to_next_chunk:
             try:
-                response, usage = query_model_one_chunk(model, chunk)
+                response, usage = await query_model_one_chunk(model, chunk)
                 chunk.log()
                 attempt.chunk_hashes.append(chunk.get_hash())
-                attempt.responses.append(Response(content=response, date=datetime.now()))
-                attempt.update_usage_and_cost(usage)
+                attempt.responses.append(
+                    SimpleResponse(content=response, date=datetime.now(), usage=usage)
+                )
                 move_to_next_chunk = True
             except ContextWindowExceededError:
                 removed_files: list[File] = chunk.shrink()
@@ -178,19 +168,40 @@ def query_model(model: str, revision: EyeballvulRevision, repo_dir: Path) -> Att
 
 
 @typechecked
-def handle_repo(repo_url: str, revisions: list[EyeballvulRevision], model: str) -> None:
+async def handle_repo(
+    repo_url: str, revisions: list[EyeballvulRevision], model: str, max_size_bytes: int
+) -> None:
     """Handle all the given `revisions` of the repository at `repo_url`."""
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_dir = Path(temp_dir)
         subprocess.check_call(["git", "clone", repo_url, str(repo_dir)])
         for revision in revisions:
-            attempt = query_model(model, revision, repo_dir)
-            attempt.parse()
-            attempt.add_score()
-            attempt.log()
+            try:
+                attempt = await query_model(model, revision, repo_dir, max_size_bytes)
+                attempt.parse()
+                attempt.add_score()
+                attempt.log()
+            except ValueError:
+                logging.warning(f"Skipping revision {revision.commit} because it is too large.")
 
 
-model = "gpt-4o"
-project = "https://github.com/parisneo/lollms-webui"
-revisions = [get_revision(commit) for commit in get_commits(project=project)][:1]
-handle_repo(project, revisions, model)
+async def main():
+    model = "claude-3-opus-20240307"
+    cutoff_date = "2023-09-01"
+    max_size_bytes = 600_000
+    revisions_after = [
+        revision for revision in get_revisions(after=cutoff_date) if revision.size < max_size_bytes
+    ]
+    revisions_after_by_repo: dict[str, list[EyeballvulRevision]] = {}
+    for revision in revisions_after:
+        revisions_after_by_repo.setdefault(revision.repo_url, []).append(revision)
+    revisions_after_by_repo = dict(sorted(revisions_after_by_repo.items()))
+
+    for repo_url, revisions in revisions_after_by_repo.items():
+        await handle_repo(repo_url, revisions, model, max_size_bytes)
+        if input("Continue? [Y/n]") == "n":
+            break
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

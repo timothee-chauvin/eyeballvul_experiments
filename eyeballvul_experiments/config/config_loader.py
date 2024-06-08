@@ -3,6 +3,9 @@ from typing import NamedTuple
 
 import tomli
 
+from eyeballvul_experiments.llm_gateway.gateway_interface import GatewayInterface
+from eyeballvul_experiments.llm_gateway.litellm_gateway import LiteLLMGateway
+
 PARENT_DIR = Path(__file__).parent
 PROJECT_DIR = PARENT_DIR.parent.parent
 
@@ -29,6 +32,7 @@ class Config:
     exclude_extensions = config["exclude_extensions"]
     instruction_template = instruction_template
     cwe_list = cwe_list
+    gateway: GatewayInterface = LiteLLMGateway()
 
     paths = Paths(
         chunks=data_path / "chunks",
