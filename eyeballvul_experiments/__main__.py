@@ -206,6 +206,9 @@ async def handle_repo(
     if not models_by_revision:
         logging.info(f"No new attempts to make for {repo_url}.")
         return 0.0, {}
+    if all(cache.get(revision.commit, 0) > max_size_bytes for revision in revisions):
+        logging.info(f"Skipping {repo_url} because all revisions are known to be too large.")
+        return 0.0, {}
     total_cost = 0.0
     cache_update = {}
     with tempfile.TemporaryDirectory() as temp_dir:
