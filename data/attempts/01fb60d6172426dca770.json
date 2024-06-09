@@ -1,0 +1,118 @@
+{
+  "commit": "4084ea18f96d9a953315f5555fca45f26639b8be",
+  "repo_url": "https://github.com/cyanomiko/dcnnt-py",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "ae7b8d1efa8980c63a92"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the provided codebase:\n```yaml\nleads:\n  - headline: Use of weak password hashing algorithm\n    analysis: |\n      The derive_key function in dcnnt/common/__init__.py is using SHA256 to hash passwords into 256-bit keys.\n      While SHA256 is a cryptographically secure hash function, it is not suitable for hashing passwords as it\n      is very fast and does not use a salt. This makes it vulnerable to rainbow table attacks and brute force\n      attacks if an attacker obtains the password hashes. A secure password hashing algorithm like bcrypt, scrypt,\n      Argon2, or PBKDF2 should be used instead which are much slower and utilize a salt.\n    cwe: CWE-916\n    function_names:\n      - derive_key\n    filenames:\n      - dcnnt/common/__init__.py\n    classification: very promising\n\n  - headline: Sensitive data stored in clear text \n    analysis: |\n      The device manager (DeviceManager class in dcnnt/device_manager.py) is storing sensitive data like device\n      passwords in plaintext JSON files on disk. An attacker who gains access to the filesystem can easily read\n      these passwords. Sensitive data should be encrypted before being persisted. The passwords should be hashed\n      using a secure password hashing algorithm before storing.\n    cwe: CWE-312\n    function_names:\n      - dump_device\n      - load_item\n    filenames:\n      - dcnnt/device_manager.py  \n    classification: very promising\n      \n  - headline: Incorrect permission assignment for critical resource \n    analysis: |\n      Some of the directories being created, like for plugin working directories, sync directories etc. are world\n      readable and writable. For example, the notify-send command writes icons to $DCNNT_RUNTIME_DIR which defaults\n      to /tmp/dcnnt and is readable by all users. An attacker could potentially modify or delete files in these\n      directories. Strict permissions should be set when creating directories to store potentially sensitive data.\n    cwe: CWE-732  \n    function_names:\n      - init_environment\n    filenames:\n      - dcnnt/app.py\n    classification: slightly promising\n\n  - headline: Improper handling of exceptional conditions\n    analysis: |\n      In many places in the code, errors during file I/O operations (like reading configs, writing logs etc)\n      are caught and logged but execution continues. This can lead to unexpected behavior. All I/O exceptions \n      should be properly handled and execution terminated or retried if critical files cannot be read or written.\n      Filesystem permissions and disk space issues can also cause I/O failures which are not being considered.\n    cwe: CWE-755\n    function_names:\n      - init_logger\n      - load_item\n    filenames:\n      - dcnnt/app.py\n      - dcnnt/device_manager.py\n    classification: slightly promising\n\n  - headline: Deserialization of untrusted data\n    analysis: |  \n      The unpack_raw_request method in dcnnt/server_search.py deserializes JSON data from UDP datagrams without\n      validating it. This can potentially lead to code execution vulnerabilities if the deserialized data is\n      used to instantiate arbitrary classes or call unsafe methods. The JSON data should be validated against\n      a strict schema before deserializing. Avoid using the load/loads methods and instead use safe_load/safe_loads.\n    cwe: CWE-502\n    function_names:\n      - unpack_raw_request\n    filenames:\n      - dcnnt/server_search.py\n    classification: very promising\n\n  - headline: Execution of commands from untrusted sources\n    analysis: |  \n      Some of the plugins allow executing arbitrary shell commands constructed from user-controlled data.\n      For example the on_done option in the sync plugin allows specifying a shell command that is executed\n      after sync. If an attacker can control the data used to construct these commands, they can inject\n      arbitrary OS commands. Any user-supplied data used in shell commands should be strictly validated and escaped.\n      Avoid shell=True if possible.\n    cwe: CWE-78\n    function_names:\n      - handle_dir_list\n      - common_upload_handler\n      - handle_upload\n      - handle_exec\n    filenames:  \n      - dcnnt/plugins/sync.py\n      - dcnnt/plugins/file_transfer.py\n      - dcnnt/plugins/remote_commands.py  \n    classification: very promising\n```",
+      "date": "2024-06-09T10:19:51.909670",
+      "usage": {
+        "prompt_tokens": 30039,
+        "completion_tokens": 1089,
+        "cost": 0.53226
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of weak password hashing algorithm",
+      "analysis": "The derive_key function in dcnnt/common/__init__.py is using SHA256 to hash passwords into 256-bit keys.\nWhile SHA256 is a cryptographically secure hash function, it is not suitable for hashing passwords as it\nis very fast and does not use a salt. This makes it vulnerable to rainbow table attacks and brute force\nattacks if an attacker obtains the password hashes. A secure password hashing algorithm like bcrypt, scrypt,\nArgon2, or PBKDF2 should be used instead which are much slower and utilize a salt.\n",
+      "classification": "very promising",
+      "cwe": "CWE-916",
+      "function_names": [
+        "derive_key"
+      ],
+      "filenames": [
+        "dcnnt/common/__init__.py"
+      ]
+    },
+    {
+      "headline": "Sensitive data stored in clear text",
+      "analysis": "The device manager (DeviceManager class in dcnnt/device_manager.py) is storing sensitive data like device\npasswords in plaintext JSON files on disk. An attacker who gains access to the filesystem can easily read\nthese passwords. Sensitive data should be encrypted before being persisted. The passwords should be hashed\nusing a secure password hashing algorithm before storing.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "dump_device",
+        "load_item"
+      ],
+      "filenames": [
+        "dcnnt/device_manager.py"
+      ]
+    },
+    {
+      "headline": "Incorrect permission assignment for critical resource",
+      "analysis": "Some of the directories being created, like for plugin working directories, sync directories etc. are world\nreadable and writable. For example, the notify-send command writes icons to $DCNNT_RUNTIME_DIR which defaults\nto /tmp/dcnnt and is readable by all users. An attacker could potentially modify or delete files in these\ndirectories. Strict permissions should be set when creating directories to store potentially sensitive data.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "init_environment"
+      ],
+      "filenames": [
+        "dcnnt/app.py"
+      ]
+    },
+    {
+      "headline": "Improper handling of exceptional conditions",
+      "analysis": "In many places in the code, errors during file I/O operations (like reading configs, writing logs etc)\nare caught and logged but execution continues. This can lead to unexpected behavior. All I/O exceptions \nshould be properly handled and execution terminated or retried if critical files cannot be read or written.\nFilesystem permissions and disk space issues can also cause I/O failures which are not being considered.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-755",
+      "function_names": [
+        "init_logger",
+        "load_item"
+      ],
+      "filenames": [
+        "dcnnt/app.py",
+        "dcnnt/device_manager.py"
+      ]
+    },
+    {
+      "headline": "Deserialization of untrusted data",
+      "analysis": "The unpack_raw_request method in dcnnt/server_search.py deserializes JSON data from UDP datagrams without\nvalidating it. This can potentially lead to code execution vulnerabilities if the deserialized data is\nused to instantiate arbitrary classes or call unsafe methods. The JSON data should be validated against\na strict schema before deserializing. Avoid using the load/loads methods and instead use safe_load/safe_loads.\n",
+      "classification": "very promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "unpack_raw_request"
+      ],
+      "filenames": [
+        "dcnnt/server_search.py"
+      ]
+    },
+    {
+      "headline": "Execution of commands from untrusted sources",
+      "analysis": "Some of the plugins allow executing arbitrary shell commands constructed from user-controlled data.\nFor example the on_done option in the sync plugin allows specifying a shell command that is executed\nafter sync. If an attacker can control the data used to construct these commands, they can inject\narbitrary OS commands. Any user-supplied data used in shell commands should be strictly validated and escaped.\nAvoid shell=True if possible.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "handle_dir_list",
+        "common_upload_handler",
+        "handle_upload"
+      ],
+      "filenames": [
+        "dcnnt/plugins/sync.py",
+        "dcnnt/plugins/file_transfer.py",
+        "dcnnt/plugins/remote_commands.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 4
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-1000": "2024-04-27T09:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

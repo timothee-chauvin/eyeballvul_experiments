@@ -1,0 +1,39 @@
+{
+  "commit": "f9ab0e003f48f228bb957027f3d1c2b2841fb0a4",
+  "repo_url": "https://github.com/buildkite/elastic-ci-stack-for-aws",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "5719463aad70bed8f500"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Potential command injection vulnerability in bk-install-elastic-stack.sh\"\n    analysis: |\n      The bk-install-elastic-stack.sh script executes user input from the BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT environment variable without any validation or sanitization:\n      \n      ```bash\n      if [[ -n \"${BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT}\" ]]; then\n        /usr/local/bin/bk-fetch.sh \"${BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT}\" /tmp/elastic_bootstrap\n        bash < /tmp/elastic_bootstrap\n        rm /tmp/elastic_bootstrap\n      fi\n      ```\n\n      If an attacker can control the value of BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT, they could provide a URL that returns malicious bash commands. This would allow arbitrary command execution as root when the bootstrap script is downloaded and executed.\n\n      To exploit this, an attacker would need to find a way to set the BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT environment variable before this script runs, likely by modifying the stack configuration.\n    cwe: CWE-78\n    function_names: \n      - on_error\n    filenames:\n      - packer/linux/conf/bin/bk-install-elastic-stack.sh\n    classification: very promising\n\n  - headline: \"Unrestricted access to authorized_keys enables SSH access for attackers\"\n    analysis: |  \n      The bk-install-elastic-stack.sh script allows unrestricted downloading of an authorized_keys file from a URL specified in the BUILDKITE_AUTHORIZED_USERS_URL environment variable:\n\n      ```bash\n      if [[ -n \"${BUILDKITE_AUTHORIZED_USERS_URL}\" ]]; then\n        cat <<-EOF > /usr/local/bin/refresh_authorized_keys\n          /usr/local/bin/bk-fetch.sh \"${BUILDKITE_AUTHORIZED_USERS_URL}\" /tmp/authorized_keys\n          mv /tmp/authorized_keys /home/ec2-user/.ssh/authorized_keys\n          chmod 600 /home/ec2-user/.ssh/authorized_keys\n          chown ec2-user: /home/ec2-user/.ssh/authorized_keys\n        EOF\n        chmod +x /usr/local/bin/refresh_authorized_keys\n        /usr/local/bin/refresh_authorized_keys\n        systemctl enable refresh_authorized_keys.timer\n      fi\n      ```\n\n      If an attacker can control the BUILDKITE_AUTHORIZED_USERS_URL variable, they can provide a URL hosting their own SSH public key. This would get downloaded and set as an authorized key for the ec2-user, allowing the attacker SSH access to the instance.\n\n      The refresh_authorized_keys script and timer means the attacker can gain access even after the instance is bootstrapped, simply by modifying the URL to point to their public key.\n    cwe: CWE-284\n    function_names:\n      - on_error\n    filenames:\n      - packer/linux/conf/bin/bk-install-elastic-stack.sh\n    classification: very promising\n  \n  - headline: \"Docker socket mounted from host allows privilege escalation\"\n    analysis: |\n      The bk-install-elastic-stack.sh script mounts the host Docker socket when installing QEMU binfmt for multiarch support:\n\n      ```bash\n      docker run \\\n        --privileged \\\n        --userns=host \\\n        --rm \\\n        \"tonistiigi/binfmt:${QEMU_BINFMT_TAG}\" \\\n          --install all\n      ```\n\n      By mounting the Docker socket and running in host user namespace with --privileged, any command run in this container has root-level access to the host.\n\n      If an attacker can modify the container image or the QEMU_BINFMT_TAG, they may be able to execute malicious commands with full host privileges. This could enable installing rootkits, modifying critical system files, etc.\n\n      However, exploitation would require the ability to modify files that are only writable by root during the Packer build, so the real-world risk depends on the security of the build pipeline.\n    cwe: CWE-284\n    function_names: \n      - on_error\n    filenames:\n      - packer/linux/conf/bin/bk-install-elastic-stack.sh  \n    classification: slightly promising\n\n  - headline: \"Agent tokens are passed to user-data and logged to the console\"\n    analysis: |  \n      The bk-install-elastic-stack.sh script fetches agent tokens from SSM and configures buildkite-agent with it:\n\n      ```bash  \n      set +x # Don't leak the agent token into logs\n      echo \"Setting \\$BUILDKITE_AGENT_TOKEN to the value stored in the SSM Parameter $BUILDKITE_AGENT_TOKEN_PATH\"\n      BUILDKITE_AGENT_TOKEN=\"$(aws ssm get-parameter --name \"${BUILDKITE_AGENT_TOKEN_PATH}\" --with-decryption --query Parameter.Value --output text)\"\n      set -x\n      ```\n\n      The token is passed to the configuration file:\n      \n      ```bash\n      cat <<EOF > /etc/buildkite-agent/buildkite-agent.cfg\n      token=\"${BUILDKITE_AGENT_TOKEN}\"\n      ...\n      ```\n\n      While there's an attempt to avoid logging the token, the full ec2 user-data, including this token, gets logged to the system console output which is available via the EC2 API/console.\n\n      Anyone with IAM permissions to read the EC2 console output could retrieve valid agent tokens. With an agent token, an attacker could impersonate an agent to access source code, secrets, etc. They may even be able to execute arbitrary jobs in the Buildkite pipeline.\n    cwe: CWE-522  \n    function_names:\n      - on_error\n    filenames:\n      - packer/linux/conf/bin/bk-install-elastic-stack.sh\n    classification: slightly promising\n``` ",
+      "date": "2024-06-09T09:24:09.772077",
+      "usage": {
+        "prompt_tokens": 12062,
+        "completion_tokens": 1451,
+        "cost": 0.289755
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-43116": "2023-12-22T10:15:11",
+        "CVE-2023-43741": "2023-12-22T10:15:11"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

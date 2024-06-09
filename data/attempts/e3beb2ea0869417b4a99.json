@@ -1,0 +1,102 @@
+{
+  "commit": "11822083b7d80dea7c1ff40e89812787c6d4fbe3",
+  "repo_url": "https://github.com/cloudfoundry/cf-deployment",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "88d2ad86cd2673bb0567"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper Neutralization of Special Elements in OS Command\n    analysis: |\n      The scripts use bash for various file operations and calling external commands without proper sanitization of inputs. Specifically, the following lines are susceptible to OS Command Injection:\n      - `pushd ${home} > /dev/null` in multiple scripts including `scripts/test-addons-ops.sh`, `scripts/test-standard-ops.sh`, and others.\n      These lines do not properly sanitize the content of `home` variable, leading to potential OS command injection if an attacker controls this input.\n    cwe: CWE-78\n    function_names:\n      - test_addons_ops\n      - test_standard_ops\n      - test_legacy_ops\n    filenames:\n      - scripts/test-addons-ops.sh\n      - scripts/test-standard-ops.sh\n      - scripts/test-legacy-ops.sh\n    classification: very promising\n  - headline: Hard-coded Credentials\n    analysis: |\n      The script `scripts/test-test-ops.sh` has instances of hard-coded API keys and passwords in the check_interpolation function calls:\n      - `check_interpolation \"add-datadog-firehose-nozzle.yml\" \"-v datadog_api_key=XYZ\" \u2026`\n      - `check_interpolation \"name: enable-nfs-broker-backup.yml\" \"enable-backup-restore.yml \u2026 -v nfs-broker-database-password=i_am_a_password\"`\n      Hard-coding sensitive information like API keys and passwords directly into scripts can lead to accidental leakage and exploit if the source code is exposed.\n    cwe: CWE-798\n    function_names:\n      - test_test_ops\n    filenames:\n      - scripts/test-test-ops.sh\n    classification: very promising\n  - headline: Exposure of Sensitive Information in Output\n    analysis: |\n      The `test_use_compiled_releases` function in `scripts/semantic-tests.sh` uses the `yq` and `jq` commands to extract and print information from a manifest file without sanitizing or ensuring the removal of sensitive data. The following lines are of concern:\n      - `jq -r .releases[].url | grep 'github.com'`\n      Such practices can inadvertently expose URLs or sensitive information if they are present in the manifest file.\n    cwe: CWE-200\n    function_names:\n      - test_use_compiled_releases\n    filenames:\n      - scripts/semantic-tests.sh\n    classification: slightly promising\n  - headline: Cleartext Storage of Sensitive Information\n    analysis: |\n      Throughout the scripts, especially in `scripts/test-experimental-ops.sh`, there are many instances where sensitive data like credentials and API keys are passed as command-line arguments. While they may not be stored explicitly, they can be exposed through process listings:\n      - `check_interpolation \"add-credhub-lb.yml\" \"enable-instance-identity-credentials.yml\" \"-o secure-service-credentials.yml\" \u2026`\n      - `bosh int cf-deployment.yml -o operations/use-latest-stemcell.yml --path=/stemcells/alias=default/version`\n      Anyone with access to the command-line history or process listings can view these details.\n    cwe: CWE-312\n    function_names: []\n    filenames:\n      - scripts/test-experimental-ops.sh\n      - scripts/semantic-tests.sh\n    classification: slightly promising\n```",
+      "date": "2024-06-09T09:52:53.353373",
+      "usage": {
+        "prompt_tokens": 6593,
+        "completion_tokens": 702,
+        "cost": 0.043495
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper Neutralization of Special Elements in OS Command",
+      "analysis": "The scripts use bash for various file operations and calling external commands without proper sanitization of inputs. Specifically, the following lines are susceptible to OS Command Injection:\n- pushd ${home} > /dev/null in multiple scripts including scripts/test-addons-ops.sh, scripts/test-standard-ops.sh, and others.\nThese lines do not properly sanitize the content of home variable, leading to potential OS command injection if an attacker controls this input.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "test_addons_ops",
+        "test_standard_ops",
+        "test_legacy_ops"
+      ],
+      "filenames": [
+        "scripts/test-addons-ops.sh",
+        "scripts/test-standard-ops.sh",
+        "scripts/test-legacy-ops.sh"
+      ]
+    },
+    {
+      "headline": "Hard-coded Credentials",
+      "analysis": "The script scripts/test-test-ops.sh has instances of hard-coded API keys and passwords in the check_interpolation function calls:\n- check_interpolation \"add-datadog-firehose-nozzle.yml\" \"-v datadog_api_key=XYZ\" \u2026\n- check_interpolation \"name: enable-nfs-broker-backup.yml\" \"enable-backup-restore.yml \u2026 -v nfs-broker-database-password=i_am_a_password\"\nHard-coding sensitive information like API keys and passwords directly into scripts can lead to accidental leakage and exploit if the source code is exposed.\n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "test_test_ops"
+      ],
+      "filenames": [
+        "scripts/test-test-ops.sh"
+      ]
+    },
+    {
+      "headline": "Exposure of Sensitive Information in Output",
+      "analysis": "The test_use_compiled_releases function in scripts/semantic-tests.sh uses the yq and jq commands to extract and print information from a manifest file without sanitizing or ensuring the removal of sensitive data. The following lines are of concern:\n- jq -r .releases[].url | grep 'github.com'\nSuch practices can inadvertently expose URLs or sensitive information if they are present in the manifest file.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "test_use_compiled_releases"
+      ],
+      "filenames": [
+        "scripts/semantic-tests.sh"
+      ]
+    },
+    {
+      "headline": "Cleartext Storage of Sensitive Information",
+      "analysis": "Throughout the scripts, especially in scripts/test-experimental-ops.sh, there are many instances where sensitive data like credentials and API keys are passed as command-line arguments. While they may not be stored explicitly, they can be exposed through process listings:\n- check_interpolation \"add-credhub-lb.yml\" \"enable-instance-identity-credentials.yml\" \"-o secure-service-credentials.yml\" \u2026\n- bosh int cf-deployment.yml -o operations/use-latest-stemcell.yml --path=/stemcells/alias=default/version\nAnyone with access to the command-line history or process listings can view these details.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-312",
+      "function_names": [],
+      "filenames": [
+        "scripts/test-experimental-ops.sh",
+        "scripts/semantic-tests.sh"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 10,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2018-1191"
+      },
+      "vuln_dates": {
+        "CVE-2023-34041": "2023-09-08T08:15:07",
+        "CVE-2020-15586": "2020-07-17T16:15:11",
+        "CVE-2019-11294": "2019-12-19T20:15:12",
+        "CVE-2019-11277": "2019-09-23T18:15:11",
+        "CVE-2019-3801": "2019-04-25T21:29:00",
+        "CVE-2019-11289": "2019-11-19T19:15:23",
+        "CVE-2019-11283": "2019-10-23T16:15:11",
+        "CVE-2019-11282": "2019-10-23T16:15:11",
+        "CVE-2023-34061": "2024-01-12T07:15:11",
+        "CVE-2018-1191": "2018-03-29T20:29:00",
+        "CVE-2018-1265": "2018-06-06T20:29:00"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
