@@ -240,8 +240,12 @@ async def handle_repo(
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            for model in models_by_revision.get(revision.commit, []):
-                cost, new_cache_update = await do_attempt(model, revision, repo_dir, max_size_bytes)
+            tasks = [
+                asyncio.create_task(do_attempt(model, revision, repo_dir, max_size_bytes))
+                for model in models_by_revision.get(revision.commit, [])
+            ]
+            for task in asyncio.as_completed(tasks):
+                cost, new_cache_update = await task
                 total_cost += cost
                 cache_update.update(new_cache_update)
     return total_cost, cache_update
