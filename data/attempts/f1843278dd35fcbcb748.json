@@ -1,0 +1,104 @@
+{
+  "commit": "b43f3bf95421f0bd1bfec0a35cdf94f17616ecb3",
+  "repo_url": "https://github.com/frostming/unearth",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "53e287cee6b73de5b4a4"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the codebase:\n\n```yaml\nleads:\n  - headline: Arbitrary file write via symlinks in ZIP archives\n    analysis: |\n      In the _unzip_archive function, extracted files are written to arbitrary \n      locations specified in the ZIP archive without checking for symlinks. An\n      attacker could craft a malicious ZIP file containing symlinks to overwrite\n      arbitrary files on the filesystem when the archive is extracted.\n    cwe: CWE-22\n    function_names:\n      - _unzip_archive\n    filenames:\n      - src/unearth/preparer.py  \n    classification: very promising\n\n  - headline: Command injection in version control commands\n    analysis: |\n      The VersionControl base class and its subclasses call out to Git, Mercurial,\n      Subversion, and Bazaar commands by constructing shell commands using\n      untrusted input (repository URLs, revisions, etc). If special shell \n      characters are not properly escaped, an attacker could inject arbitrary\n      commands to be executed.\n    cwe: CWE-78\n    function_names:\n      - run_command\n      - fetch_new\n      - update \n    filenames:\n      - src/unearth/vcs/base.py\n      - src/unearth/vcs/git.py\n      - src/unearth/vcs/hg.py\n      - src/unearth/vcs/svn.py\n      - src/unearth/vcs/bazaar.py\n    classification: slightly promising\n\n  - headline: Path traversal in local file links\n    analysis: | \n      The Link class allows specifying local file paths, which are accessed \n      directly. An attacker could construct a malicious link containing path\n      traversal characters like \"..\" to access files outside the expected \n      directories.\n    cwe: CWE-22\n    function_names:\n      - from_path\n      - file_path\n    filenames:\n      - src/unearth/link.py\n    classification: slightly promising\n\n  - headline: Cleartext storage of PyPI credentials\n    analysis: |\n      The MultiDomainBasicAuth class optionally prompts for and stores PyPI \n      credentials (username and password) unencrypted. These cleartext credentials\n      could potentially be accessed by other users or processes on the system.\n    cwe: CWE-312\n    function_names:\n      - _prompt_for_password  \n    filenames:\n      - src/unearth/auth.py\n    classification: slightly promising\n\n  - headline: Use of insecure transports\n    analysis: | \n      Unearth supports fetching packages and version control repositories over \n      insecure transports like unencrypted HTTP and FTP. This could allow \n      tampering or eavesdropping by network attackers. However, it seems the \n      insecure transports are not used by default and must be explicitly enabled.\n    cwe: CWE-319 \n    function_names:\n      - iter_secure_origins\n    filenames:\n      - src/unearth/session.py  \n    classification: not promising\n```",
+      "date": "2024-06-09T12:10:18.709357",
+      "usage": {
+        "prompt_tokens": 52836,
+        "completion_tokens": 758,
+        "cost": 0.84939
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Arbitrary file write via symlinks in ZIP archives",
+      "analysis": "In the _unzip_archive function, extracted files are written to arbitrary \nlocations specified in the ZIP archive without checking for symlinks. An\nattacker could craft a malicious ZIP file containing symlinks to overwrite\narbitrary files on the filesystem when the archive is extracted.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "_unzip_archive"
+      ],
+      "filenames": [
+        "src/unearth/preparer.py"
+      ]
+    },
+    {
+      "headline": "Command injection in version control commands",
+      "analysis": "The VersionControl base class and its subclasses call out to Git, Mercurial,\nSubversion, and Bazaar commands by constructing shell commands using\nuntrusted input (repository URLs, revisions, etc). If special shell \ncharacters are not properly escaped, an attacker could inject arbitrary\ncommands to be executed.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "run_command",
+        "fetch_new",
+        "update"
+      ],
+      "filenames": [
+        "src/unearth/vcs/base.py",
+        "src/unearth/vcs/git.py",
+        "src/unearth/vcs/hg.py"
+      ]
+    },
+    {
+      "headline": "Path traversal in local file links",
+      "analysis": "The Link class allows specifying local file paths, which are accessed \ndirectly. An attacker could construct a malicious link containing path\ntraversal characters like \"..\" to access files outside the expected \ndirectories.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "from_path",
+        "file_path"
+      ],
+      "filenames": [
+        "src/unearth/link.py"
+      ]
+    },
+    {
+      "headline": "Cleartext storage of PyPI credentials",
+      "analysis": "The MultiDomainBasicAuth class optionally prompts for and stores PyPI \ncredentials (username and password) unencrypted. These cleartext credentials\ncould potentially be accessed by other users or processes on the system.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "_prompt_for_password"
+      ],
+      "filenames": [
+        "src/unearth/auth.py"
+      ]
+    },
+    {
+      "headline": "Use of insecure transports",
+      "analysis": "Unearth supports fetching packages and version control repositories over \ninsecure transports like unencrypted HTTP and FTP. This could allow \ntampering or eavesdropping by network attackers. However, it seems the \ninsecure transports are not used by default and must be explicitly enabled.\n",
+      "classification": "not promising",
+      "cwe": "CWE-319",
+      "function_names": [
+        "iter_secure_origins"
+      ],
+      "filenames": [
+        "src/unearth/session.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-45805": "2023-10-20T19:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

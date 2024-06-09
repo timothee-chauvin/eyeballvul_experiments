@@ -1,0 +1,95 @@
+{
+  "commit": "2f24db2b23feaa9f77698ef9721d5d1fe569b911",
+  "repo_url": "https://github.com/folio-org/spring-module-core",
+  "model": "gpt-4-turbo-2024-04-09",
+  "chunk_hashes": [
+    "86bf4078824e41573ff3"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential SQL Injection via tenant controlled schema generation\n    analysis: |\n      The application constructs SQL queries dynamically for schema operations based on tenant inputs received through HTTP headers. The `schemaService.getSchema` method directly incorporates the tenant name, which is included in SQL statements used to create, use, or drop schemas. If external input is not correctly sanitized or escaped, this can lead to SQL injection vulnerabilities where arbitrary SQL code could be executed on the database.\n    cwe: CWE-89\n    function_names:\n      - createTenant\n      - deleteTenant\n      - resolveCurrentTenantIdentifier\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/service/SchemaService.java\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateSchemaService.java\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateTenantIdentifierResolver.java\n    classification: very promising\n\n  - headline: Inadequate tenant isolation leading to cross-tenant data leaks\n    analysis: |\n      The application uses a shared database schema approach where schemas are dynamically chosen based on the `X-Okapi-Tenant` header. If the header is missing, and no default behavior is enforced strictly checked or the fallback is insecure, it potentially allows users to access or manipulate another tenant's data unintentionally by not providing a tenant header, or providing incorrect tenant information that might still resolve to a valid schema.\n    cwe: CWE-264\n    function_names:\n      - resolveCurrentTenantIdentifier\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateTenantIdentifierResolver.java\n    classification: slightly promising\n\n  - headline: Information leakage through error messages\n    analysis: |\n      The system can potentially expose sensitive information through detailed error messages. When an error occurs within the SQL or schema operations (e.g., tenant already exists, or tenant does not exist), the application throws exceptions that include system state information. This can be misused by an attacker to infer system properties or perform further attacks.\n    cwe: CWE-209\n    function_names:\n      - createTenant\n      - deleteTenant\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateSchemaService.java\n    classification: slightly promising\n\n  - headline: Insecure storage and handling of sensitive tenant data\n    analysis: |\n      The application's handling of tenant identifiers and the schema name derivation appears to store and transmit data in clear text, which might expose sensitive information or allow unauthorized access if intercepted or accessed from logs or error messages. Moreover, with default schema names constructed directly from tenant-provided data, this may lead to predictable resource locations.\n    cwe: CWE-312\n    function_names:\n      - setTenant\n      - getTenant\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/storage/ThreadLocalStorage.java\n    classification: slightly promising\n```",
+      "date": "2024-06-09T12:05:50.376995",
+      "usage": {
+        "prompt_tokens": 16498,
+        "completion_tokens": 623,
+        "cost": 0.18367
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential SQL Injection via tenant controlled schema generation",
+      "analysis": "The application constructs SQL queries dynamically for schema operations based on tenant inputs received through HTTP headers. The schemaService.getSchema method directly incorporates the tenant name, which is included in SQL statements used to create, use, or drop schemas. If external input is not correctly sanitized or escaped, this can lead to SQL injection vulnerabilities where arbitrary SQL code could be executed on the database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "createTenant",
+        "deleteTenant",
+        "resolveCurrentTenantIdentifier"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/service/SchemaService.java",
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateSchemaService.java",
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateTenantIdentifierResolver.java"
+      ]
+    },
+    {
+      "headline": "Inadequate tenant isolation leading to cross-tenant data leaks",
+      "analysis": "The application uses a shared database schema approach where schemas are dynamically chosen based on the X-Okapi-Tenant header. If the header is missing, and no default behavior is enforced strictly checked or the fallback is insecure, it potentially allows users to access or manipulate another tenant's data unintentionally by not providing a tenant header, or providing incorrect tenant information that might still resolve to a valid schema.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-264",
+      "function_names": [
+        "resolveCurrentTenantIdentifier"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateTenantIdentifierResolver.java"
+      ]
+    },
+    {
+      "headline": "Information leakage through error messages",
+      "analysis": "The system can potentially expose sensitive information through detailed error messages. When an error occurs within the SQL or schema operations (e.g., tenant already exists, or tenant does not exist), the application throws exceptions that include system state information. This can be misused by an attacker to infer system properties or perform further attacks.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [
+        "createTenant",
+        "deleteTenant"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateSchemaService.java"
+      ]
+    },
+    {
+      "headline": "Insecure storage and handling of sensitive tenant data",
+      "analysis": "The application's handling of tenant identifiers and the schema name derivation appears to store and transmit data in clear text, which might expose sensitive information or allow unauthorized access if intercepted or accessed from logs or error messages. Moreover, with default schema names constructed directly from tenant-provided data, this may lead to predictable resource locations.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "setTenant",
+        "getTenant"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/storage/ThreadLocalStorage.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2022-4963"
+      },
+      "vuln_dates": {
+        "CVE-2022-4963": "2024-03-21T02:44:57"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

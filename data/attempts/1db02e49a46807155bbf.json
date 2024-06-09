@@ -1,0 +1,93 @@
+{
+  "commit": "2f24db2b23feaa9f77698ef9721d5d1fe569b911",
+  "repo_url": "https://github.com/folio-org/spring-module-core",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "86bf4078824e41573ff3"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Hardcoded tenant header name in `TenantIntegrationHelper` and other classes\n    analysis: |\n      In the `TenantIntegrationHelper` and other classes that manage tenant headers,\n      there is a hardcoded default tenant header name (`X-Okapi-Tenant`). This can lead to \n      issues if this value is exposed in logs or otherwise becomes known to unauthorized entities.\n      Moreover, potential misconfigurations or overrides might go unnoticed.\n    cwe: CWE-798\n    function_names:\n      - tenantGet\n      - tenantPost\n    filenames:\n      - tenant/src/test/java/org/folio/spring/tenant/TenantIntegrationHelper.java\n      - tenant/src/test/java/org/folio/spring/tenant/TenantContextHelper.java\n    classification: very promising\n\n  - headline: Potential SQL Injection in `HibernateMultiTenantConnectionProvider`\n    analysis: |\n      In `getConnection` and `releaseConnection` methods of `HibernateMultiTenantConnectionProvider`,\n      the tenant schema name is directly appended to the SQL strings without validation or escaping.\n      An attacker could exploit this to inject malicious SQL via the tenant identifier.\n    cwe: CWE-89\n    function_names:\n      - getConnection\n      - releaseConnection\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateMultiTenantConnectionProvider.java\n    classification: very promising\n    \n  - headline: Insufficient session validation in `HibernateTenantIdentifierResolver`\n    analysis: |\n      The `resolveCurrentTenantIdentifier` method tries to resolve the tenant from the \n      HTTP request first and falls back to `ThreadLocalStorage` if no request is found.\n      If neither are present, it defaults to the default tenant. This strategy can result in\n      unintended tenant usage, potentially leading to unauthorized access to data.\n    cwe: CWE-287\n    function_names:\n      - resolveCurrentTenantIdentifier\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateTenantIdentifierResolver.java\n    classification: slightly promising\n\n  - headline: Information leakage through detailed error messages\n    analysis: |\n      Error handling in `TenantControllerAdvice`, `DomainAdvice`, and `MultipleInterfaceAdvice`\n      return detailed error messages which may reveal implementation details or other sensitive\n      information. This information can be leveraged by attackers to refine their attacks.\n    cwe: CWE-209\n    function_names:\n      - hasndleSQLException\n      - hasndleIOException\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/controller/advice/TenantControllerAdvice.java\n      - domain/src/main/java/org/folio/spring/controller/advice/DomainAdvice.java\n      - domain/src/main/java/org/folio/spring/controller/advice/MultipleInterfaceAdvice.java\n    classification: very promising\n```",
+      "date": "2024-06-09T12:05:42.991353",
+      "usage": {
+        "prompt_tokens": 17017,
+        "completion_tokens": 589,
+        "cost": 0.09392
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Hardcoded tenant header name in TenantIntegrationHelper and other classes",
+      "analysis": "In the TenantIntegrationHelper and other classes that manage tenant headers,\nthere is a hardcoded default tenant header name (X-Okapi-Tenant). This can lead to \nissues if this value is exposed in logs or otherwise becomes known to unauthorized entities.\nMoreover, potential misconfigurations or overrides might go unnoticed.\n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "tenantGet",
+        "tenantPost"
+      ],
+      "filenames": [
+        "tenant/src/test/java/org/folio/spring/tenant/TenantIntegrationHelper.java",
+        "tenant/src/test/java/org/folio/spring/tenant/TenantContextHelper.java"
+      ]
+    },
+    {
+      "headline": "Potential SQL Injection in HibernateMultiTenantConnectionProvider",
+      "analysis": "In getConnection and releaseConnection methods of HibernateMultiTenantConnectionProvider,\nthe tenant schema name is directly appended to the SQL strings without validation or escaping.\nAn attacker could exploit this to inject malicious SQL via the tenant identifier.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "getConnection",
+        "releaseConnection"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateMultiTenantConnectionProvider.java"
+      ]
+    },
+    {
+      "headline": "Insufficient session validation in HibernateTenantIdentifierResolver",
+      "analysis": "The resolveCurrentTenantIdentifier method tries to resolve the tenant from the \nHTTP request first and falls back to ThreadLocalStorage if no request is found.\nIf neither are present, it defaults to the default tenant. This strategy can result in\nunintended tenant usage, potentially leading to unauthorized access to data.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-287",
+      "function_names": [
+        "resolveCurrentTenantIdentifier"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateTenantIdentifierResolver.java"
+      ]
+    },
+    {
+      "headline": "Information leakage through detailed error messages",
+      "analysis": "Error handling in TenantControllerAdvice, DomainAdvice, and MultipleInterfaceAdvice\nreturn detailed error messages which may reveal implementation details or other sensitive\ninformation. This information can be leveraged by attackers to refine their attacks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-209",
+      "function_names": [
+        "hasndleSQLException",
+        "hasndleIOException"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/controller/advice/TenantControllerAdvice.java",
+        "domain/src/main/java/org/folio/spring/controller/advice/DomainAdvice.java",
+        "domain/src/main/java/org/folio/spring/controller/advice/MultipleInterfaceAdvice.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-4963": "2024-03-21T02:44:57"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

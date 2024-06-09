@@ -1,0 +1,67 @@
+{
+  "commit": "b4be51a20d089eb7c4bf1ad37e2417f9c1f6a0ea",
+  "repo_url": "https://github.com/folio-org/mod-remote-storage",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "485275be2671602cec3b"
+  ],
+  "responses": [
+    {
+      "content": "Here are the identified security vulnerabilities in the provided codebase, with analysis and CWE classification:\n\n```yaml\nleads:\n  - headline: Potential SQL injection in AccessionQueueService\n    analysis: |\n      In the AccessionQueueService class, the getCriteriaSpecification method dynamically constructs a SQL query using string concatenation with unsanitized input from the AccessionFilterData object. This could potentially allow an attacker to manipulate the query and inject malicious SQL code.\n      \n      The same issue is present in the ReturnRetrievalQueueService class in the getCriteriaSpecification method.\n    cwe: CWE-89\n    function_names:\n      - AccessionQueueService.getCriteriaSpecification\n      - ReturnRetrievalQueueService.getCriteriaSpecification  \n    filenames:\n      - src/main/java/org/folio/rs/service/AccessionQueueService.java\n      - src/main/java/org/folio/rs/service/ReturnRetrievalQueueService.java\n    classification: very promising\n\n  - headline: Potential sensitive information logging \n    analysis: |  \n      The KafkaMessageListener class logs the full details of DomainEvent objects at info level in the handleEvents method. Depending on what information is contained in these events, sensitive data could end up being logged.\n\n      Similarly, the AccessionQueueService class logs full AccessionRequest objects which may contain sensitive details.\n    cwe: CWE-532\n    function_names:\n      - KafkaMessageListener.handleEvents\n      - AccessionQueueService.processPostAccession\n    filenames:  \n      - src/main/java/org/folio/rs/integration/KafkaMessageListener.java\n      - src/main/java/org/folio/rs/service/AccessionQueueService.java\n    classification: slightly promising\n\n  - headline: Use of MD5 for password hashing\n    analysis: |\n      The PasswordEncoder interface from Spring Security is being used, which likely means passwords are being hashed. However, the specific hash algorithm is not visible in the provided code. If a weak hash like MD5 is being used, it would make cracking passwords easier.\n      \n      To confirm this, we'd need to see the SecurityConfiguration class to check what PasswordEncoder bean is defined. BCrypt or Argon2 should be used instead of MD5 or SHA-1.\n    cwe: CWE-327\n    function_names:\n      - \n    filenames:\n      - \n    classification: not promising\n\n  - headline: Disabled CSRF protection\n    analysis: |\n      The controllers all extend a base class annotated with @RestController. In a default Spring Boot app, this would disable CSRF protection for the whole application.\n\n      However, it's likely this application doesn't need CSRF since it appears to be an API-only backend without server-rendered pages that might have cross-site request forgery vulnerabilities. \n      \n      Confirming CSRF can be safely disabled would require reviewing how the frontend interacts with these APIs.\n    cwe: CWE-352\n    function_names:\n      - \n    filenames:\n      - \n    classification: not promising\n```\n\nThe key findings are the potential SQL injection in query building, and the logging of sensitive information. The logging especially should be investigated to see if any personal data, credentials, or access tokens are being written to logs. \n\nThe possible use of MD5 for password hashing and lack of CSRF protection are lower priority, as they would need to be confirmed by reviewing code and application architecture not included here. Let me know if you have any other questions!",
+      "date": "2024-06-09T12:05:28.210420",
+      "usage": {
+        "prompt_tokens": 102272,
+        "completion_tokens": 856,
+        "cost": 1.59828
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential SQL injection in AccessionQueueService",
+      "analysis": "In the AccessionQueueService class, the getCriteriaSpecification method dynamically constructs a SQL query using string concatenation with unsanitized input from the AccessionFilterData object. This could potentially allow an attacker to manipulate the query and inject malicious SQL code.\n\nThe same issue is present in the ReturnRetrievalQueueService class in the getCriteriaSpecification method.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "AccessionQueueService.getCriteriaSpecification",
+        "ReturnRetrievalQueueService.getCriteriaSpecification"
+      ],
+      "filenames": [
+        "src/main/java/org/folio/rs/service/AccessionQueueService.java",
+        "src/main/java/org/folio/rs/service/ReturnRetrievalQueueService.java"
+      ]
+    },
+    {
+      "headline": "Potential sensitive information logging",
+      "analysis": "The KafkaMessageListener class logs the full details of DomainEvent objects at info level in the handleEvents method. Depending on what information is contained in these events, sensitive data could end up being logged.\n\nSimilarly, the AccessionQueueService class logs full AccessionRequest objects which may contain sensitive details.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-532",
+      "function_names": [
+        "KafkaMessageListener.handleEvents",
+        "AccessionQueueService.processPostAccession"
+      ],
+      "filenames": [
+        "src/main/java/org/folio/rs/integration/KafkaMessageListener.java",
+        "src/main/java/org/folio/rs/service/AccessionQueueService.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-23685": "2024-01-19T21:15:10"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

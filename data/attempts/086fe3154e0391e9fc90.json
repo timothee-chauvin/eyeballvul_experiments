@@ -1,0 +1,78 @@
+{
+  "commit": "1e1b9b145774c98ceb18949abd5000d8389ccd23",
+  "repo_url": "https://github.com/folio-org/mod-data-export-spring",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "c75d680c95bc7b326418"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output of the identified security vulnerabilities:\n\n```yaml\nleads:\n  - headline: Potential SQL Injection in CQL2JPACriteria\n    analysis: |\n      The CQL2JPACriteria class takes a CQL query string and converts it to a JPA criteria query. However, it does this by directly interpolating the CQL query string into a SQL query without proper escaping or parameterization. This could allow an attacker to inject malicious SQL if they can control the input CQL query string. The toCriteria() method is the entry point where the untrusted CQL string enters the class.\n    cwe: CWE-89\n    function_names:\n      - toCriteria\n    filenames:\n      - src/main/java/org/folio/des/repository/criteria/CQL2JPACriteria.java\n    classification: very promising\n\n  - headline: Potential Command Injection in ExportScheduler\n    analysis: |\n      The ExportScheduler class uses the Quartz library to schedule data export jobs. When creating new jobs, it directly embeds parameters from the ExportConfig object into the job name and job description without escaping them. If an attacker can control the ExportConfig, they may be able to inject malicious characters into the job name/description which could end up being passed to the OS by the Quartz library. The createScheduledJob() method is where the untrusted ExportConfig data enters the job configuration.\n    cwe: CWE-78\n    function_names:  \n      - createScheduledJob\n    filenames:\n      - src/main/java/org/folio/des/scheduling/ExportScheduler.java\n    classification: slightly promising\n\n  - headline: Potential Cleartext Storage of Credentials \n    analysis: |  \n      The SecurityManagerService stores database credentials and system user credentials in clear text in various places. The createUser() method stores system user credentials directly in the database. The AuthService stores system user credentials directly in calls to external services like authClient.getApiKey(). Storing credentials in plaintext makes them vulnerable to exposure if an attacker gains access to the database or can intercept external API calls.\n    cwe: CWE-312\n    function_names:\n      - createUser  \n      - loginSystemUser\n      - saveCredentials\n    filenames:\n      - src/main/java/org/folio/des/security/SecurityManagerService.java\n      - src/main/java/org/folio/des/security/AuthService.java  \n    classification: very promising\n```\n\nThe key vulnerabilities found are:\n1. Potential SQL injection in the CQL query handling \n2. Potential command injection in the job scheduler \n3. Plaintext storage of database and system user credentials\n\nOf these, the SQL injection and plaintext credential storage are the most concerning from a security perspective. The command injection risk seems less likely to be exploitable but is still worth investigating further.\n\nLet me know if you need any clarification or have additional questions!",
+      "date": "2024-06-09T12:04:06.497417",
+      "usage": {
+        "prompt_tokens": 41091,
+        "completion_tokens": 697,
+        "cost": 0.66864
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential SQL Injection in CQL2JPACriteria",
+      "analysis": "The CQL2JPACriteria class takes a CQL query string and converts it to a JPA criteria query. However, it does this by directly interpolating the CQL query string into a SQL query without proper escaping or parameterization. This could allow an attacker to inject malicious SQL if they can control the input CQL query string. The toCriteria() method is the entry point where the untrusted CQL string enters the class.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "toCriteria"
+      ],
+      "filenames": [
+        "src/main/java/org/folio/des/repository/criteria/CQL2JPACriteria.java"
+      ]
+    },
+    {
+      "headline": "Potential Command Injection in ExportScheduler",
+      "analysis": "The ExportScheduler class uses the Quartz library to schedule data export jobs. When creating new jobs, it directly embeds parameters from the ExportConfig object into the job name and job description without escaping them. If an attacker can control the ExportConfig, they may be able to inject malicious characters into the job name/description which could end up being passed to the OS by the Quartz library. The createScheduledJob() method is where the untrusted ExportConfig data enters the job configuration.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "createScheduledJob"
+      ],
+      "filenames": [
+        "src/main/java/org/folio/des/scheduling/ExportScheduler.java"
+      ]
+    },
+    {
+      "headline": "Potential Cleartext Storage of Credentials",
+      "analysis": "The SecurityManagerService stores database credentials and system user credentials in clear text in various places. The createUser() method stores system user credentials directly in the database. The AuthService stores system user credentials directly in calls to external services like authClient.getApiKey(). Storing credentials in plaintext makes them vulnerable to exposure if an attacker gains access to the database or can intercept external API calls.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "createUser",
+        "loginSystemUser",
+        "saveCredentials"
+      ],
+      "filenames": [
+        "src/main/java/org/folio/des/security/SecurityManagerService.java",
+        "src/main/java/org/folio/des/security/AuthService.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-23687": "2024-01-19T22:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
