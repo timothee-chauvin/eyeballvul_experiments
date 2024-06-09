@@ -1,0 +1,91 @@
+{
+  "commit": "1af4566991f5248fd0d3576ca4fbcc0a84293004",
+  "repo_url": "https://github.com/benbusby/whoogle-search",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "342bf80e2eb1c8a242cd"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: Command Injection in gen_bangs_json\n    analysis: |\n      The gen_bangs_json function in app/utils/bangs.py executes a request to an external URL (DDG_BANGS) and processes the returned data. \n      If an attacker could somehow control the DDG_BANGS variable, they could potentially inject malicious commands that get executed when the requests.get() method is called.\n      The JSON data is loaded using json.loads() without any validation, which could lead to code injection if the attacker controls the response.\n    cwe: CWE-78\n    function_names: \n      - gen_bangs_json\n    filenames:\n      - app/utils/bangs.py\n    classification: slightly promising\n\n  - headline: Improper Neutralization of Special Elements used in an OS Command\n    analysis: |  \n      The start-tor.sh script in misc/tor directly executes OS commands using the service and rc-service utilities.\n      If the script accepted any untrusted input to construct those commands, it would be vulnerable to command injection. \n      However, the script does not appear to use any external input. The only slight risk is if an attacker could control the /etc/tor/torrc file used by the tor command.\n    cwe: CWE-78\n    function_names:\n    filenames:\n      - misc/tor/start-tor.sh\n    classification: not promising\n  \n  - headline: Potential XSS in search results \n    analysis: |\n      The HTML search results returned by the search() route handler include content fetched from Google's search results page.\n      This content is passed through BeautifulSoup which provides some sanitization, but there could be potential for cross-site scripting (XSS) if Google's HTML is not properly escaped.\n      The results are also modified by functions like bold_search_terms() which introduce additional HTML tags - improper handling could introduce XSS risks.\n    cwe: CWE-79\n    function_names:\n      - search\n    filenames: \n      - app/routes.py\n    classification: slightly promising\n\n  - headline: Insecure External URL Redirect\n    analysis: |\n      The get_site_alt function in app/utils/results.py redirects to URLs specified in the SITE_ALTS dictionary. \n      An attacker may be able to construct a link that redirects to an external untrusted site if they can control part of the link that matches a SITE_ALTS key.\n      For example, a crafted link containing \"youtube.com\" would redirect to the configured invidious instance.\n    cwe: CWE-601\n    function_names:\n      - get_site_alt\n    filenames:\n      - app/utils/results.py\n    classification: slightly promising\n  \n  - headline: Unverified TLS Connections\n    analysis: |  \n      The app makes requests to external URLs without verifying TLS certificates. This can be seen in send() method of the Request class.\n      The requests library is used without specifying a verify=True option, meaning TLS certs are not checked.\n      This could allow an attacker to man-in-the-middle HTTPS connections and intercept or modify data.\n    cwe: CWE-295\n    function_names:\n      - send\n    filenames:\n      - app/request.py  \n    classification: very promising\n```\n\nThe most concerning vulnerability appears to be the lack of TLS verification on external requests, as that could allow interception of sensitive data. The potential for XSS in search results and unchecked redirects to external URLs in get_site_alt are also risks worth investigating further. The command injection risks seem less likely to be exploitable in the current code.\n\nLet me know if you have any other questions! I'm happy to clarify or expand on any of the potential vulnerabilities found.",
+      "date": "2024-06-08T23:01:52.153734",
+      "usage": {
+        "prompt_tokens": 46540,
+        "completion_tokens": 928,
+        "cost": 0.7677
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Command Injection in gen_bangs_json",
+      "analysis": "The gen_bangs_json function in app/utils/bangs.py executes a request to an external URL (DDG_BANGS) and processes the returned data. \nIf an attacker could somehow control the DDG_BANGS variable, they could potentially inject malicious commands that get executed when the requests.get() method is called.\nThe JSON data is loaded using json.loads() without any validation, which could lead to code injection if the attacker controls the response.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "gen_bangs_json"
+      ],
+      "filenames": [
+        "app/utils/bangs.py"
+      ]
+    },
+    {
+      "headline": "Potential XSS in search results",
+      "analysis": "The HTML search results returned by the search() route handler include content fetched from Google's search results page.\nThis content is passed through BeautifulSoup which provides some sanitization, but there could be potential for cross-site scripting (XSS) if Google's HTML is not properly escaped.\nThe results are also modified by functions like bold_search_terms() which introduce additional HTML tags - improper handling could introduce XSS risks.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "search"
+      ],
+      "filenames": [
+        "app/routes.py"
+      ]
+    },
+    {
+      "headline": "Insecure External URL Redirect",
+      "analysis": "The get_site_alt function in app/utils/results.py redirects to URLs specified in the SITE_ALTS dictionary. \nAn attacker may be able to construct a link that redirects to an external untrusted site if they can control part of the link that matches a SITE_ALTS key.\nFor example, a crafted link containing \"youtube.com\" would redirect to the configured invidious instance.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-601",
+      "function_names": [
+        "get_site_alt"
+      ],
+      "filenames": [
+        "app/utils/results.py"
+      ]
+    },
+    {
+      "headline": "Unverified TLS Connections",
+      "analysis": "The app makes requests to external URLs without verifying TLS certificates. This can be seen in send() method of the Request class.\nThe requests library is used without specifying a verify=True option, meaning TLS certs are not checked.\nThis could allow an attacker to man-in-the-middle HTTPS connections and intercept or modify data.\n",
+      "classification": "very promising",
+      "cwe": "CWE-295",
+      "function_names": [
+        "send"
+      ],
+      "filenames": [
+        "app/request.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 5,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-25303": "2022-07-12T15:15:09",
+        "CVE-2024-22204": "2024-01-23T18:15:18",
+        "CVE-2024-22203": "2024-01-23T18:15:18",
+        "CVE-2024-22205": "2024-01-23T18:15:18",
+        "CVE-2024-22417": "2024-01-23T18:15:18"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

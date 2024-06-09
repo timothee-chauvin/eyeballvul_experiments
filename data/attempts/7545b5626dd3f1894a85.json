@@ -1,0 +1,89 @@
+{
+  "commit": "94ca24b5b23f343769a15f325693246e07c177d2",
+  "repo_url": "https://github.com/axios/axios",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "807dae98a57810e12be1"
+  ],
+  "responses": [
+    {
+      "content": "Here are the security vulnerabilities I found in the axios codebase:\n\n```yaml\nleads:\n  - headline: Improper input validation when parsing HTTP Basic auth credentials\n    analysis: |\n      The code attempts to parse usernames and passwords from HTTP Basic auth credentials passed in the auth config option. However, it does not properly validate and sanitize these credential values before using them.\n\n      An attacker could potentially include special characters or invalid byte sequences in the username or password which could lead to errors, crashes, or injection vulnerabilities when the credentials are later used or logged.\n    cwe: CWE-20\n    function_names:\n      - xhrAdapter\n    filenames:\n      - lib/adapters/xhr.js\n    classification: slightly promising\n\n  - headline: Uncontrolled resource consumption when buffering response data  \n    analysis: | \n      The http adapter code buffers up the entire response body into memory before resolving the promise with the data. It does have a maxContentLength check, but this is defaulted to Infinity.\n      \n      An excessively large response body could cause the axios process to run out of memory and crash. A malicious server could potentially exploit this to cause a Denial of Service against a service or process using the axios client.\n    cwe: CWE-400 \n    function_names:\n      - httpAdapter\n    filenames:\n      - lib/adapters/http.js\n    classification: very promising\n    \n  - headline: Improper handling of credentials in URLs\n    analysis: |\n      The http adapter pulls auth credentials from parsed URLs if they are present. For example if an axios request was made to https://user:pass@example.com/foo, it would pass those credentials along when making the request.\n      \n      This can lead to credentials inadvertently leaking if the request URLs are dynamically constructed or come from untrusted sources. Credentials should only come from explicit config options.\n    cwe: CWE-522\n    function_names:\n      - httpAdapter\n    filenames:  \n      - lib/adapters/http.js\n    classification: slightly promising\n    \n  - headline: Incorrect escaping of username when constructing HTTP Basic auth header\n    analysis: |\n      The code attempts to URI encode the password portion of basic auth credentials, but not the username. It then constructs the Authorization header via concatenation.\n      \n      If the username contains special characters like \":\" they won't be escaped properly and it could allow splitting or manipulating the auth header. Usernames should be URI encoded as well before being used in the basic auth header.\n    cwe: CWE-116\n    function_names:\n      - xhrAdapter\n    filenames:\n      - lib/adapters/xhr.js \n    classification: slightly promising\n```\n\nIn summary, the most promising vulnerability is the potential for uncontrolled resource consumption when buffering response bodies, which could lead to out-of-memory crashes. The other leads around improper credential handling and escaping are lower severity but still worth investigating.\n\nLet me know if you would like me to expand the analysis on any of these!",
+      "date": "2024-06-08T22:51:21.601140",
+      "usage": {
+        "prompt_tokens": 90877,
+        "completion_tokens": 705,
+        "cost": 1.41603
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper input validation when parsing HTTP Basic auth credentials",
+      "analysis": "The code attempts to parse usernames and passwords from HTTP Basic auth credentials passed in the auth config option. However, it does not properly validate and sanitize these credential values before using them.\n\nAn attacker could potentially include special characters or invalid byte sequences in the username or password which could lead to errors, crashes, or injection vulnerabilities when the credentials are later used or logged.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "xhrAdapter"
+      ],
+      "filenames": [
+        "lib/adapters/xhr.js"
+      ]
+    },
+    {
+      "headline": "Uncontrolled resource consumption when buffering response data",
+      "analysis": "The http adapter code buffers up the entire response body into memory before resolving the promise with the data. It does have a maxContentLength check, but this is defaulted to Infinity.\n\nAn excessively large response body could cause the axios process to run out of memory and crash. A malicious server could potentially exploit this to cause a Denial of Service against a service or process using the axios client.\n",
+      "classification": "very promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "httpAdapter"
+      ],
+      "filenames": [
+        "lib/adapters/http.js"
+      ]
+    },
+    {
+      "headline": "Improper handling of credentials in URLs",
+      "analysis": "The http adapter pulls auth credentials from parsed URLs if they are present. For example if an axios request was made to https://user:pass@example.com/foo, it would pass those credentials along when making the request.\n\nThis can lead to credentials inadvertently leaking if the request URLs are dynamically constructed or come from untrusted sources. Credentials should only come from explicit config options.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-522",
+      "function_names": [
+        "httpAdapter"
+      ],
+      "filenames": [
+        "lib/adapters/http.js"
+      ]
+    },
+    {
+      "headline": "Incorrect escaping of username when constructing HTTP Basic auth header",
+      "analysis": "The code attempts to URI encode the password portion of basic auth credentials, but not the username. It then constructs the Authorization header via concatenation.\n\nIf the username contains special characters like \":\" they won't be escaped properly and it could allow splitting or manipulating the auth header. Usernames should be URI encoded as well before being used in the basic auth header.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-116",
+      "function_names": [
+        "xhrAdapter"
+      ],
+      "filenames": [
+        "lib/adapters/xhr.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 3,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-45857": "2023-11-08T21:15:08",
+        "CVE-2020-28168": "2020-11-06T20:15:13",
+        "CVE-2021-3749": "2021-08-31T11:15:07"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

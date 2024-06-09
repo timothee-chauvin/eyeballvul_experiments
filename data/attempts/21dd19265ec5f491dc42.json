@@ -1,0 +1,40 @@
+{
+  "commit": "94ca24b5b23f343769a15f325693246e07c177d2",
+  "repo_url": "https://github.com/axios/axios",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "807dae98a57810e12be1"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Hardcoded Credentials found in config file\"\n    analysis: |\n      In the file `test/typescript/axios.ts`, sensitive information (i.e., username and password) is hardcoded in the configuration for authentication:\n      ```typescript\n      auth: {\n        username: 'janedoe',\n        password: 's00pers3cret'\n      }\n      ```\n      This practice can potentially expose application and user data if unauthorized users gain access to the source code or logs.\n    cwe: CWE-798\n    function_names: []\n    filenames:\n      - test/typescript/axios.ts\n    classification: very promising\n  \n  - headline: \"Potential Command Injection in Custom Launcher\"\n    analysis: |\n      In `karma.conf.js`:\n      ```javascript\n      function createCustomLauncher(browser, version, platform) {\n        return {\n          base: 'SauceLabs',\n          browserName: browser,\n          version: version,\n          platform: platform\n        };\n      }\n      ```\n      and \n      ```javascript\n      var options = [\n        'SAUCE_CHROME',\n        'SAUCE_FIREFOX',\n        'SAUCE_SAFARI',\n        'SAUCE_OPERA',\n        'SAUCE_IE',\n        'SAUCE_EDGE',\n        'SAUCE_IOS',\n        'SAUCE_ANDROID'\n      ];\n      ```\n      If the variables `browser`, `version`, or `platform` are user-controlled and not properly validated, there is a risk of command injection.\n    cwe: CWE-78\n    function_names:\n      - createCustomLauncher\n    filenames:\n      - karma.conf.js\n    classification: slightly promising\n\n  - headline: \"Logging Sensitive Information in Error Messages\"\n    analysis: |\n      The file `lib/core/enhanceError.js` enhances error messages with potentially sensitive information:\n      ```javascript\n      module.exports = function enhanceError(error, config, code, request, response) {\n        error.config = config;\n        if (code) {\n          error.code = code;\n        }\n        error.request = request;\n        error.response = response;\n        error.isAxiosError = true;\n\n        error.toJSON = function toJSON() {\n          return {\n            message: this.message,\n            name: this.name,\n            description: this.description,\n            number: this.number,\n            fileName: this.fileName,\n            lineNumber: this.lineNumber,\n            columnNumber: this.columnNumber,\n            stack: this.stack,\n            config: this.config,\n            code: this.code\n          };\n        };\n        return error;\n      };\n      ```\n      This can expose sensitive details (like config) in logs.\n    cwe: CWE-532\n    function_names:\n      - enhanceError\n    filenames:\n      - lib/core/enhanceError.js\n    classification: very promising\n\n  - headline: \"Cleartext Transmission of Sensitive Information\"\n    analysis: |\n      In `lib/adapters/xhr.js`, sensitive information (credentials in the Authorization header) might be transmitted over cleartext HTTP:\n      ```javascript\n      var requestHeaders = config.headers;\n      if (config.auth) {\n        var username = config.auth.username || '';\n        var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : '';\n        requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);\n      }\n      ```\n      Transmission should be ensured over HTTPS.\n    cwe: CWE-319\n    function_names:\n      - xhrAdapter\n    filenames:\n      - lib/adapters/xhr.js\n    classification: slightly promising\n\n  - headline: \"Non-validated User Input in URL Building\"\n    analysis: |\n      In `lib/helpers/buildURL.js`, user input concatenated to URLs without validation could lead to security issues (like URL injection):\n      ```javascript\n      module.exports = function buildURL(url, params, paramsSerializer) {\n        if (!params) {\n          return url;\n        }\n        var parts = [];\n        utils.forEach(params, function serialize(val, key) {\n          if (val === null || typeof val === 'undefined') {\n            return;\n          }\n          if (utils.isArray(val)) {\n            key = key + '[]';\n          } else {\n            val = [val];\n          }\n          utils.forEach(val, function parseValue(v) {\n            if (utils.isDate(v)) {\n              v = v.toISOString();\n            } else if (utils.isObject(v)) {\n              v = JSON.stringify(v);\n            }\n            parts.push(encode(key) + '=' + encode(v));\n          });\n        });\n        var serializedParams = parts.join('&');\n        return url + (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;\n      };\n      ```\n    cwe: CWE-138\n    function_names:\n      - buildURL\n    filenames:\n      - lib/helpers/buildURL.js\n    classification: slightly promising\n```",
+      "date": "2024-06-08T22:51:49.986862",
+      "usage": {
+        "prompt_tokens": 70938,
+        "completion_tokens": 1012,
+        "cost": 0.36987
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 3,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-45857": "2023-11-08T21:15:08",
+        "CVE-2020-28168": "2020-11-06T20:15:13",
+        "CVE-2021-3749": "2021-08-31T11:15:07"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
