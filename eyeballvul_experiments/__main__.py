@@ -15,7 +15,7 @@ from eyeballvul_experiments.chunk import Chunk, File
 from eyeballvul_experiments.config.config_loader import Config
 from eyeballvul_experiments.llm_gateway.gateway_interface import ContextWindowExceededError, Usage
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s-%(asctime)s - %(message)s")
 
 # Avoid seeing the info logs from these libraries
 logging.getLogger("LiteLLM").setLevel(logging.WARNING)
