@@ -53,6 +53,10 @@ class Attempt(BaseModel):
             logging.warning("Error extracting YAML from model response")
             return []
 
+        if "leads" not in yaml_content:
+            logging.warning("No leads found in model response")
+            return []
+
         leads_yaml = yaml_content["leads"]
         leads: list[Lead] = []
         for i, lead_yaml in enumerate(leads_yaml):
