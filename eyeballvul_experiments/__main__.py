@@ -319,8 +319,9 @@ async def main():
         revisions_after_by_repo.setdefault(revision.repo_url, []).append(revision)
     revisions_after_by_repo = dict(sorted(revisions_after_by_repo.items()))
 
-    for repo_url, revisions in revisions_after_by_repo.items():
-        logging.info(f"Handling {repo_url}...")
+    repo_url_len = len(revisions_after_by_repo)
+    for i, (repo_url, revisions) in enumerate(revisions_after_by_repo.items()):
+        logging.info(f"({i+1}/{repo_url_len}) Handling {repo_url}...")
         repo_cost, cache_update = await handle_repo(
             repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache
         )
