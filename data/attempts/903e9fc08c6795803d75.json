@@ -1,0 +1,104 @@
+{
+  "commit": "56284d80811fb5963a972b438f2870f175e5b7c8",
+  "repo_url": "https://github.com/tj-actions/changed-files",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "b983fdb822096c93f3ec"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Prototype Pollution in getYamlFilePatternsFromContents\n    analysis: |\n      The `getYamlFilePatternsFromContents` function parses untrusted YAML input using `parseDocument` from the `yaml` module with no schema specified. This may allow an attacker to inject malicious keys like `__proto__` or `constructor` to modify object prototypes, known as prototype pollution. This could potentially be abused to gain unintended privileges or overwrite properties.\n    cwe: CWE-915\n    function_names:\n      - getYamlFilePatternsFromContents\n    filenames:\n      - src/utils.ts\n    classification: very promising\n\n  - headline: Command Injection in gitSubmoduleDiffSHA\n    analysis: |\n      The `gitSubmoduleDiffSHA` function executes a `git diff` command using `exec.getExecOutput` by passing unsanitized arguments containing submodule paths. If an attacker can control the submodule path, they could potentially inject arbitrary commands to be executed on the system running the action.\n    cwe: CWE-78\n    function_names:\n      - gitSubmoduleDiffSHA\n    filenames:\n      - src/utils.ts  \n    classification: very promising\n\n  - headline: Command Injection in getAllChangedFiles\n    analysis: |\n      Similar to `gitSubmoduleDiffSHA`, the `getAllChangedFiles` function also executes `git diff` commands using `exec.getExecOutput` and passes unsanitized arguments like `sha1`, `sha2`, `diff` etc. Attacker-controlled values for these could lead to command injection.\n    cwe: CWE-78\n    function_names:\n      - getAllChangedFiles\n    filenames:\n      - src/changedFiles.ts\n    classification: very promising\n    \n  - headline: Use of untrusted input as argument to child_process\n    analysis: |\n      Many of the utility functions that interact with git, like `gitFetch`, `gitFetchSubmodules`, `gitLog` etc use untrusted arguments derived from action inputs to construct commands that are passed to `exec.getExecOutput`. This pattern could allow command injection in multiple places if the inputs are not properly validated.\n    cwe: CWE-78\n    function_names:\n      - gitFetch\n      - gitFetchSubmodules \n      - gitLog\n    filenames:\n      - src/utils.ts\n    classification: very promising\n\n  - headline: Improper Input Validation \n    analysis: |\n      The `getInputs` function retrieves user defined inputs using `core.getInput` but does not perform adequate validation or sanitization on most of the inputs. Many inputs are used to construct shell commands or file paths. Failing to validate them could enable command injection or path traversal attacks.\n    cwe: CWE-20\n    function_names:\n      - getInputs\n    filenames:\n      - src/inputs.ts  \n    classification: slightly promising\n```\n\nThe analysis describes how each vulnerability could potentially be exploited, but I haven't provided any specific recommendations to fix them, focusing more on explaining the root issues to security researchers looking to develop proof-of-concept exploits. The `classification` field rates how promising each lead is for being a legitimate high-severity vulnerability. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-09T15:09:31.476864",
+      "usage": {
+        "prompt_tokens": 56985,
+        "completion_tokens": 823,
+        "cost": 0.9165
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Prototype Pollution in getYamlFilePatternsFromContents",
+      "analysis": "The getYamlFilePatternsFromContents function parses untrusted YAML input using parseDocument from the yaml module with no schema specified. This may allow an attacker to inject malicious keys like __proto__ or constructor to modify object prototypes, known as prototype pollution. This could potentially be abused to gain unintended privileges or overwrite properties.\n",
+      "classification": "very promising",
+      "cwe": "CWE-915",
+      "function_names": [
+        "getYamlFilePatternsFromContents"
+      ],
+      "filenames": [
+        "src/utils.ts"
+      ]
+    },
+    {
+      "headline": "Command Injection in gitSubmoduleDiffSHA",
+      "analysis": "The gitSubmoduleDiffSHA function executes a git diff command using exec.getExecOutput by passing unsanitized arguments containing submodule paths. If an attacker can control the submodule path, they could potentially inject arbitrary commands to be executed on the system running the action.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "gitSubmoduleDiffSHA"
+      ],
+      "filenames": [
+        "src/utils.ts"
+      ]
+    },
+    {
+      "headline": "Command Injection in getAllChangedFiles",
+      "analysis": "Similar to gitSubmoduleDiffSHA, the getAllChangedFiles function also executes git diff commands using exec.getExecOutput and passes unsanitized arguments like sha1, sha2, diff etc. Attacker-controlled values for these could lead to command injection.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "getAllChangedFiles"
+      ],
+      "filenames": [
+        "src/changedFiles.ts"
+      ]
+    },
+    {
+      "headline": "Use of untrusted input as argument to child_process",
+      "analysis": "Many of the utility functions that interact with git, like gitFetch, gitFetchSubmodules, gitLog etc use untrusted arguments derived from action inputs to construct commands that are passed to exec.getExecOutput. This pattern could allow command injection in multiple places if the inputs are not properly validated.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "gitFetch",
+        "gitFetchSubmodules",
+        "gitLog"
+      ],
+      "filenames": [
+        "src/utils.ts"
+      ]
+    },
+    {
+      "headline": "Improper Input Validation",
+      "analysis": "The getInputs function retrieves user defined inputs using core.getInput but does not perform adequate validation or sanitization on most of the inputs. Many inputs are used to construct shell commands or file paths. Failing to validate them could enable command injection or path traversal attacks.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "getInputs"
+      ],
+      "filenames": [
+        "src/inputs.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 2
+      },
+      "mapping": {
+        "1": "CVE-2023-51664",
+        "2": "CVE-2023-51664"
+      },
+      "vuln_dates": {
+        "CVE-2023-51664": "2023-12-27T17:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

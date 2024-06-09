@@ -1,0 +1,75 @@
+{
+  "commit": "bc4d19a990c6c2291f1a465b8767b99f1a152855",
+  "repo_url": "https://github.com/swift-server/swift-prometheus",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "05e7d9473277dacefe79"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Missing validation of user-supplied quantity in check_no_api_breakages.sh\n    analysis: |\n      The check_no_api_breakages.sh script takes command line arguments for the repository URL, new version tag, and one or more old version tags to compare against. However, it does not validate the number of command line arguments supplied by the user. \n\n      If less than the required 3 arguments are provided, the script prints usage instructions and exits. But if more than 3 arguments are given, the extra arguments are passed through unchecked to be used as \"old version tags\". \n\n      Depending on what these extra arguments contain and how they are handled later in the script, this could potentially lead to command injection or other vulnerabilities if the arguments are malformed or malicious.\n\n      The script should validate that exactly the expected number of arguments are supplied and provide an error message if not, rather than silently ignoring extra arguments.\n    cwe: CWE-1284\n    function_names: \n      - usage\n    filenames:\n      - scripts/check_no_api_breakages.sh\n    classification: slightly promising\n  \n  - headline: Insecure temporary file creation in soundness.sh  \n    analysis: |\n      The soundness.sh script creates a temporary file using `mktemp` to store some text for later comparison. However, the template used for `mktemp` is predictable and uses a common prefix in the /tmp directory.\n\n      This makes it easier for an attacker to pre-create files with the expected name in /tmp and potentially trick the script into overwriting an existing file or using attacker-controlled content.\n\n      To fix this, a random suffix should be added to the temporary filename template. Even better would be to use `mktemp` with the `-d` option to create a temporary directory, so the file is never exposed in a shared /tmp location.\n    cwe: CWE-379\n    function_names:\n      - replace_acceptable_years\n    filenames: \n      - scripts/soundness.sh\n    classification: slightly promising\n\n  - headline: git clone without specifying explicit protocol\n    analysis: |\n      The check_no_api_breakages.sh script clones a user-specified git repository URL without forcing a specific protocol. Depending on the environment and git configuration, this could result in cloning over an insecure protocol like HTTP or FTP. \n      \n      An attacker could potentially exploit this to serve malicious content and have the script clone from their server if they can MITM the traffic.\n\n      To harden this, the script should either validate that the user-supplied URL begins with \"https://\" or explicitly specify the protocol to use with the clone command, e.g. `git clone https://...`.\n    cwe: CWE-829\n    function_names:\n      - N/A\n    filenames:\n      - scripts/check_no_api_breakages.sh\n    classification: not promising\n```",
+      "date": "2024-06-09T15:02:35.508799",
+      "usage": {
+        "prompt_tokens": 5934,
+        "completion_tokens": 685,
+        "cost": 0.140385
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Missing validation of user-supplied quantity in check_no_api_breakages.sh",
+      "analysis": "The check_no_api_breakages.sh script takes command line arguments for the repository URL, new version tag, and one or more old version tags to compare against. However, it does not validate the number of command line arguments supplied by the user. \n\nIf less than the required 3 arguments are provided, the script prints usage instructions and exits. But if more than 3 arguments are given, the extra arguments are passed through unchecked to be used as \"old version tags\". \n\nDepending on what these extra arguments contain and how they are handled later in the script, this could potentially lead to command injection or other vulnerabilities if the arguments are malformed or malicious.\n\nThe script should validate that exactly the expected number of arguments are supplied and provide an error message if not, rather than silently ignoring extra arguments.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-1284",
+      "function_names": [
+        "usage"
+      ],
+      "filenames": [
+        "scripts/check_no_api_breakages.sh"
+      ]
+    },
+    {
+      "headline": "Insecure temporary file creation in soundness.sh",
+      "analysis": "The soundness.sh script creates a temporary file using mktemp to store some text for later comparison. However, the template used for mktemp is predictable and uses a common prefix in the /tmp directory.\n\nThis makes it easier for an attacker to pre-create files with the expected name in /tmp and potentially trick the script into overwriting an existing file or using attacker-controlled content.\n\nTo fix this, a random suffix should be added to the temporary filename template. Even better would be to use mktemp with the -d option to create a temporary directory, so the file is never exposed in a shared /tmp location.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-379",
+      "function_names": [
+        "replace_acceptable_years"
+      ],
+      "filenames": [
+        "scripts/soundness.sh"
+      ]
+    },
+    {
+      "headline": "git clone without specifying explicit protocol",
+      "analysis": "The check_no_api_breakages.sh script clones a user-specified git repository URL without forcing a specific protocol. Depending on the environment and git configuration, this could result in cloning over an insecure protocol like HTTP or FTP. \n\nAn attacker could potentially exploit this to serve malicious content and have the script clone from their server if they can MITM the traffic.\n\nTo harden this, the script should either validate that the user-supplied URL begins with \"https://\" or explicitly specify the protocol to use with the clone command, e.g. git clone https://....\n",
+      "classification": "not promising",
+      "cwe": "CWE-829",
+      "function_names": [
+        "N/A"
+      ],
+      "filenames": [
+        "scripts/check_no_api_breakages.sh"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-28867": "2024-03-29T15:15:11"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

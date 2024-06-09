@@ -1,0 +1,38 @@
+{
+  "commit": "ca25f6388005288aae7ed4978f37e7f1b02fc5e1",
+  "repo_url": "https://github.com/ubertidavide/fastbots",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "fbf7a2b5b5e2583d9963"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Code Injection via eval in __locator__ method\"\n    analysis: |\n      In the `Page` class, the `__locator__` method uses `eval` to dynamically execute a string containing Python code. This is a serious security flaw, as `eval` will execute any code given to it without any sanitization. An attacker who can control the input to `eval` can run arbitrary code on the server.\n      Here's the relevant part of the code:\n      ```python\n      def __locator__(self, locator_name: str) -> tuple:\n          ...\n          return eval(self._bot.locator(self._page_name, locator_name))\n      ```\n      If an attacker can control or manipulate the `locator_name` or elements in the locator configuration, they could inject malicious code to be executed.\n    cwe: CWE-94\n    function_names:\n      - __locator__\n    filenames:\n      - fastbots/page.py\n    classification: very promising\n  \n  - headline: \"Sensitive File Paths Hard-Coded in Configuration\"\n    analysis: |\n      In the configuration file `fastbots/config.py`, sensitive file paths such as the location of cookies, HTML, and screenshots are hard-coded. If these paths are not properly secured, it can lead to exposure of sensitive information or unauthorized file access as the code is run in different environments.\n      Here are some of the relevant paths:\n      ```python\n      BOT_SCREENSHOT_DOWNLOAD_FOLDER_PATH: str = config('BOT_SCREENSHOT_DOWNLOAD_FOLDER_PATH', default='debug/', cast=str)\n      BOT_HTML_DOWNLOAD_FOLDER_PATH: str = config('BOT_HTML_DOWNLOAD_FOLDER_PATH', default='debug/', cast=str)\n      BOT_COOKIES_FILE_PATH: str = config('BOT_COOKIES_FILE_PATH', default='cookies.pkl', cast=str)\n      ```\n      If these paths are exposed or manipulated, sensitive data could be compromised.\n    cwe: CWE-922\n    function_names: []\n    filenames:\n      - fastbots/config.py\n    classification: slightly promising\n  \n  - headline: \"No Verification of Data Authenticity in Cookie Handling\"\n    analysis: |\n      The `Bot` class's methods, `save_cookies` and `load_cookies`, do not verify the integrity or authenticity of the data being saved or loaded. This could be abused by an attacker to inject malicious cookies or tamper with existing ones to execute a session hijacking attack.\n      Here's the relevant part of the code:\n      ```python\n      def save_cookies(self):\n          cookies: List[dict] = self._driver.get_cookies()\n          with open(config.BOT_COOKIES_FILE_PATH, 'wb') as file:\n              pickle.dump(cookies, file)\n\n      def load_cookies(self):\n          if Path(config.BOT_COOKIES_FILE_PATH).is_file():\n              with open(config.BOT_COOKIES_FILE_PATH, 'rb') as file:\n                  cookies = pickle.load(file)\n                  for cookie in cookies:\n                      self._driver.add_cookie(cookie)\n      ```\n      There is no integrity check to ensure the cookies have not been tampered with.\n    cwe: CWE-345\n    function_names:\n      - save_cookies\n      - load_cookies\n    filenames:\n      - fastbots/bot.py\n    classification: very promising\n```",
+      "date": "2024-06-09T15:16:58.458612",
+      "usage": {
+        "prompt_tokens": 9062,
+        "completion_tokens": 679,
+        "cost": 0.055495
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-48699": "2023-11-21T23:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

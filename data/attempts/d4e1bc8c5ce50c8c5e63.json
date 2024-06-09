@@ -1,0 +1,38 @@
+{
+  "commit": "a6de94825c0693935a3f6ef80eb670b533d435aa",
+  "repo_url": "https://github.com/t2bot/matrix-media-repo",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "036628ae5871241948c5"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Potential Command Injection in build.sh\"\n    analysis: |\n      The `build.sh` script uses a combination of shell commands and variables without proper sanitization or validation:\n      \n      ```sh\n      GOBIN=$PWD/bin go install -v ./cmd/compile_assets\n      $PWD/bin/compile_assets\n      GOBIN=$PWD/bin go install -ldflags \"-X github.com/turt2live/matrix-media-repo/common/version.GitCommit=$(git rev-list -1 HEAD) -X github.com/turt2live/matrix-media-repo/common/version.Version=$(git describe --tags)\" -v ./cmd/...\n      ```\n      \n      If an attacker controls one of these variables, they might execute arbitrary commands. The `$PWD` variable is generally reliable, but caution is needed when including dynamic content, especially in the `-ldflags` option.\n    cwe: CWE-78\n    function_names: []\n    filenames:\n      - build.sh\n    classification: very promising\n\n  - headline: \"Improper Output Encoding in templates/export_index.html\"\n    analysis: |\n      The `templates/export_index.html` file directly includes unsanitized variables like `{{.Entity}}`, `{{.ArchivedName}}`, `{{.FileName}}`, `{{.Origin}}`, and `{{.MediaID}}` in the HTML output:\n      \n      ```html\n      <a href=\"{{.ArchivedName}}\"><code>{{if eq .FileName \"\"}}&lt;no name&gt;{{else}}{{.FileName}}{{end}}</code></a>\n      <span class=\"muted\"><code>mxc://{{.Origin}}/{{.MediaID}}</code></span>\n      ...\n      <h1>{{.Entity}} media export</h1>\n      ```\n      \n      This can result in Cross-Site Scripting (XSS) attacks if any of these variables contain malicious content.\n    cwe: CWE-79\n    function_names: []\n    filenames:\n      - templates/export_index.html\n    classification: very promising\n\n  - headline: \"Potential Command Injection in build-dist.sh\"\n    analysis: |\n      Similar to `build.sh`, the `build-dist.sh` script involves dynamic shell commands with variables, potentially leading to command injection:\n      \n      ```sh\n      GOOS=$os GOARCH=$arch GOBIN=$PWD/bin go build -o $PWD/bin/$pth -a -ldflags \"-X github.com/turt2live/matrix-media-repo/common/version.GitCommit=$(git rev-list -1 HEAD) -X github.com/turt2live/matrix-media-repo/common/version.Version=$(git describe --tags)\" -v ./cmd/...\n      ```\n      \n      Variables like `$os`, `$arch`, and `$pth` should be properly sanitized to prevent malicious input from being executed.\n    cwe: CWE-78\n    function_names: []\n    filenames:\n      - build-dist.sh\n    classification: slightly promising\n\n  - headline: \"Missing Authorization in templates/view_export.html\"\n    analysis: |\n      The JavaScript in `templates/view_export.html` allows anyone with access to the page to delete an export by calling `deleteExport` without any form of authentication or authorization:\n      \n      ```javascript\n      function deleteExport() {\n          var url = \"/_matrix/media/unstable/admin/export/{{.ExportID}}/delete\";\n          var xhr = new XMLHttpRequest();\n          xhr.open(\"DELETE\", url, true);\n      ...\n      ```\n      \n      This can lead to unauthorized deletion of exports if the URL is accessible without proper checks.\n    cwe: CWE-862\n    function_names: []\n    filenames:\n      - templates/view_export.html\n    classification: very promising\n\n  - headline: \"Privilege Escalation in docker/run.sh\"\n    analysis: |\n      The script `docker/run.sh` attempts to change the ownership of files and directories to the specified UID and GID without verifying the authenticity or authority of these IDs:\n      \n      ```sh\n      chown -R ${UID}:${GID} /data\n      exec su-exec ${UID}:${GID} media_repo\n      ```\n      \n      If an attacker manipulates the `UID` and `GID` variables, they could gain unwanted access or privileges within the containerized environment.\n    cwe: CWE-269\n    function_names: []\n    filenames:\n      - docker/run.sh\n    classification: very promising\n```",
+      "date": "2024-06-09T15:03:37.236739",
+      "usage": {
+        "prompt_tokens": 4178,
+        "completion_tokens": 920,
+        "cost": 0.03469
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-41318": "2023-09-08T20:15:14"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
