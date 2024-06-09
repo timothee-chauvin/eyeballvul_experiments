@@ -106,6 +106,7 @@ async def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
     return (response.choices[0].message.content, response.usage)
 
 
+@typechecked
 def create_chunk_initial_guess(
     files: list[File], revision: EyeballvulRevision, max_context_bytes: int, included_repo_size: int
 ) -> Chunk:
@@ -124,6 +125,7 @@ def create_chunk_initial_guess(
     return chunk
 
 
+@typechecked
 async def query_model(
     model: str, revision: EyeballvulRevision, repo_dir: Path, max_size_bytes: int
 ) -> Attempt:
@@ -177,6 +179,7 @@ async def query_model(
     return attempt
 
 
+@typechecked
 async def do_attempt(
     model: str, revision: EyeballvulRevision, repo_dir: Path, max_size_bytes: int
 ) -> tuple[float, dict[str, int]]:
@@ -244,6 +247,7 @@ async def handle_repo(
     return total_cost, cache_update
 
 
+@typechecked
 def get_attempts_by_commit() -> dict[str, list[Attempt]]:
     """Return a dictionary of attempts, grouped by commit."""
     attempts_by_commit: dict[str, list[Attempt]] = {}
@@ -254,6 +258,7 @@ def get_attempts_by_commit() -> dict[str, list[Attempt]]:
     return attempts_by_commit
 
 
+@typechecked
 def already_attempted(
     attempts_by_commit: dict[str, list[Attempt]], commit: str, model: str
 ) -> bool:
@@ -261,11 +266,13 @@ def already_attempted(
     return any(attempt.model == model for attempt in attempts_by_commit.get(commit, []))
 
 
+@typechecked
 def cost_of_past_attempts(attempts_by_commit: dict[str, list[Attempt]]) -> float:
     """Return the total cost of all past attempts."""
     return sum(attempt.cost() for attempts in attempts_by_commit.values() for attempt in attempts)
 
 
+@typechecked
 def read_cache() -> dict[str, int]:
     """Read the cache of repository sizes."""
     try:
@@ -275,6 +282,7 @@ def read_cache() -> dict[str, int]:
         return {}
 
 
+@typechecked
 def write_cache(cache: dict[str, int]) -> None:
     """Write the cache of repository sizes."""
     with open(Config.paths.cache / "cache.json", "w") as f:
