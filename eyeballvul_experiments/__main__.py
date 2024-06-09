@@ -128,13 +128,13 @@ async def query_model(
     model: str, revision: EyeballvulRevision, repo_dir: Path, max_size_bytes: int
 ) -> Attempt:
     """
-    Run `model` on the repository at `commit`, and return a new `Attempt` object (not yet scored),
-    unless the repository exceeds `max_size_bytes`.
+    Run `model` on the repository at `revision` (with the commit already checked out in `repo_dir`),
+    and return a new `Attempt` object (not yet scored), unless the repository exceeds
+    `max_size_bytes`.
 
     The model may be queried multiple times on chunks of the repository at that commit if the repository exceeds the model's context length.
 
     This method works the following way:
-    - the repository is checked out at the given commit
     - the files at this commit are obtained
     - chunks are built incrementally, by trying to completely fill the context window.
         - if the context window is not exceeded, the response is extracted. We move on to the next chunk.
@@ -144,12 +144,6 @@ async def query_model(
         commit=revision.commit,
         repo_url=revision.repo_url,
         model=model,
-    )
-    subprocess.check_call(
-        ["git", "checkout", revision.commit],
-        cwd=repo_dir,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
     )
     files = get_files_in_repo(repo_dir)
     included_repo_size = sum(len(file.contents) for file in files)
@@ -181,6 +175,23 @@ async def query_model(
                 else:
                     files = removed_files + files
     return attempt
+
+
+async def do_attempt(
+    model: str, revision: EyeballvulRevision, repo_dir: Path, max_size_bytes: int
+) -> tuple[float, dict[str, int]]:
+    try:
+        attempt = await query_model(model, revision, repo_dir, max_size_bytes)
+        attempt.log()  # in case something goes wrong later...
+        attempt.parse()
+        attempt.add_score()
+        attempt.log()
+        return (attempt.cost(), {})
+    except RepositoryTooLargeError as e:
+        logging.warning(
+            f"Skipping revision {revision.commit} with {model} because it is too large (size {e.repo_size})."
+        )
+        return (0.0, {revision.commit: e.repo_size})
 
 
 @typechecked
@@ -220,19 +231,16 @@ async def handle_repo(
                     f"Skipping revision {revision.commit} because it is too large (size {cache[revision.commit]})."
                 )
                 continue
+            subprocess.check_call(
+                ["git", "checkout", revision.commit],
+                cwd=repo_dir,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             for model in models_by_revision.get(revision.commit, []):
-                try:
-                    attempt = await query_model(model, revision, repo_dir, max_size_bytes)
-                    attempt.log()  # in case something goes wrong later...
-                    attempt.parse()
-                    attempt.add_score()
-                    attempt.log()
-                    total_cost += attempt.cost()
-                except RepositoryTooLargeError as e:
-                    logging.warning(
-                        f"Skipping revision {revision.commit} because it is too large (size {e.repo_size})."
-                    )
-                    cache_update[revision.commit] = e.repo_size
+                cost, new_cache_update = await do_attempt(model, revision, repo_dir, max_size_bytes)
+                total_cost += cost
+                cache_update.update(new_cache_update)
     return total_cost, cache_update
 
 
