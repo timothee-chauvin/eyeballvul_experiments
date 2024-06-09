@@ -1,0 +1,70 @@
+{
+  "commit": "2582640c2c13c5f5f9b860d62d2b7c3bc7f4826b",
+  "repo_url": "https://github.com/deis/workflow-manager",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "2d29c2ed65883d9be557"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Insecure storage of sensitive information in shell script\n    analysis: |\n      The deploy.sh script includes the plaintext username and password for logging into Docker Hub and quay.io \n      as environment variables. Storing sensitive credentials in plaintext in scripts is insecure, as anyone with\n      access to the codebase can easily extract them. If the codebase is published publicly or an attacker gains\n      access to it, the credentials will be compromised. Instead, sensitive information like this should be stored \n      securely in a secrets manager or environment variables configured on the build server and never checked into\n      version control.\n    cwe: CWE-522\n    function_names: []\n    filenames:\n      - _scripts/deploy.sh\n    classification: very promising\n\n  - headline: Use of insufficiently random values generated from the current Git commit hash\n    analysis: |\n      The deploy.sh script sets a version variable using the current short Git commit hash. This commit hash\n      value is generated using an insecure cryptographic hashing algorithm (likely SHA-1). \n      If this version string is used for any security sensitive purpose, it would be vulnerable to collisions and\n      could allow attackers to forge version strings. However, based on the code snippet, it seems this version\n      is likely just used for tagging the Docker containers with a unique identifier for the current build. So in\n      that use case it is probably not a significant vulnerability. Git commit hashes, even short ones, are still\n      quite unique. But Git commit hashes should not be relied on for anything security-critical.\n    cwe: CWE-330\n    function_names: []  \n    filenames:\n      - _scripts/deploy.sh\n    classification: slightly promising\n\n  - headline: Incorrect permissions allow anyone to run deploy script\n    analysis: |\n      Both deploy.sh and generate-changelog.sh have the executable bit set for all users (as evidenced by the \n      shebang line that allows executing the script directly). These scripts are part of the git repository \n      and the execute permissions will be retained when the repo is cloned. Normally build/deploy scripts are\n      meant to only be run in CI/CD pipelines by authorized users. Allowing any user to execute these scripts \n      directly is dangerous, especially for deploy scripts that push new code/images to production.\n      There may be legitimate reasons to have these as executable, e.g. for local developer builds. But if not,\n      a better practice is to remove execute permissions and have the scripts invoked explicitly via bash in the \n      CI/CD configs, e.g \"bash _scripts/deploy.sh\".\n    cwe: CWE-732\n    function_names: []\n    filenames: \n      - _scripts/deploy.sh\n      - _scripts/generate-changelog.sh\n    classification: slightly promising\n```",
+      "date": "2024-06-09T11:26:18.109665",
+      "usage": {
+        "prompt_tokens": 4163,
+        "completion_tokens": 660,
+        "cost": 0.111945
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insecure storage of sensitive information in shell script",
+      "analysis": "The deploy.sh script includes the plaintext username and password for logging into Docker Hub and quay.io \nas environment variables. Storing sensitive credentials in plaintext in scripts is insecure, as anyone with\naccess to the codebase can easily extract them. If the codebase is published publicly or an attacker gains\naccess to it, the credentials will be compromised. Instead, sensitive information like this should be stored \nsecurely in a secrets manager or environment variables configured on the build server and never checked into\nversion control.\n",
+      "classification": "very promising",
+      "cwe": "CWE-522",
+      "function_names": [],
+      "filenames": [
+        "_scripts/deploy.sh"
+      ]
+    },
+    {
+      "headline": "Use of insufficiently random values generated from the current Git commit hash",
+      "analysis": "The deploy.sh script sets a version variable using the current short Git commit hash. This commit hash\nvalue is generated using an insecure cryptographic hashing algorithm (likely SHA-1). \nIf this version string is used for any security sensitive purpose, it would be vulnerable to collisions and\ncould allow attackers to forge version strings. However, based on the code snippet, it seems this version\nis likely just used for tagging the Docker containers with a unique identifier for the current build. So in\nthat use case it is probably not a significant vulnerability. Git commit hashes, even short ones, are still\nquite unique. But Git commit hashes should not be relied on for anything security-critical.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-330",
+      "function_names": [],
+      "filenames": [
+        "_scripts/deploy.sh"
+      ]
+    },
+    {
+      "headline": "Incorrect permissions allow anyone to run deploy script",
+      "analysis": "Both deploy.sh and generate-changelog.sh have the executable bit set for all users (as evidenced by the \nshebang line that allows executing the script directly). These scripts are part of the git repository \nand the execute permissions will be retained when the repo is cloned. Normally build/deploy scripts are\nmeant to only be run in CI/CD pipelines by authorized users. Allowing any user to execute these scripts \ndirectly is dangerous, especially for deploy scripts that push new code/images to production.\nThere may be legitimate reasons to have these as executable, e.g. for local developer builds. But if not,\na better practice is to remove execute permissions and have the scripts invoked explicitly via bash in the \nCI/CD configs, e.g \"bash _scripts/deploy.sh\".\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [],
+      "filenames": [
+        "_scripts/deploy.sh",
+        "_scripts/generate-changelog.sh"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2016-15036": "2023-12-23T20:15:37"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,38 @@
+{
+  "commit": "8b6241c1b81a99dac8ad636aa2b237b31628e82e",
+  "repo_url": "https://github.com/fastify/session",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "7b137dc98b984b871e21"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Hardcoded Secret Key Usage\"\n    analysis: |\n      The code contains several instances of hardcoded secret keys used for session management and encryption. Specifically, the file `test/util.js` contains the following hardcoded secrets and session IDs:\n\n      ```javascript\n      const DEFAULT_SECRET = 'cNaoPYAwF60HZJzkcNaoPYAwF60HZJzk';\n      const DEFAULT_SESSION_ID = 'Qk_XT2K7-clT-x1tVvoY6tIQ83iP72KN';\n      const DEFAULT_ENCRYPTED_SESSION_ID = `${DEFAULT_SESSION_ID}.B7fUDYXU9fXF9pNuL3qm4NVmSduLJ6kzCOPh5JhHGoE`;\n      ```\n\n      Hardcoding such sensitive information can lead to various security issues, including unauthorized access to sessions and encrypted data. It is recommended to use environment variables or a secure secrets management service.\n\n    cwe: CWE-798\n    function_names:\n      - buildFastify\n    filenames:\n      - test/util.js\n    classification: very promising\n\n  - headline: \"Insecure Session Cookie Usage without HTTPS Enforcement\"\n    analysis: |\n      The code allows for setting session cookies without enforcing HTTPS, which can lead to session hijacking through man-in-the-middle attacks. For instance, the tests in `test/session.test.js` contain insecure configurations:\n\n      ```javascript\n      const options = {\n        secret: DEFAULT_SECRET,\n        cookie: { secure: false }\n      };\n      ```\n\n      Not setting the `secure` attribute to true in a production environment can make cookies vulnerable when transmitted over an unsecured network.\n\n    cwe: CWE-311\n    function_names:\n      - buildFastify\n    filenames:\n      - test/session.test.js\n    classification: very promising\n\n  - headline: \"Improper Handling of Sessions with Expired Cookies\"\n    analysis: |\n      The tests indicate that expired session cookies might not be properly handled. Specifically, in `test/session.test.js`, the following code demonstrates the issue:\n\n      ```javascript\n      const store = {\n        get (id, cb) {\n          cb(null, { cookie: { expires: new Date(Date.now() - 1000) } });\n        },\n        destroy (id, cb) { cb(new Error('No can do')) }\n      };\n      ```\n\n      If the session store encounters an error while trying to destroy an expired session, it incorrectly bubbles up the error, causing a `500` status code:\n\n      ```javascript\n      const response = await fastify.inject({\n        url: '/',\n        headers: { cookie: 'sessionId=_TuQsCBgxtHB3bu6wsRpTXfjqR5sK-q_.3mu5mErW+QI7w+Q0V2fZtrztSvqIpYgsnnC8LQf6ERY;' }\n      });\n      t.equal(response.statusCode, 500);\n      ```\n\n      This can lead to denial-of-service if not handled correctly.\n\n    cwe: CWE-754\n    function_names:\n      - buildFastify\n    filenames:\n      - test/session.test.js\n    classification: slightly promising\n\n  - headline: \"Insecure Handling of HTTP and HTTPS Protocols\"\n    analysis: |\n      The code sometimes retrieves session cookies without properly checking whether the request is over HTTP or HTTPS. This is evident in the `onRequest` method found in `lib/fastifySession.js`:\n\n      ```javascript\n      const isInsecureConnection = cookieOpts.secure === true && request.protocol !== 'https';\n      ```\n\n      The condition checks if the secure attribute is true but does not enforce it properly, creating an opportunity where cookies could be mishandled.\n\n    cwe: CWE-311\n    function_names:\n      - onRequest\n    filenames:\n      - lib/fastifySession.js\n    classification: slightly promising\n```",
+      "date": "2024-06-09T11:51:28.738143",
+      "usage": {
+        "prompt_tokens": 32753,
+        "completion_tokens": 820,
+        "cost": 0.176065
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-35220": "2024-05-21T21:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

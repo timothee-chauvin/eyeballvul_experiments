@@ -1,0 +1,75 @@
+{
+  "commit": "25bb064e5dca172181e29b07a5db039ec5f76f8c",
+  "repo_url": "https://github.com/decentraland/single-sign-on-client",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "1fccf67432bbc3b12d7a"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Usage of unvalidated input as key in local storage\n    analysis: |\n      The `getKey` function in SingleSignOn.shared.ts takes a user string as input and uses it to construct a local storage key. While there is a regular expression check to ensure the user is a valid Ethereum address, the unchecked user input is still used in the key. If an attacker can control the user string, they may be able to overwrite other local storage values or perform other unintended actions by constructing a malicious key string that passes the regex check.\n      \n      To exploit this, an attacker would need to find a way to control the user string passed to `getKey`. The code calling `getKey` does validate that the user is an Ethereum address with a regex before passing it. However, if there are other codepaths that call `getKey` with a user-controlled string, or if the regex can be bypassed, it could allow an attack.\n    cwe: CWE-20\n    function_names: \n      - getKey\n    filenames:\n      - packages/lib/src/SingleSignOn.shared.ts\n    classification: slightly promising\n\n  - headline: Potential denial of service via large number of iframe messages\n    analysis: |\n      The `postMessage` function in SingleSignOn.ts sends messages to the single sign-on iframe and waits for responses. It increments a `_counter` variable to generate unique IDs for each message. \n      \n      If an attacker can cause a large number of `postMessage` calls to be made (e.g. by triggering many concurrent login requests), the `_counter` may increment to a very large number. Since `_counter` is stored in memory, this could potentially lead to high memory usage. More concerning is that since `_counter` is used as the ID in messages, a very large value may cause errors if it exceeds expected size limits when serialized in the message.\n      \n      However, the impact is likely limited, since `_counter` is just an integer and would take a very large number of messages to cause issues. An attacker would likely need another vulnerability to inject a large number of requests to exploit this.\n    cwe: CWE-400\n    function_names:\n      - postMessage\n    filenames:\n      - packages/lib/src/SingleSignOn.ts  \n    classification: slightly promising\n\n  - headline: Denial of service via slow POST responses on SSO iframe\n    analysis: |\n      The `getIframe` function in SingleSignOn.ts attempts to get a reference to the single sign-on iframe by sending it \"ping\" messages. It will try up to `GET_IFRAME_RETRIES` times, waiting `GET_IFRAME_TIMEOUT` milliseconds between each try.\n\n      If an attacker can cause the iframe to be unavailable or to respond slowly to POST messages, it could cause calls to `getIframe` to take a long time or hang indefinitely. This would prevent completion of any functions that rely on communicating with the iframe, like `getIdentity`, `storeIdentity`, etc. \n      \n      To exploit this, an attacker would likely need to find a way to make the legitimate SSO iframe unavailable and replace it with a malicious iframe that is slow to respond. Alternatively, if the attacker can cause the legitimate iframe to respond slowly, that could also trigger the issue.\n    cwe: CWE-400\n    function_names:\n      - getIframe\n    filenames:\n      - packages/lib/src/SingleSignOn.ts\n    classification: slightly promising\n```",
+      "date": "2024-06-09T11:25:34.870612",
+      "usage": {
+        "prompt_tokens": 5875,
+        "completion_tokens": 822,
+        "cost": 0.149775
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Usage of unvalidated input as key in local storage",
+      "analysis": "The getKey function in SingleSignOn.shared.ts takes a user string as input and uses it to construct a local storage key. While there is a regular expression check to ensure the user is a valid Ethereum address, the unchecked user input is still used in the key. If an attacker can control the user string, they may be able to overwrite other local storage values or perform other unintended actions by constructing a malicious key string that passes the regex check.\n\nTo exploit this, an attacker would need to find a way to control the user string passed to getKey. The code calling getKey does validate that the user is an Ethereum address with a regex before passing it. However, if there are other codepaths that call getKey with a user-controlled string, or if the regex can be bypassed, it could allow an attack.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "getKey"
+      ],
+      "filenames": [
+        "packages/lib/src/SingleSignOn.shared.ts"
+      ]
+    },
+    {
+      "headline": "Potential denial of service via large number of iframe messages",
+      "analysis": "The postMessage function in SingleSignOn.ts sends messages to the single sign-on iframe and waits for responses. It increments a _counter variable to generate unique IDs for each message. \n\nIf an attacker can cause a large number of postMessage calls to be made (e.g. by triggering many concurrent login requests), the _counter may increment to a very large number. Since _counter is stored in memory, this could potentially lead to high memory usage. More concerning is that since _counter is used as the ID in messages, a very large value may cause errors if it exceeds expected size limits when serialized in the message.\n\nHowever, the impact is likely limited, since _counter is just an integer and would take a very large number of messages to cause issues. An attacker would likely need another vulnerability to inject a large number of requests to exploit this.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "postMessage"
+      ],
+      "filenames": [
+        "packages/lib/src/SingleSignOn.ts"
+      ]
+    },
+    {
+      "headline": "Denial of service via slow POST responses on SSO iframe",
+      "analysis": "The getIframe function in SingleSignOn.ts attempts to get a reference to the single sign-on iframe by sending it \"ping\" messages. It will try up to GET_IFRAME_RETRIES times, waiting GET_IFRAME_TIMEOUT milliseconds between each try.\n\nIf an attacker can cause the iframe to be unavailable or to respond slowly to POST messages, it could cause calls to getIframe to take a long time or hang indefinitely. This would prevent completion of any functions that rely on communicating with the iframe, like getIdentity, storeIdentity, etc. \n\nTo exploit this, an attacker would likely need to find a way to make the legitimate SSO iframe unavailable and replace it with a malicious iframe that is slow to respond. Alternatively, if the attacker can cause the legitimate iframe to respond slowly, that could also trigger the issue.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "getIframe"
+      ],
+      "filenames": [
+        "packages/lib/src/SingleSignOn.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-41049": "2023-09-01T20:15:07"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

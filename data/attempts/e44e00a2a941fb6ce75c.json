@@ -1,0 +1,49 @@
+{
+  "commit": "0287d28c7dddccfeec1777f741acba44732ac342",
+  "repo_url": "https://github.com/fastify/fastify-swagger-ui",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "995bf7357a9f2647c0a5"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Potential Improper Input Validation in Playwright Configuration\"\n    analysis: |\n      The Playwright configuration file (`playwright.config.js`) allows environment variables to control key aspects like retries, workers, and others. This configuration uses environment variables directly without proper validation or sanitization. \n      For example:\n      - `forbidOnly: !!process.env.CI`\n      - `retries: process.env.CI ? 2 : 0`\n      - `workers: process.env.CI ? 1 : undefined`\n      If these environment variables are set to unexpected values or manipulated by an attacker, it may lead to unintended behavior or denial of service through resource exhaustion.\n    cwe: CWE-20\n    function_names: []\n    filenames:\n      - \"playwright.config.js\"\n    classification: slightly promising\n\n  - headline: \"Improper Authorization Verification\"\n    analysis: |\n      In the file `test/hooks.test.js`, different routes are registered without checks for authentication or authorization except for a subset using `fastify.basicAuth`. This may lead to improper access control if some routes are meant to be protected but aren't.\n      Example:\n      ```javascript\n      fastify.post('/fooBar123', schemaBody, () => {})\n      ```\n      This route registration can be accessed without proper authentication or authorization, which can lead to unauthorized access and potential data leakage or manipulation.\n    cwe: CWE-862\n    function_names:\n      - \"register\"\n      - \"post\"\n    filenames:\n      - \"test/hooks.test.js\"\n    classification: very promising\n\n  - headline: \"Cleartext Transmission of Sensitive Information\"\n    analysis: |\n      In the scripts that set and retrieve environment variables or handle request parameters, there is potential for sensitive information such as API keys or credentials to be logged or transmitted in cleartext, particularly through log outputs or HTTP responses.\n      For example:\n      ```javascript\n      fastify.put('/some-route/:id', {\n        schema: {\n          description: 'post some data',\n          tags: ['user', 'code'],\n          params: {\n            type: 'object',\n            properties: {\n              id: {\n                type: 'string',\n                description: 'user id'\n              }\n            }\n          },\n          body: {\n            type: 'object',\n            properties: {\n              hello: { type: 'string' },\n              obj: {\n                type: 'object',\n                properties: {\n                  some: { type: 'string' }\n                }\n              }\n            }\n          },\n          response: {\n            201: {\n              description: 'Successful response',\n              type: 'object',\n              properties: {\n                hello: { type: 'string' }\n              }\n            }\n          }\n        }\n      }, (req, reply) => {})\n      ```\n      If the `req.params` or `req.body` contain sensitive information, it might get logged or intercepted.\n    cwe: CWE-319\n    function_names:\n      - \"put\"\n    filenames:\n      - \"examples/dynamic-swagger.js\"\n      - \"examples/dynamic-openapi.js\"\n    classification: very promising\n\n  - headline: \"Potential Prototype Pollution via Swagger Specification\"\n    analysis: |\n      In multiple places, particularly in the registration of Swagger UI and Swagger specifications, there exists a potential for prototype pollution if the specification objects are not deeply cloned or sanitized properly before usage.\n      For example:\n      ```javascript\n      await fastify.register(fastifySwaggerUi, {\n        transformSpecification: function (swaggerObject, req, reply) {\n          swaggerObject.swagger = '2.1'\n          return swaggerObject\n        }\n      })\n      ```\n      If `swaggerObject` is manipulated, it can potentially lead to a security issue where prototype functions are overridden or malicious properties are injected.\n    cwe: CWE-1321\n    function_names:\n      - \"register\"\n    filenames:\n      - \"test/transform-swagger.test.js\"\n      - \"lib/routes.js\"\n    classification: slightly promising\n```",
+      "date": "2024-06-09T11:50:38.210544",
+      "usage": {
+        "prompt_tokens": 32869,
+        "completion_tokens": 826,
+        "cost": 0.176735
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential Improper Input Validation in Playwright Configuration",
+      "analysis": "The Playwright configuration file (playwright.config.js) allows environment variables to control key aspects like retries, workers, and others. This configuration uses environment variables directly without proper validation or sanitization. \nFor example:\n- forbidOnly: !!process.env.CI\n- retries: process.env.CI ? 2 : 0\n- workers: process.env.CI ? 1 : undefined\nIf these environment variables are set to unexpected values or manipulated by an attacker, it may lead to unintended behavior or denial of service through resource exhaustion.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [],
+      "filenames": [
+        "playwright.config.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-22207": "2024-01-15T16:15:13"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

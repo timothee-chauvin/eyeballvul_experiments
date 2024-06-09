@@ -1,0 +1,76 @@
+{
+  "commit": "0e89d18bc5966dd9e62e89426e9ea63b2e0e617d",
+  "repo_url": "https://github.com/darrenofficial/dpaste",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "2929f62b2791e8469a04"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output of the security vulnerability leads I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Potential SQL Injection in Snippet model\n    analysis: |\n      The `secret_id` field on the Snippet model is populated using the `generate_secret_id` function, which generates a random string using characters from `settings.SLUG_CHOICES`. However, this value is then used in a raw SQL query without proper escaping or parameterization when filtering snippets:\n\n          deleteable_snippets = Snippet.objects.filter(secret_id=secret_id)\n      \n      If an attacker can control the value of `secret_id`, they could potentially inject malicious SQL and perform unauthorized actions.\n    cwe: CWE-89\n    function_names:\n      - generate_secret_id\n    filenames:\n      - dpaste/models.py\n    classification: slightly promising\n\n  - headline: Cross-Site Scripting (XSS) in snippet rendering \n    analysis: |\n      User-provided content is rendered in the `dpaste/templates/dpaste/details.html` template without proper escaping or sanitization. The `{{ snippet.content }}` variable is inserted directly into the HTML output.\n\n      An attacker could submit malicious JavaScript code as the snippet content, which would then get executed in the context of other users viewing that snippet. This could allow the attacker to steal sensitive data or perform unauthorized actions.\n    cwe: CWE-79\n    function_names:\n      - SnippetDetailView.get\n    filenames:\n      - dpaste/views.py\n      - dpaste/templates/dpaste/details.html\n    classification: very promising\n\n  - headline: Missing CSRF protection on sensitive actions\n    analysis: |\n      Several views that perform sensitive actions like deleting snippets are missing CSRF protection. For example, the `SnippetDetailView.post` method handles deletion of snippets, but does not have the `@csrf_protect` decorator applied.\n\n      This could allow an attacker to construct a malicious website that submits a form to delete a snippet without the user's knowledge or consent when they visit the page.\n    cwe: CWE-352\n    function_names:  \n      - SnippetDetailView.post\n    filenames:\n      - dpaste/views.py  \n    classification: very promising\n```\n\nThe main vulnerabilities I found are:\n\n1. Potential SQL injection in generating the secret ID for snippets \n2. Stored XSS from rendering user-provided snippet content without escaping\n3. Missing CSRF protection on sensitive actions like deleting snippets\n\nLet me know if you need any clarification or have additional questions!",
+      "date": "2024-06-09T11:23:18.073827",
+      "usage": {
+        "prompt_tokens": 37064,
+        "completion_tokens": 626,
+        "cost": 0.60291
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential SQL Injection in Snippet model",
+      "analysis": "The secret_id field on the Snippet model is populated using the generate_secret_id function, which generates a random string using characters from settings.SLUG_CHOICES. However, this value is then used in a raw SQL query without proper escaping or parameterization when filtering snippets:\n\n    deleteable_snippets = Snippet.objects.filter(secret_id=secret_id)\n\nIf an attacker can control the value of secret_id, they could potentially inject malicious SQL and perform unauthorized actions.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "generate_secret_id"
+      ],
+      "filenames": [
+        "dpaste/models.py"
+      ]
+    },
+    {
+      "headline": "Cross-Site Scripting (XSS) in snippet rendering",
+      "analysis": "User-provided content is rendered in the dpaste/templates/dpaste/details.html template without proper escaping or sanitization. The {{ snippet.content }} variable is inserted directly into the HTML output.\n\nAn attacker could submit malicious JavaScript code as the snippet content, which would then get executed in the context of other users viewing that snippet. This could allow the attacker to steal sensitive data or perform unauthorized actions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "SnippetDetailView.get"
+      ],
+      "filenames": [
+        "dpaste/views.py",
+        "dpaste/templates/dpaste/details.html"
+      ]
+    },
+    {
+      "headline": "Missing CSRF protection on sensitive actions",
+      "analysis": "Several views that perform sensitive actions like deleting snippets are missing CSRF protection. For example, the SnippetDetailView.post method handles deletion of snippets, but does not have the @csrf_protect decorator applied.\n\nThis could allow an attacker to construct a malicious website that submits a form to delete a snippet without the user's knowledge or consent when they visit the page.\n",
+      "classification": "very promising",
+      "cwe": "CWE-352",
+      "function_names": [
+        "SnippetDetailView.post"
+      ],
+      "filenames": [
+        "dpaste/views.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-49277": "2023-12-01T21:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

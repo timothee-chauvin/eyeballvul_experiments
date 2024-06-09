@@ -1,0 +1,87 @@
+{
+  "commit": "0287d28c7dddccfeec1777f741acba44732ac342",
+  "repo_url": "https://github.com/fastify/fastify-swagger-ui",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "995bf7357a9f2647c0a5"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: Prototype Pollution in transformSpecification option\n    analysis: |\n      The `transformSpecification` option allows passing a function that can modify the Swagger specification object. If this function is passed untrusted user input and does not properly validate it, an attacker could potentially inject properties into the `swaggerObject` prototype, leading to prototype pollution.\n      This could allow an attacker to modify the behavior of the application by overwriting existing properties or adding new ones to the base object prototype.\n    cwe: CWE-915\n    function_names:\n      - fastifySwagger\n    filenames:\n      - lib/routes.js\n    classification: very promising\n  \n  - headline: Content Injection in indexHtml generation\n    analysis: |\n      The `indexHtml` function in `lib/index-html.js` generates HTML content using raw string concatenation of potentially untrusted input from the `opts` parameter. \n      If the input is not properly sanitized, it could allow an attacker to inject malicious HTML, CSS or JavaScript code into the generated HTML page. This could lead to cross-site scripting (XSS) attacks if the injected code is executed by other users' browsers.\n    cwe: CWE-79\n    function_names:\n      - indexHtml  \n    filenames:\n      - lib/index-html.js\n    classification: very promising\n  \n  - headline: Command Injection in fastifySwagger plugin\n    analysis: |\n      The `fastifySwagger` plugin registers several routes, some of which use unsanitized input from `opts` parameters to construct file paths and shell commands.\n      For example, the `/documentation/:file` route uses `req.params['*']` directly to send a file. If the wildcard parameter is not validated, it could allow an attacker to send requests containing relative paths or special characters to access arbitrary files or inject shell commands.\n    cwe: CWE-78  \n    function_names: \n      - fastifySwagger\n    filenames:\n      - lib/routes.js\n    classification: slightly promising\n\n  - headline: Insecure Content Loading over HTTP \n    analysis: | \n      Some of the example code, like `examples/dynamic-openapi.js`, configures Swagger UI to load content like the OpenAPI specification over plain HTTP URLs.\n      Loading content over unencrypted HTTP can expose it to man-in-the-middle attacks. A network attacker could intercept the traffic and modify the contents, potentially injecting malicious code.\n      HTTPS should be used instead to encrypt the traffic and verify the server's identity.\n    cwe: CWE-319\n    function_names:\n      - fastify.register\n    filenames:\n      - examples/dynamic-openapi.js\n    classification: slightly promising\n```\n\nThe CWE list was used as a reference to classify the root causes of the identified vulnerabilities. The prototype pollution and content injection issues look very promising to investigate further for a potential exploit. The command injection and insecure content loading are of somewhat lower severity but still worth noting.",
+      "date": "2024-06-09T11:51:10.501759",
+      "usage": {
+        "prompt_tokens": 42411,
+        "completion_tokens": 729,
+        "cost": 0.69084
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Prototype Pollution in transformSpecification option",
+      "analysis": "The transformSpecification option allows passing a function that can modify the Swagger specification object. If this function is passed untrusted user input and does not properly validate it, an attacker could potentially inject properties into the swaggerObject prototype, leading to prototype pollution.\nThis could allow an attacker to modify the behavior of the application by overwriting existing properties or adding new ones to the base object prototype.\n",
+      "classification": "very promising",
+      "cwe": "CWE-915",
+      "function_names": [
+        "fastifySwagger"
+      ],
+      "filenames": [
+        "lib/routes.js"
+      ]
+    },
+    {
+      "headline": "Content Injection in indexHtml generation",
+      "analysis": "The indexHtml function in lib/index-html.js generates HTML content using raw string concatenation of potentially untrusted input from the opts parameter. \nIf the input is not properly sanitized, it could allow an attacker to inject malicious HTML, CSS or JavaScript code into the generated HTML page. This could lead to cross-site scripting (XSS) attacks if the injected code is executed by other users' browsers.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "indexHtml"
+      ],
+      "filenames": [
+        "lib/index-html.js"
+      ]
+    },
+    {
+      "headline": "Command Injection in fastifySwagger plugin",
+      "analysis": "The fastifySwagger plugin registers several routes, some of which use unsanitized input from opts parameters to construct file paths and shell commands.\nFor example, the /documentation/:file route uses req.params['*'] directly to send a file. If the wildcard parameter is not validated, it could allow an attacker to send requests containing relative paths or special characters to access arbitrary files or inject shell commands.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "fastifySwagger"
+      ],
+      "filenames": [
+        "lib/routes.js"
+      ]
+    },
+    {
+      "headline": "Insecure Content Loading over HTTP",
+      "analysis": "Some of the example code, like examples/dynamic-openapi.js, configures Swagger UI to load content like the OpenAPI specification over plain HTTP URLs.\nLoading content over unencrypted HTTP can expose it to man-in-the-middle attacks. A network attacker could intercept the traffic and modify the contents, potentially injecting malicious code.\nHTTPS should be used instead to encrypt the traffic and verify the server's identity.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-319",
+      "function_names": [
+        "fastify.register"
+      ],
+      "filenames": [
+        "examples/dynamic-openapi.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-22207": "2024-01-15T16:15:13"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
