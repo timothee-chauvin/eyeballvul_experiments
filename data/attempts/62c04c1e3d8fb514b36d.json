@@ -1,0 +1,95 @@
+{
+  "commit": "ad52a3ca81d1ab9497378aafe54320739a45fc83",
+  "repo_url": "https://github.com/lunary-ai/lunary",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "1590a04a1efe21ea459d"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Improper input validation in shared filter deserialization\n    analysis: |\n      The `deserializeLogic` function in `packages/shared/filters/serialize.ts` does not properly validate the deserialized filter parameters. Malicious input could be provided that results in unexpected filter behavior or potential injection vulnerabilities when the filters are used in SQL queries.\n      \n      The deserialized parameters are passed directly to the `deserializeParamValue` function which switches on the `filterParam.type` field. However, the `type` is controlled by the attacker and could be set to an unexpected value, possibly leading to bugs or injection flaws if `deserializeParamValue` is extended in the future to handle new filter types.\n    cwe: CWE-20\n    function_names:\n      - deserializeLogic\n      - deserializeParamValue\n    filenames:\n      - packages/shared/filters/serialize.ts\n    classification: very promising\n\n  - headline: SQL injection in convertChecksToSQL \n    analysis: |  \n      The `convertChecksToSQL` function in `packages/backend/src/utils/filters.ts` constructs a SQL query based on provided filter data. However, it does not properly escape or parameterize the filter parameters before including them in the SQL.\n      \n      For example, the `runner.sql(logicElement.params)` call directly passes the `params` object to the `sql` tagged template function. If `params` contains untrusted data, this could lead to a SQL injection vulnerability.\n      \n      An attacker could provide malicious filter parameters that break out of the intended SQL query structure and inject arbitrary SQL code. This could allow them to read, modify or delete data in the connected database.\n    cwe: CWE-89\n    function_names:\n      - convertChecksToSQL\n    filenames:\n      - packages/backend/src/utils/filters.ts\n    classification: very promising\n\n  - headline: Improper neutralization of script tags in radar descriptions\n    analysis: |\n      The `description` field of radar objects is rendered directly into the DOM without any sanitization or escaping. This could allow an attacker to inject malicious HTML or JavaScript if they control the radar description text.\n\n      For example, submitting a `description` containing `<script>alert(1)</script>` would execute JavaScript in the context of other users viewing the radar in their browser.\n\n      This cross-site scripting (XSS) flaw could be used to steal user session tokens, modify the page appearance, redirect users to phishing pages, or perform other malicious browser-side actions.\n    cwe: CWE-79\n    filenames:\n      - packages/frontend/pages/radars/index.tsx\n    classification: very promising\n\n  - headline: CSRF token not validated on sensitive actions\n    analysis: |\n      The backend API endpoints make state-changing actions without checking for a CSRF token. This leaves them vulnerable to cross-site request forgery (CSRF) attacks.\n\n      For example, the POST /templates endpoint will create a new template for any authenticated user, without confirming the request originated from a trusted site. An attacker could craft a malicious page that makes a forged request to this endpoint when visited by a victim.\n\n      As a result, an attacker could perform unwanted actions on behalf of users, like creating new templates, modifying settings, or triggering Delete actions. The impact depends on the site functionality.\n    cwe: CWE-352\n    classification: very promising\n```",
+      "date": "2024-06-09T13:19:39.527310",
+      "usage": {
+        "prompt_tokens": 58821,
+        "completion_tokens": 824,
+        "cost": 0.944115
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper input validation in shared filter deserialization",
+      "analysis": "The deserializeLogic function in packages/shared/filters/serialize.ts does not properly validate the deserialized filter parameters. Malicious input could be provided that results in unexpected filter behavior or potential injection vulnerabilities when the filters are used in SQL queries.\n\nThe deserialized parameters are passed directly to the deserializeParamValue function which switches on the filterParam.type field. However, the type is controlled by the attacker and could be set to an unexpected value, possibly leading to bugs or injection flaws if deserializeParamValue is extended in the future to handle new filter types.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "deserializeLogic",
+        "deserializeParamValue"
+      ],
+      "filenames": [
+        "packages/shared/filters/serialize.ts"
+      ]
+    },
+    {
+      "headline": "SQL injection in convertChecksToSQL",
+      "analysis": "The convertChecksToSQL function in packages/backend/src/utils/filters.ts constructs a SQL query based on provided filter data. However, it does not properly escape or parameterize the filter parameters before including them in the SQL.\n\nFor example, the runner.sql(logicElement.params) call directly passes the params object to the sql tagged template function. If params contains untrusted data, this could lead to a SQL injection vulnerability.\n\nAn attacker could provide malicious filter parameters that break out of the intended SQL query structure and inject arbitrary SQL code. This could allow them to read, modify or delete data in the connected database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "convertChecksToSQL"
+      ],
+      "filenames": [
+        "packages/backend/src/utils/filters.ts"
+      ]
+    },
+    {
+      "headline": "Improper neutralization of script tags in radar descriptions",
+      "analysis": "The description field of radar objects is rendered directly into the DOM without any sanitization or escaping. This could allow an attacker to inject malicious HTML or JavaScript if they control the radar description text.\n\nFor example, submitting a description containing <script>alert(1)</script> would execute JavaScript in the context of other users viewing the radar in their browser.\n\nThis cross-site scripting (XSS) flaw could be used to steal user session tokens, modify the page appearance, redirect users to phishing pages, or perform other malicious browser-side actions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [],
+      "filenames": [
+        "packages/frontend/pages/radars/index.tsx"
+      ]
+    },
+    {
+      "headline": "CSRF token not validated on sensitive actions",
+      "analysis": "The backend API endpoints make state-changing actions without checking for a CSRF token. This leaves them vulnerable to cross-site request forgery (CSRF) attacks.\n\nFor example, the POST /templates endpoint will create a new template for any authenticated user, without confirming the request originated from a trusted site. An attacker could craft a malicious page that makes a forged request to this endpoint when visited by a victim.\n\nAs a result, an attacker could perform unwanted actions on behalf of users, like creating new templates, modifying settings, or triggering Delete actions. The impact depends on the site functionality.\n",
+      "classification": "very promising",
+      "cwe": "CWE-352",
+      "function_names": [],
+      "filenames": []
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 14,
+        "tp": 0,
+        "fp": 4
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-3761": "2024-05-20T09:15:09",
+        "CVE-2024-1741": "2024-04-10T17:15:53",
+        "CVE-2024-1902": "2024-04-10T17:15:53",
+        "CVE-2024-1599": "2024-04-10T17:15:52",
+        "CVE-2024-1738": "2024-04-16T00:15:10",
+        "CVE-2024-1625": "2024-04-10T17:15:52",
+        "CVE-2024-1739": "2024-04-16T00:15:10",
+        "CVE-2024-1666": "2024-04-16T00:15:10",
+        "CVE-2024-1665": "2024-04-16T00:15:10",
+        "CVE-2024-1626": "2024-04-16T00:15:09",
+        "CVE-2024-1740": "2024-04-10T17:15:53",
+        "CVE-2024-1643": "2024-04-10T17:15:52",
+        "CVE-2024-3504": "2024-06-06T18:15:17",
+        "CVE-2024-5127": "2024-06-06T18:15:19"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

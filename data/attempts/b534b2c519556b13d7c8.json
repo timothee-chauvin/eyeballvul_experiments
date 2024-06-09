@@ -1,0 +1,83 @@
+{
+  "commit": "ba8c701292e4720b4e10210b266be5666d098fb6",
+  "repo_url": "https://github.com/ijl/orjson",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "0dfeca17dec9640b0b88"
+  ],
+  "responses": [
+    {
+      "content": "Here are the security vulnerabilities I identified in the codebase:\n\n```yaml\nleads:\n  - headline: NULL pointer dereference when default() returns None\n    analysis: |\n      In test/test_default.py, the test_default_func_none test passes None from the default function to orjson.\n      The decoder does not check for NULL before dereferencing the pointer returned by default(), which will cause a NULL pointer dereference and crash if default() returns a NULL PyObject* (None in Python).\n      This could potentially be abused by untrusted code to cause a denial-of-service if it can control the input to default().\n    cwe: CWE-476\n    function_names:\n      - \"default_func_none\"  \n    filenames:\n      - \"test/test_default.py\"\n    classification: very promising\n\n  - headline: Integer overflow in _PyLong_AsInt overflow checking\n    analysis: |\n      In orjson/_json.pyx, the validate_utf8 function casts a size_t (64-bit unsigned int on 64-bit systems) to a long.\n      _PyLong_AsInt is then called to get a C int from the PyLongObject. This is checked against INT_MAX to detect overflow.\n      However, on Windows long is only 32-bit, so the overflow check can pass even if the 64-bit size_t value overflowed a 32-bit long.\n      This could lead to a smaller-than-expected buffer being allocated and a subsequent heap buffer overflow.\n    cwe: CWE-190  \n    function_names:\n      - \"validate_utf8\"\n    filenames: \n      - \"pysrc/orjson/_json.pyx\"\n    classification: slightly promising\n    \n  - headline: Potential denial-of-service in deeply nested structures \n    analysis: |  \n      orjson recursively parses arbitrarily deep nested JSON structures. On untrusted input, an attacker could craft\n      a JSON document with deeply nested arrays or objects to cause stack exhaustion and denial-of-service.\n      There are some hardcoded recursion limits, but they may not be low enough to prevent issues with e.g. highly concurrent servers.\n    cwe: CWE-674\n    function_names: []\n    filenames: []\n    classification: slightly promising\n    \n  - headline: Unchecked floating point cast\n    analysis: |\n      When serializing dicts with non-string keys, orjson casts Python floats to C doubles without checking for overflow.\n      It's unclear if this can actually cause any memory corruption issues in practice given how Python floats are implemented. \n      The impact is likely just that infinities, NaNs, and very large/small values outside the range of a double will silently be coerced.\n    cwe: CWE-681\n    function_names: \n      - \"encoder_add_dict_key\"\n    filenames:\n      - \"pysrc/orjson/_json.pyx\"\n    classification: not promising\n```\n\nIn summary, the most promising vulnerability is a potential NULL pointer dereference in the default() serializer callback. There are a few other minor issues like integer overflows and deeply nested document DoS, but the impact of those seems more limited. Overall the codebase has relatively few obvious memory safety issues considering it is implemented in C.",
+      "date": "2024-06-09T12:34:29.948158",
+      "usage": {
+        "prompt_tokens": 98875,
+        "completion_tokens": 788,
+        "cost": 1.542225
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "NULL pointer dereference when default() returns None",
+      "analysis": "In test/test_default.py, the test_default_func_none test passes None from the default function to orjson.\nThe decoder does not check for NULL before dereferencing the pointer returned by default(), which will cause a NULL pointer dereference and crash if default() returns a NULL PyObject* (None in Python).\nThis could potentially be abused by untrusted code to cause a denial-of-service if it can control the input to default().\n",
+      "classification": "very promising",
+      "cwe": "CWE-476",
+      "function_names": [
+        "default_func_none"
+      ],
+      "filenames": [
+        "test/test_default.py"
+      ]
+    },
+    {
+      "headline": "Integer overflow in _PyLong_AsInt overflow checking",
+      "analysis": "In orjson/_json.pyx, the validate_utf8 function casts a size_t (64-bit unsigned int on 64-bit systems) to a long.\n_PyLong_AsInt is then called to get a C int from the PyLongObject. This is checked against INT_MAX to detect overflow.\nHowever, on Windows long is only 32-bit, so the overflow check can pass even if the 64-bit size_t value overflowed a 32-bit long.\nThis could lead to a smaller-than-expected buffer being allocated and a subsequent heap buffer overflow.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "validate_utf8"
+      ],
+      "filenames": [
+        "pysrc/orjson/_json.pyx"
+      ]
+    },
+    {
+      "headline": "Potential denial-of-service in deeply nested structures",
+      "analysis": "orjson recursively parses arbitrarily deep nested JSON structures. On untrusted input, an attacker could craft\na JSON document with deeply nested arrays or objects to cause stack exhaustion and denial-of-service.\nThere are some hardcoded recursion limits, but they may not be low enough to prevent issues with e.g. highly concurrent servers.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-674",
+      "function_names": [],
+      "filenames": []
+    },
+    {
+      "headline": "Unchecked floating point cast",
+      "analysis": "When serializing dicts with non-string keys, orjson casts Python floats to C doubles without checking for overflow.\nIt's unclear if this can actually cause any memory corruption issues in practice given how Python floats are implemented. \nThe impact is likely just that infinities, NaNs, and very large/small values outside the range of a double will silently be coerced.\n",
+      "classification": "not promising",
+      "cwe": "CWE-681",
+      "function_names": [
+        "encoder_add_dict_key"
+      ],
+      "filenames": [
+        "pysrc/orjson/_json.pyx"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-27454": "2024-02-26T16:28:00"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

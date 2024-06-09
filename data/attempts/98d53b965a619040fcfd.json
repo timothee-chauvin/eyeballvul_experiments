@@ -1,0 +1,89 @@
+{
+  "commit": "48063aeb0dd2065a8af7c976d6650d49980949a4",
+  "repo_url": "https://github.com/snowflakedb/snowflake-hive-metastore-connector",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "cf53e68c6375f8df4e66"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output with the possible security vulnerabilities in the codebase:\n\n```yaml\nleads:\n  - headline: Unsafe Snowflake credentials in configuration\n    analysis: |\n      The Snowflake JDBC connection details, including username, password, and private key, are stored in plaintext in the snowflake-config.xml configuration file. This sensitive information should not be stored in plaintext configuration files that may be checked into source control. Instead, consider using secrets management solutions or environment variables to provide the credentials at runtime.\n    cwe: CWE-522\n    function_names:\n      - SnowflakeConf\n    filenames:\n      - src/main/java/net/snowflake/hivemetastoreconnector/SnowflakeConf.java\n    classification: very promising\n  \n  - headline: Insecure storage of AWS credentials in Hive configuration\n    analysis: |\n      The listener checks Hive configuration properties to get AWS access key ID and secret key for creating external stages in Snowflake. These credentials are sensitive and should not be stored in Hive configs which are not securely managed. If an attacker gains access to the Hive metastore configs, they could retrieve the AWS credentials. A more secure approach would be to use IAM roles in AWS and Snowflake storage integration to avoid managing AWS keys.\n    cwe: CWE-522\n    function_names:\n      - generateCredentialsString\n    filenames: \n      - src/main/java/net/snowflake/hivemetastoreconnector/util/StageCredentialUtil.java\n    classification: very promising\n\n  - headline: Security misconfiguration allowing sync from any Hive database\n    analysis: |\n      By default, the listener will sync metadata for tables in any Hive database to Snowflake unless explicitly filtered using configuration properties snowflake.hive-metastore-listener.database-filter-regex and snowflake.hive-metastore-listener.table-filter-regex. Not setting these filter regexes could allow unintended Hive databases and tables to get synced to Snowflake. Set strict filters to only allow syncing the intended Hive databases.\n    cwe: CWE-732\n    function_names:\n      - shouldHandle\n    filenames:\n      - src/main/java/net/snowflake/hivemetastoreconnector/SnowflakeHiveListener.java  \n    classification: slightly promising\n\n  - headline: Sensitive information in log statements\n    analysis: | \n      Some log statements print out potentially sensitive information like stage location URLs and SQL queries being executed. In INFO level logging, we see Snowflake queries with stage names and locations being logged. This could expose sensitive details if the logs are not properly secured or if they are persisted in log aggregation tools. Avoid logging sensitive details where possible, and ensure access to the log files is restricted.  \n    cwe: CWE-532\n    function_names: \n      - generateLocationWithCommand\n      - executeStatements\n    filenames:\n      - src/main/java/net/snowflake/hivemetastoreconnector/commands/CreateExternalTable.java\n      - src/main/java/net/snowflake/hivemetastoreconnector/core/SnowflakeClient.java\n    classification: slightly promising\n\n```",
+      "date": "2024-06-09T14:51:41.034987",
+      "usage": {
+        "prompt_tokens": 72270,
+        "completion_tokens": 782,
+        "cost": 1.1427
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unsafe Snowflake credentials in configuration",
+      "analysis": "The Snowflake JDBC connection details, including username, password, and private key, are stored in plaintext in the snowflake-config.xml configuration file. This sensitive information should not be stored in plaintext configuration files that may be checked into source control. Instead, consider using secrets management solutions or environment variables to provide the credentials at runtime.\n",
+      "classification": "very promising",
+      "cwe": "CWE-522",
+      "function_names": [
+        "SnowflakeConf"
+      ],
+      "filenames": [
+        "src/main/java/net/snowflake/hivemetastoreconnector/SnowflakeConf.java"
+      ]
+    },
+    {
+      "headline": "Insecure storage of AWS credentials in Hive configuration",
+      "analysis": "The listener checks Hive configuration properties to get AWS access key ID and secret key for creating external stages in Snowflake. These credentials are sensitive and should not be stored in Hive configs which are not securely managed. If an attacker gains access to the Hive metastore configs, they could retrieve the AWS credentials. A more secure approach would be to use IAM roles in AWS and Snowflake storage integration to avoid managing AWS keys.\n",
+      "classification": "very promising",
+      "cwe": "CWE-522",
+      "function_names": [
+        "generateCredentialsString"
+      ],
+      "filenames": [
+        "src/main/java/net/snowflake/hivemetastoreconnector/util/StageCredentialUtil.java"
+      ]
+    },
+    {
+      "headline": "Security misconfiguration allowing sync from any Hive database",
+      "analysis": "By default, the listener will sync metadata for tables in any Hive database to Snowflake unless explicitly filtered using configuration properties snowflake.hive-metastore-listener.database-filter-regex and snowflake.hive-metastore-listener.table-filter-regex. Not setting these filter regexes could allow unintended Hive databases and tables to get synced to Snowflake. Set strict filters to only allow syncing the intended Hive databases.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "shouldHandle"
+      ],
+      "filenames": [
+        "src/main/java/net/snowflake/hivemetastoreconnector/SnowflakeHiveListener.java"
+      ]
+    },
+    {
+      "headline": "Sensitive information in log statements",
+      "analysis": "Some log statements print out potentially sensitive information like stage location URLs and SQL queries being executed. In INFO level logging, we see Snowflake queries with stage names and locations being logged. This could expose sensitive details if the logs are not properly secured or if they are persisted in log aggregation tools. Avoid logging sensitive details where possible, and ensure access to the log files is restricted.  \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-532",
+      "function_names": [
+        "generateLocationWithCommand",
+        "executeStatements"
+      ],
+      "filenames": [
+        "src/main/java/net/snowflake/hivemetastoreconnector/commands/CreateExternalTable.java",
+        "src/main/java/net/snowflake/hivemetastoreconnector/core/SnowflakeClient.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-28851": "2024-03-15T19:15:07"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

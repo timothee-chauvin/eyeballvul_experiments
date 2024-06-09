@@ -1,0 +1,93 @@
+{
+  "commit": "1b3e967ee51d409f223b36e42a55f88b76b10741",
+  "repo_url": "https://github.com/jenkinsci/jira-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "8a1723dfdad37b2df0b7"
+  ],
+  "responses": [
+    {
+      "content": "Here are the security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: JIRA credentials stored in plain text\n    analysis: |\n      The JiraSite class stores the JIRA username and password in plain text fields.\n      If an attacker gains access to the Jenkins config files, they could recover the\n      JIRA credentials. The password should be encrypted instead of stored in plain text.\n    cwe: CWE-256\n    function_names:\n      - JiraSite.java:JiraSite()\n    filenames:\n      - src/main/java/hudson/plugins/jira/JiraSite.java\n    classification: very promising\n\n  - headline: JIRA REST API accessed with overly broad permissions\n    analysis: |  \n      The JiraRestService class connects to JIRA's REST API using the configured\n      JIRA username and password. However, it appears this user has very broad permissions\n      in JIRA, being able to create and modify issues, add comments, create versions, etc.\n      If this credential was compromised, an attacker could perform many undesirable actions\n      in JIRA. The permissions for this integration account should be scoped down to the \n      bare minimum needed for the plugin's functionality.\n    cwe: CWE-285\n    function_names:\n      - JiraRestService.java:JiraRestService()\n    filenames:\n      - src/main/java/hudson/plugins/jira/JiraRestService.java  \n    classification: slightly promising\n    \n  - headline: Improper restriction of XML resolution\n    analysis: |\n      The JiraVersionParameterDefinition class uses an instance of net.sf.json.JSONObject to parse \n      form data submitted by the user. Older versions of net.sf.json are vulnerable to XXE attacks \n      when parsing untrusted XML content. However, it's not clear from the provided code if this  \n      particular usage is exploitable since JSONObject is parsing JSON, not XML. More research\n      would be needed to determine if this may allow an XXE attack.\n    cwe: CWE-611  \n    function_names:\n      - JiraVersionParameterDefinition.java:createValue()\n    filenames:\n      - src/main/java/hudson/plugins/jira/versionparameter/JiraVersionParameterDefinition.java\n    classification: slightly promising\n\n  - headline: Improper restriction of user-controlled values in WHERE clause  \n    analysis: |\n      The JiraIssueUpdater and JiraIssueUpdateBuilder classes allow specifying a JQL query to match\n      issues to update in JIRA. The JQL query is built by substituting a user-provided string directly\n      into the query. This could allow users to inject arbitrary JQL predicates into the query to\n      update issues they shouldn't have access to. The user input should be validated and properly \n      escaped before inclusion in the JQL query.\n    cwe: CWE-943\n    function_names:\n      - JiraIssueUpdater.java:perform()  \n      - JiraIssueUpdateBuilder.java:perform()\n    filenames:\n      - src/main/java/hudson/plugins/jira/JiraIssueUpdater.java\n      - src/main/java/hudson/plugins/jira/JiraIssueUpdateBuilder.java\n    classification: very promising\n        \n```\n\nThe most promising vulnerabilities to investigate further are the JIRA credentials stored in plain text, and the potential for JQL injection in user-specified queries. The overly broad permissions for the JIRA integration user is also concerning from a defense-in-depth perspective. The potential XXE issue is lower priority to investigate in my opinion.",
+      "date": "2024-06-09T12:52:27.811630",
+      "usage": {
+        "prompt_tokens": 70030,
+        "completion_tokens": 876,
+        "cost": 1.11615
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "JIRA credentials stored in plain text",
+      "analysis": "The JiraSite class stores the JIRA username and password in plain text fields.\nIf an attacker gains access to the Jenkins config files, they could recover the\nJIRA credentials. The password should be encrypted instead of stored in plain text.\n",
+      "classification": "very promising",
+      "cwe": "CWE-256",
+      "function_names": [
+        "JiraSite.java:JiraSite()"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/jira/JiraSite.java"
+      ]
+    },
+    {
+      "headline": "JIRA REST API accessed with overly broad permissions",
+      "analysis": "The JiraRestService class connects to JIRA's REST API using the configured\nJIRA username and password. However, it appears this user has very broad permissions\nin JIRA, being able to create and modify issues, add comments, create versions, etc.\nIf this credential was compromised, an attacker could perform many undesirable actions\nin JIRA. The permissions for this integration account should be scoped down to the \nbare minimum needed for the plugin's functionality.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-285",
+      "function_names": [
+        "JiraRestService.java:JiraRestService()"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/jira/JiraRestService.java"
+      ]
+    },
+    {
+      "headline": "Improper restriction of XML resolution",
+      "analysis": "The JiraVersionParameterDefinition class uses an instance of net.sf.json.JSONObject to parse \nform data submitted by the user. Older versions of net.sf.json are vulnerable to XXE attacks \nwhen parsing untrusted XML content. However, it's not clear from the provided code if this  \nparticular usage is exploitable since JSONObject is parsing JSON, not XML. More research\nwould be needed to determine if this may allow an XXE attack.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-611",
+      "function_names": [
+        "JiraVersionParameterDefinition.java:createValue()"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/jira/versionparameter/JiraVersionParameterDefinition.java"
+      ]
+    },
+    {
+      "headline": "Improper restriction of user-controlled values in WHERE clause",
+      "analysis": "The JiraIssueUpdater and JiraIssueUpdateBuilder classes allow specifying a JQL query to match\nissues to update in JIRA. The JQL query is built by substituting a user-provided string directly\ninto the query. This could allow users to inject arbitrary JQL predicates into the query to\nupdate issues they shouldn't have access to. The user input should be validated and properly \nescaped before inclusion in the JQL query.\n",
+      "classification": "very promising",
+      "cwe": "CWE-943",
+      "function_names": [
+        "JiraIssueUpdater.java:perform()",
+        "JiraIssueUpdateBuilder.java:perform()"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/jira/JiraIssueUpdater.java",
+        "src/main/java/hudson/plugins/jira/JiraIssueUpdateBuilder.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 5,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-49653": "2023-11-29T14:15:07",
+        "CVE-2023-49673": "2023-11-29T14:15:07",
+        "CVE-2019-16541": "2019-11-21T15:15:14",
+        "CVE-2018-1000412": "2019-01-09T23:29:02",
+        "CVE-2022-29041": "2022-04-12T20:15:09"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

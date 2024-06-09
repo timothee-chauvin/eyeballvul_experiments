@@ -1,0 +1,76 @@
+{
+  "commit": "b6ac0a8e9f31660dc65e54ee0fa070ffc81f8723",
+  "repo_url": "https://github.com/giggio/node-chromedriver",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "7a7891ea9c6a51d92676"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Inadequate neutralization of special elements used in a shell command\n    analysis: |\n      The install.js script spawns a shell command using untrusted input from the `cdnUrl` environment variable. This variable can be set to an arbitrary value by an attacker. The contents of `cdnUrl` are passed to `util.format()` and used to construct a download URL, which is later split on '/' characters. However, there is no validation or sanitization of the `cdnUrl` value. \n      \n      An attacker could potentially set `cdnUrl` to a string containing shell metacharacters, allowing them to inject arbitrary commands that would be executed by the script. This could allow an attacker to execute malicious code on the system running the install script.\n    cwe: CWE-78\n    function_names:\n      - getRequestOptions\n    filenames:\n      - install.js\n    classification: very promising\n    \n  - headline: Improper error handling in subprocess invocation\n    analysis: |\n      The testInstall.js script invokes several subprocesses using Node's child_process.spawnSync(). If any of these subprocess invocations fail, the script attempts to clean up the temporary install directory before exiting.\n\n      However, the cleanup logic does not properly handle errors that may occur when trying to delete the install directory. If removing the directory fails for some reason, the script will log an error message but will not exit with a non-zero status code.\n\n      As a result, the testInstall.js script may incorrectly report a successful exit status even if the installation and cleanup did not fully succeed. This could cause incorrect test results or allow the build to proceed when it should fail.\n    cwe: CWE-755\n    function_names:\n      - removeFolder\n    filenames:  \n      - testInstall.js\n    classification: slightly promising\n  \n  - headline: Insecure file permissions for extracted archive\n    analysis: |\n      The install.js script downloads a zip archive and extracts it to a temporary directory before copying it into place. The zip extraction is done using a third-party AdmZip library.\n\n      After extraction, the script attempts to fix file permissions on the chromedriver binary by calling fs.chmodSync() to add the user-execute bit if needed. However, there is no validation of the file permissions on the extracted files before this.\n\n      If the zip archive contained files with overly permissive or insecure permissions, those could carry over to the extracted files. The script only fixes the chromedriver binary itself, not any other files. This could allow unprivileged users to modify or tamper with sensitive extracted files.\n    cwe: CWE-732\n    function_names:  \n      - fixFilePermissions\n    filenames:\n      - install.js  \n    classification: slightly promising\n```",
+      "date": "2024-06-09T12:19:23.920917",
+      "usage": {
+        "prompt_tokens": 7304,
+        "completion_tokens": 657,
+        "cost": 0.158835
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Inadequate neutralization of special elements used in a shell command",
+      "analysis": "The install.js script spawns a shell command using untrusted input from the cdnUrl environment variable. This variable can be set to an arbitrary value by an attacker. The contents of cdnUrl are passed to util.format() and used to construct a download URL, which is later split on '/' characters. However, there is no validation or sanitization of the cdnUrl value. \n\nAn attacker could potentially set cdnUrl to a string containing shell metacharacters, allowing them to inject arbitrary commands that would be executed by the script. This could allow an attacker to execute malicious code on the system running the install script.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "getRequestOptions"
+      ],
+      "filenames": [
+        "install.js"
+      ]
+    },
+    {
+      "headline": "Improper error handling in subprocess invocation",
+      "analysis": "The testInstall.js script invokes several subprocesses using Node's child_process.spawnSync(). If any of these subprocess invocations fail, the script attempts to clean up the temporary install directory before exiting.\n\nHowever, the cleanup logic does not properly handle errors that may occur when trying to delete the install directory. If removing the directory fails for some reason, the script will log an error message but will not exit with a non-zero status code.\n\nAs a result, the testInstall.js script may incorrectly report a successful exit status even if the installation and cleanup did not fully succeed. This could cause incorrect test results or allow the build to proceed when it should fail.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-755",
+      "function_names": [
+        "removeFolder"
+      ],
+      "filenames": [
+        "testInstall.js"
+      ]
+    },
+    {
+      "headline": "Insecure file permissions for extracted archive",
+      "analysis": "The install.js script downloads a zip archive and extracts it to a temporary directory before copying it into place. The zip extraction is done using a third-party AdmZip library.\n\nAfter extraction, the script attempts to fix file permissions on the chromedriver binary by calling fs.chmodSync() to add the user-execute bit if needed. However, there is no validation of the file permissions on the extracted files before this.\n\nIf the zip archive contained files with overly permissive or insecure permissions, those could carry over to the extracted files. The script only fixes the chromedriver binary itself, not any other files. This could allow unprivileged users to modify or tamper with sensitive extracted files.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "fixFilePermissions"
+      ],
+      "filenames": [
+        "install.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-26156": "2023-11-09T05:15:09",
+        "CVE-2016-10579": "2018-06-01T18:29:00"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

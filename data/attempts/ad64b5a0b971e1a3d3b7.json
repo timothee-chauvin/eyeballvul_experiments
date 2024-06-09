@@ -1,0 +1,88 @@
+{
+  "commit": "07879000f45c0ca3ae4ca4eb5a75f24822aa9dda",
+  "repo_url": "https://github.com/sidekiq/sidekiq",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "4143c179002d74c00c71"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output with security leads for the provided codebase:\n\n```yaml\nleads:\n  - headline: Potential XSS vulnerability in metrics.js\n    analysis: |\n      In the JobMetricsOverviewChart class in metrics.js, the buildTooltipTitle\n      method inserts user-controlled data (items[0].label) into the HTML without\n      proper escaping. If an attacker can control the job labels, they may be\n      able to inject malicious scripts that execute when a user hovers over the\n      tooltip in the chart.\n    cwe: CWE-79\n    function_names:\n      - buildTooltipTitle\n    filenames:\n      - web/assets/javascripts/metrics.js\n    classification: very promising\n\n  - headline: Client-side template injection in metrics.js\n    analysis: |\n      Several methods in the JobMetricsOverviewChart class in metrics.js, such as\n      buildTooltipTitle and buildDataset, insert user-controlled data into HTML\n      or URLs without proper sanitization. An attacker who can control the job\n      metric data may be able to inject malicious HTML or JavaScript that gets \n      executed in the context of the page. For example, the job labels are inserted\n      directly into the tooltip HTML in buildTooltipTitle.\n    cwe: CWE-1336\n    function_names:\n      - buildTooltipTitle\n      - buildDataset \n    filenames:\n      - web/assets/javascripts/metrics.js\n    classification: very promising\n\n  - headline: Improper Access Control in dashboard.js\n    analysis: |\n      The addPollingListeners function in dashboard.js reads and writes the \n      'sidekiqLivePoll' value in localStorage based on clicking elements with the\n      'live-poll' class. There do not appear to be any restrictions on which pages\n      or origins can set this value. This could allow clickjacking attacks where a \n      malicious page tricks the user into enabling or disabling live polling against\n      their wishes.\n    cwe: CWE-269\n    function_names:\n      - addPollingListeners\n    filenames:\n      - web/assets/javascripts/dashboard.js\n    classification: slightly promising\n\n  - headline: Code Injection in dashboard.js\n    analysis: |\n      The replacePage function in dashboard.js parses untrusted HTML from a fetch\n      response and replaces parts of the current page with it, including executing\n      any scripts. An attacker who can get the victim to visit a malicious URL could \n      potentially fetch that URL from the Sidekiq dashboard and inject arbitrary code.\n      However, this requires an existing XSS or request forgery vulnerability, so it\n      only slightly increases the impact of those vulnerabilities if present.\n    cwe: CWE-94\n    function_names:\n      - replacePage\n    filenames:\n      - web/assets/javascripts/dashboard.js\n    classification: slightly promising\n```\n\nThe two most promising leads both involve potential XSS or HTML injection issues in the metrics.js file. There are a few places where user input is inserted into HTML without proper escaping or sanitization.\n\nThe other two leads relate to insecure handling of dashboard state in localStorage and executing JavaScript from fetched HTML, but they are less likely to be exploitable on their own without chaining with other vulnerabilities.\n\nLet me know if you would like me to elaborate on any of the identified leads!",
+      "date": "2024-06-09T14:48:16.435604",
+      "usage": {
+        "prompt_tokens": 21565,
+        "completion_tokens": 801,
+        "cost": 0.38355
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential XSS vulnerability in metrics.js",
+      "analysis": "In the JobMetricsOverviewChart class in metrics.js, the buildTooltipTitle\nmethod inserts user-controlled data (items[0].label) into the HTML without\nproper escaping. If an attacker can control the job labels, they may be\nable to inject malicious scripts that execute when a user hovers over the\ntooltip in the chart.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "buildTooltipTitle"
+      ],
+      "filenames": [
+        "web/assets/javascripts/metrics.js"
+      ]
+    },
+    {
+      "headline": "Client-side template injection in metrics.js",
+      "analysis": "Several methods in the JobMetricsOverviewChart class in metrics.js, such as\nbuildTooltipTitle and buildDataset, insert user-controlled data into HTML\nor URLs without proper sanitization. An attacker who can control the job\nmetric data may be able to inject malicious HTML or JavaScript that gets \nexecuted in the context of the page. For example, the job labels are inserted\ndirectly into the tooltip HTML in buildTooltipTitle.\n",
+      "classification": "very promising",
+      "cwe": "CWE-1336",
+      "function_names": [
+        "buildTooltipTitle",
+        "buildDataset"
+      ],
+      "filenames": [
+        "web/assets/javascripts/metrics.js"
+      ]
+    },
+    {
+      "headline": "Improper Access Control in dashboard.js",
+      "analysis": "The addPollingListeners function in dashboard.js reads and writes the \n'sidekiqLivePoll' value in localStorage based on clicking elements with the\n'live-poll' class. There do not appear to be any restrictions on which pages\nor origins can set this value. This could allow clickjacking attacks where a \nmalicious page tricks the user into enabling or disabling live polling against\ntheir wishes.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-269",
+      "function_names": [
+        "addPollingListeners"
+      ],
+      "filenames": [
+        "web/assets/javascripts/dashboard.js"
+      ]
+    },
+    {
+      "headline": "Code Injection in dashboard.js",
+      "analysis": "The replacePage function in dashboard.js parses untrusted HTML from a fetch\nresponse and replaces parts of the current page with it, including executing\nany scripts. An attacker who can get the victim to visit a malicious URL could \npotentially fetch that URL from the Sidekiq dashboard and inject arbitrary code.\nHowever, this requires an existing XSS or request forgery vulnerability, so it\nonly slightly increases the impact of those vulnerabilities if present.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "replacePage"
+      ],
+      "filenames": [
+        "web/assets/javascripts/dashboard.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-32887": "2024-04-26T21:15:49"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

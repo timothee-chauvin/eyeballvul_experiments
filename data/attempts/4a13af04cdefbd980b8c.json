@@ -1,0 +1,117 @@
+{
+  "commit": "3d0c91ebb05cbb700c2343a29cd2955b9ceb4fb6",
+  "repo_url": "https://github.com/netease-youdao/qanything",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "d265cbab9a11995a3fa4"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: Arbitrary command execution via untrusted user input in ocr_server.py \n    analysis: |\n      In ocr_server.py, the ocr_request() function takes untrusted user input from the 'img64' parameter and passes it to cv2.imread() without validation. This could allow an attacker to pass malicious image data that exploits vulnerabilities in the image parsing libraries to execute arbitrary code.\n    cwe: CWE-78\n    function_names:\n      - ocr_request\n    filenames:\n      - qanything_kernel/dependent_server/ocr_serve/ocr_server.py\n    classification: very promising\n\n  - headline: SQL injection in mysql_client.py\n    analysis: |\n      Several functions in mysql_client.py construct SQL queries by directly interpolating untrusted user input into the query string using string formatting. For example, check_file_exist() inserts the kb_id and user_id parameters into the query without escaping or parameterization. This could allow an attacker to inject malicious SQL and gain unauthorized access to the database.\n    cwe: CWE-89\n    function_names:\n      - delete_knowledge_base\n      - check_file_exist\n      - check_file_exist_by_name\n    filenames:\n      - qanything_kernel/connector/database/mysql/mysql_client.py\n    classification: very promising\n    \n  - headline: Server-side request forgery (SSRF) in MyRecursiveUrlLoader \n    analysis: | \n      The MyRecursiveUrlLoader class takes a user-supplied URL, fetches it using requests.get(), and then recursively loads child links. It does not appear to validate the supplied URL, which could allow an attacker to supply a malicious URL that access internal services or makes requests to arbitrary external systems.\n    cwe: CWE-918\n    function_names:\n      - get_child_links_recursive\n    filenames:\n      - qanything_kernel/utils/loader/my_recursive_url_loader.py\n    classification: very promising\n    \n  - headline: Missing authentication for API endpoints\n    analysis: |\n      The API endpoints defined in sanic_api.py do not perform any authentication checks. An attacker could call these endpoints directly to access and modify user data without needing to login or have authorization.\n    cwe: CWE-306\n    function_names:\n      - new_knowledge_base\n      - upload_files\n      - list_kbs\n      - local_doc_chat\n    filenames:\n      - qanything_kernel/qanything_server/sanic_api.py\n    classification: very promising\n\n  - headline: Insufficient validation of uploaded files\n    analysis: |\n      The upload_files() function allows uploading arbitrary files without validating their type or contents. An attacker could upload malicious files like scripts or binaries which may be saved and executed by other parts of the application.\n    cwe: CWE-434\n    function_names: \n      - upload_files\n    filenames:\n      - qanything_kernel/qanything_server/handler.py  \n    classification: slightly promising\n\n  - headline: Unchecked system calls in run_for_online.sh  \n    analysis: |\n      run_for_online.sh makes several system calls using untrusted input like $user_ip without validating it first. If an attacker can control this variable, they may be able to inject malicious commands.\n    cwe: CWE-78 \n    function_names:\n      - run_for_online.sh\n    filenames:\n      - scripts/run_for_online.sh\n    classification: slightly promising\n```\n\nThe codebase likely contains additional vulnerabilities, but these stood out as the most concerning from an initial review. I'd recommend a thorough security audit focused on injection flaws, access control issues, and unsafe handling of untrusted data. Let me know if you need any other details to investigate these leads further!",
+      "date": "2024-06-09T13:45:16.798897",
+      "usage": {
+        "prompt_tokens": 83423,
+        "completion_tokens": 956,
+        "cost": 1.323045
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Arbitrary command execution via untrusted user input in ocr_server.py",
+      "analysis": "In ocr_server.py, the ocr_request() function takes untrusted user input from the 'img64' parameter and passes it to cv2.imread() without validation. This could allow an attacker to pass malicious image data that exploits vulnerabilities in the image parsing libraries to execute arbitrary code.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "ocr_request"
+      ],
+      "filenames": [
+        "qanything_kernel/dependent_server/ocr_serve/ocr_server.py"
+      ]
+    },
+    {
+      "headline": "SQL injection in mysql_client.py",
+      "analysis": "Several functions in mysql_client.py construct SQL queries by directly interpolating untrusted user input into the query string using string formatting. For example, check_file_exist() inserts the kb_id and user_id parameters into the query without escaping or parameterization. This could allow an attacker to inject malicious SQL and gain unauthorized access to the database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "delete_knowledge_base",
+        "check_file_exist",
+        "check_file_exist_by_name"
+      ],
+      "filenames": [
+        "qanything_kernel/connector/database/mysql/mysql_client.py"
+      ]
+    },
+    {
+      "headline": "Server-side request forgery (SSRF) in MyRecursiveUrlLoader",
+      "analysis": "The MyRecursiveUrlLoader class takes a user-supplied URL, fetches it using requests.get(), and then recursively loads child links. It does not appear to validate the supplied URL, which could allow an attacker to supply a malicious URL that access internal services or makes requests to arbitrary external systems.\n",
+      "classification": "very promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "get_child_links_recursive"
+      ],
+      "filenames": [
+        "qanything_kernel/utils/loader/my_recursive_url_loader.py"
+      ]
+    },
+    {
+      "headline": "Missing authentication for API endpoints",
+      "analysis": "The API endpoints defined in sanic_api.py do not perform any authentication checks. An attacker could call these endpoints directly to access and modify user data without needing to login or have authorization.\n",
+      "classification": "very promising",
+      "cwe": "CWE-306",
+      "function_names": [
+        "new_knowledge_base",
+        "upload_files",
+        "list_kbs"
+      ],
+      "filenames": [
+        "qanything_kernel/qanything_server/sanic_api.py"
+      ]
+    },
+    {
+      "headline": "Insufficient validation of uploaded files",
+      "analysis": "The upload_files() function allows uploading arbitrary files without validating their type or contents. An attacker could upload malicious files like scripts or binaries which may be saved and executed by other parts of the application.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-434",
+      "function_names": [
+        "upload_files"
+      ],
+      "filenames": [
+        "qanything_kernel/qanything_server/handler.py"
+      ]
+    },
+    {
+      "headline": "Unchecked system calls in run_for_online.sh",
+      "analysis": "run_for_online.sh makes several system calls using untrusted input like $user_ip without validating it first. If an attacker can control this variable, they may be able to inject malicious commands.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "run_for_online.sh"
+      ],
+      "filenames": [
+        "scripts/run_for_online.sh"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 3
+      },
+      "mapping": {
+        "1": "CVE-2024-25722"
+      },
+      "vuln_dates": {
+        "CVE-2024-25722": "2024-02-11T05:15:08"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

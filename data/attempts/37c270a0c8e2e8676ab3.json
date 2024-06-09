@@ -1,0 +1,77 @@
+{
+  "commit": "1fe0ac9a0a9d417d09c2125b6fd2c1627beea186",
+  "repo_url": "https://github.com/phz76/rtspserver",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "9bc192c910bdc34886cd"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential SQL injection vulnerability in HandleDescribe method\n    analysis: |\n      The HandleDescribe method in the RtspConnection class builds an RTSP Describe response using\n      the RtspRequest::BuildDescribeRes method. This method takes a std::string parameter named 'sdp' \n      and inserts it directly into the response string using sprintf:\n      \n          size = rtsp_request_->BuildDescribeRes(res.get(), 4096, sdp.c_str());  \n      \n      If the 'sdp' string comes from an untrusted source like user input, it could contain malicious \n      SQL that gets executed when the response is sent, allowing SQL injection attacks.\n      To exploit this, an attacker would need to find a way to control the SDP data that gets passed in.\n    cwe: CWE-89\n    function_names:\n      - RtspConnection::HandleDescribe\n      - RtspRequest::BuildDescribeRes  \n    filenames:\n      - src/xop/RtspConnection.cpp\n      - src/xop/RtspMessage.cpp\n    classification: very promising\n\n  - headline: Potential stack overflow in RtspResponse::ParseResponse\n    analysis: |\n      The ParseResponse method in the RtspResponse class uses sscanf to parse fields from the input \n      buffer into fixed-size stack buffers:\n  \n          char session_id[50] = {0};\n          if (sscanf(ptr, \"%*[^:]: %s\", session_id) == 1)\n              session_ = session_id;\n\n      If the input contains a session ID longer than 49 characters, it will overflow the session_id buffer\n      on the stack, potentially allowing arbitrary code execution.\n      To exploit this, an attacker would need to send a malformed RTSP response with a long session ID.\n    cwe: CWE-121\n    function_names:\n      - RtspResponse::ParseResponse\n    filenames: \n      - src/xop/RtspMessage.cpp  \n    classification: slightly promising\n\n  - headline: Unbounded memory allocation in H264Source::HandleFrame  \n    analysis: |\n      The HandleFrame method in the H264Source class dynamically allocates buffers based on untrusted size values:\n\n          if(frame_size > MAX_RTP_PAYLOAD_SIZE) {\n            char FU_A[2] = {0}; \n            ...\n            while (frame_size + 3 > MAX_RTP_PAYLOAD_SIZE) {\n              ...\n              rtp_pkt.data.get()[RTP_TCP_HEAD_SIZE + RTP_HEADER_SIZE + 0] = FU[0];\n              rtp_pkt.data.get()[RTP_TCP_HEAD_SIZE + RTP_HEADER_SIZE + 1] = FU[1];\n              rtp_pkt.data.get()[RTP_TCP_HEAD_SIZE + RTP_HEADER_SIZE + 2] = FU[2];\n              memcpy(rtp_pkt.data.get()+RTP_TCP_HEAD_SIZE+RTP_HEADER_SIZE+3, frame_buf, MAX_RTP_PAYLOAD_SIZE-3);\n            }\n          }\n\n      The buffer sizes are derived from frame_size, which comes from the input AVFrame. By sending\n      a large enough frame, an attacker could make the function overcommit memory, potentially leading \n      to denial of service or memory corruption issues.\n    cwe: CWE-789\n    function_names:\n      - H264Source::HandleFrame\n    filenames:\n      - src/xop/H264Source.cpp\n    classification: slightly promising\n```",
+      "date": "2024-06-09T14:04:35.093999",
+      "usage": {
+        "prompt_tokens": 78671,
+        "completion_tokens": 892,
+        "cost": 1.246965
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential SQL injection vulnerability in HandleDescribe method",
+      "analysis": "The HandleDescribe method in the RtspConnection class builds an RTSP Describe response using\nthe RtspRequest::BuildDescribeRes method. This method takes a std::string parameter named 'sdp' \nand inserts it directly into the response string using sprintf:\n\n    size = rtsp_request_->BuildDescribeRes(res.get(), 4096, sdp.c_str());  \n\nIf the 'sdp' string comes from an untrusted source like user input, it could contain malicious \nSQL that gets executed when the response is sent, allowing SQL injection attacks.\nTo exploit this, an attacker would need to find a way to control the SDP data that gets passed in.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "RtspConnection::HandleDescribe",
+        "RtspRequest::BuildDescribeRes"
+      ],
+      "filenames": [
+        "src/xop/RtspConnection.cpp",
+        "src/xop/RtspMessage.cpp"
+      ]
+    },
+    {
+      "headline": "Potential stack overflow in RtspResponse::ParseResponse",
+      "analysis": "The ParseResponse method in the RtspResponse class uses sscanf to parse fields from the input \nbuffer into fixed-size stack buffers:\n\n    char session_id[50] = {0};\n    if (sscanf(ptr, \"%*[^:]: %s\", session_id) == 1)\n        session_ = session_id;\n\nIf the input contains a session ID longer than 49 characters, it will overflow the session_id buffer\non the stack, potentially allowing arbitrary code execution.\nTo exploit this, an attacker would need to send a malformed RTSP response with a long session ID.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-121",
+      "function_names": [
+        "RtspResponse::ParseResponse"
+      ],
+      "filenames": [
+        "src/xop/RtspMessage.cpp"
+      ]
+    },
+    {
+      "headline": "Unbounded memory allocation in H264Source::HandleFrame",
+      "analysis": "The HandleFrame method in the H264Source class dynamically allocates buffers based on untrusted size values:\n\n    if(frame_size > MAX_RTP_PAYLOAD_SIZE) {\n      char FU_A[2] = {0}; \n      ...\n      while (frame_size + 3 > MAX_RTP_PAYLOAD_SIZE) {\n        ...\n        rtp_pkt.data.get()[RTP_TCP_HEAD_SIZE + RTP_HEADER_SIZE + 0] = FU[0];\n        rtp_pkt.data.get()[RTP_TCP_HEAD_SIZE + RTP_HEADER_SIZE + 1] = FU[1];\n        rtp_pkt.data.get()[RTP_TCP_HEAD_SIZE + RTP_HEADER_SIZE + 2] = FU[2];\n        memcpy(rtp_pkt.data.get()+RTP_TCP_HEAD_SIZE+RTP_HEADER_SIZE+3, frame_buf, MAX_RTP_PAYLOAD_SIZE-3);\n      }\n    }\n\nThe buffer sizes are derived from frame_size, which comes from the input AVFrame. By sending\na large enough frame, an attacker could make the function overcommit memory, potentially leading \nto denial of service or memory corruption issues.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-789",
+      "function_names": [
+        "H264Source::HandleFrame"
+      ],
+      "filenames": [
+        "src/xop/H264Source.cpp"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-6888": "2023-12-17T01:15:27"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

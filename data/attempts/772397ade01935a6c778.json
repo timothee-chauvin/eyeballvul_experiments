@@ -1,0 +1,95 @@
+{
+  "commit": "020a6ad9444a39ccfc2e62afdce1bd21d439c85b",
+  "repo_url": "https://github.com/speedy11cz/mcrpx",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "0a86e045cc02416de9e1"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output identifying security vulnerabilities in the provided codebase:\n\n```yaml\nleads:\n  - headline: Potential arbitrary file write via ZipUtil.extractZip \n    analysis: |\n      The extractZip method in ZipUtil extracts entries from a provided zip file to a specified output directory. \n      However, it does not appear to validate or sanitize the entry paths. A malicious zip file could potentially contain\n      entries with relative paths like \"../somefile\" which would cause the file to be written outside the intended output\n      directory. This could allow overwriting arbitrary files if the process has sufficient permissions.\n    cwe: CWE-22\n    function_names:\n      - extractZip\n      - extractFile \n    filenames:\n      - common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java\n    classification: very promising\n\n  - headline: Potential arbitrary file write via ZipUtil.extractMinecraft\n    analysis: |  \n      Similar to the extractZip vulnerability, the extractMinecraft method also extracts entries from a jar file\n      to an output directory without validating the paths. While the paths are expected to start with \"assets/\", \n      there is no check to prevent path traversal. A specially crafted jar file could potentially contain entries \n      that use relative paths to escape the output directory and overwrite arbitrary files, if the process has permissions.\n    cwe: CWE-22\n    function_names:  \n      - extractMinecraft\n      - extractFile\n    filenames:\n      - common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java  \n    classification: very promising\n\n  - headline: Potential resource exhaustion via ZIP Bomb\n    analysis: |\n      The extractZip and extractMinecraft methods extract compressed entries from zip/jar files to an output directory.\n      However, there are no limits on the uncompressed size of the entries. An attacker could provide a small zip/jar \n      containing entries that decompress to an extremely large size (a \"zip bomb\"), causing disk space exhaustion or \n      out-of-memory errors when extracted. The getZipUncompressedSize method sums the uncompressed sizes but does not \n      impose any limit.\n    cwe: CWE-400\n    function_names:\n      - extractZip\n      - extractMinecraft  \n      - getZipUncompressedSize\n    filenames: \n      - common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java\n    classification: very promising\n\n  - headline: Missing filter for executable script extensions\n    analysis: |  \n      The code extracts files from zip archives without any filtering based on file extension. This could allow executable\n      script files like .bat, .exe, .sh, .php, etc to be extracted if present in the zip. Running these extracted scripts \n      could potentially allow remote code execution. File extensions should be validated to only allow expected file types.\n    cwe: CWE-434\n    function_names:\n      - extractZip\n      - extractMinecraft\n    filenames:  \n      - common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java\n    classification: slightly promising  \n```",
+      "date": "2024-06-09T14:53:00.295860",
+      "usage": {
+        "prompt_tokens": 19251,
+        "completion_tokens": 789,
+        "cost": 0.34794
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential arbitrary file write via ZipUtil.extractZip",
+      "analysis": "The extractZip method in ZipUtil extracts entries from a provided zip file to a specified output directory. \nHowever, it does not appear to validate or sanitize the entry paths. A malicious zip file could potentially contain\nentries with relative paths like \"../somefile\" which would cause the file to be written outside the intended output\ndirectory. This could allow overwriting arbitrary files if the process has sufficient permissions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "extractZip",
+        "extractFile"
+      ],
+      "filenames": [
+        "common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java"
+      ]
+    },
+    {
+      "headline": "Potential arbitrary file write via ZipUtil.extractMinecraft",
+      "analysis": "Similar to the extractZip vulnerability, the extractMinecraft method also extracts entries from a jar file\nto an output directory without validating the paths. While the paths are expected to start with \"assets/\", \nthere is no check to prevent path traversal. A specially crafted jar file could potentially contain entries \nthat use relative paths to escape the output directory and overwrite arbitrary files, if the process has permissions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "extractMinecraft",
+        "extractFile"
+      ],
+      "filenames": [
+        "common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java"
+      ]
+    },
+    {
+      "headline": "Potential resource exhaustion via ZIP Bomb",
+      "analysis": "The extractZip and extractMinecraft methods extract compressed entries from zip/jar files to an output directory.\nHowever, there are no limits on the uncompressed size of the entries. An attacker could provide a small zip/jar \ncontaining entries that decompress to an extremely large size (a \"zip bomb\"), causing disk space exhaustion or \nout-of-memory errors when extracted. The getZipUncompressedSize method sums the uncompressed sizes but does not \nimpose any limit.\n",
+      "classification": "very promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "extractZip",
+        "extractMinecraft",
+        "getZipUncompressedSize"
+      ],
+      "filenames": [
+        "common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java"
+      ]
+    },
+    {
+      "headline": "Missing filter for executable script extensions",
+      "analysis": "The code extracts files from zip archives without any filtering based on file extension. This could allow executable\nscript files like .bat, .exe, .sh, .php, etc to be extracted if present in the zip. Running these extracted scripts \ncould potentially allow remote code execution. File extensions should be validated to only allow expected file types.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-434",
+      "function_names": [
+        "extractZip",
+        "extractMinecraft"
+      ],
+      "filenames": [
+        "common/src/main/java/cz/speedy11/mcrpx/common/util/ZipUtil.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "0": "CVE-2024-24043",
+        "1": "CVE-2024-24043"
+      },
+      "vuln_dates": {
+        "CVE-2024-24043": "2024-03-19T07:15:09"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

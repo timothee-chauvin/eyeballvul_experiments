@@ -1,0 +1,79 @@
+{
+  "commit": "4cd4de4e3284b46f135752e0a8da7212af21c80f",
+  "repo_url": "https://github.com/kindspells/astro-shield",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "b8acd2c5287506865983"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cross-Site Scripting (XSS) via user-controlled JavaScript code execution in src/core.mjs\n    analysis: |\n      The `scriptReplacer` and `styleReplacer` functions in src/core.mjs take user-controlled `content` and include it directly in a script or style tag without proper sanitization or escaping. This allows an attacker to inject arbitrary JavaScript code that will get executed in the context of the application.\n      \n      For example, if `content` contains something like `</script><script>alert(1)</script>`, this would break out of the current script tag and execute the attacker's JavaScript.\n\n      To exploit this, an attacker would need to find a way to control the `content` variable, likely by injecting malicious JavaScript into an external script or style that gets processed by this code.\n    cwe: CWE-79\n    function_names:\n      - scriptReplacer\n      - styleReplacer  \n    filenames:\n      - src/core.mjs\n    classification: very promising\n\n  - headline: Command Injection via sriHashesModule path in src/main.mjs \n    analysis: |\n      The `sriHashesModule` option is passed from the plugin config into `getAstroBuildDone` and then to `processStaticFiles` without any validation or sanitization.\n      \n      If an attacker can control the value of `sriHashesModule`, they could potentially inject shell metacharacters and execute arbitrary commands when this path is used in file system operations like `readFile`, `writeFile`, etc.\n\n      For example, setting `sriHashesModule` to something like `; rm -rf /` would delete files on the server when `processStaticFiles` tries to read/write this \"path\".\n    cwe: CWE-78\n    function_names:\n      - getAstroBuildDone\n      - processStaticFiles\n    filenames:\n      - src/main.mjs\n      - src/core.mjs\n    classification: slightly promising\n\n  - headline: Directory Traversal via publicDir in e2e test fixtures\n    analysis: |\n      Several of the `astro.config.mjs` files in the e2e test fixtures construct file paths by concatenating `rootDir` with relative paths like `src/generated/sri.mjs`.\n\n      `rootDir` is set to `new URL('.', import.meta.url).pathname`. Depending on how the tests are run and what `import.meta.url` is set to, an attacker may be able to manipulate this to perform a directory traversal and access files outside the intended directory.\n\n      For example, if an attacker could set `import.meta.url` to `file:///tmp/exploit/astro.config.mjs`, then `rootDir` would be `/tmp/exploit`. Accessing `/tmp/exploit/../../../etc/passwd` would then traverse out of `rootDir` and access sensitive files.\n    cwe: CWE-22\n    function_names: []\n    filenames:\n      - e2e/fixtures/hybrid/astro.config.mjs\n      - e2e/fixtures/hybrid2/astro.config.mjs \n      - e2e/fixtures/hybrid3/astro.config.mjs\n      - e2e/fixtures/static/astro.config.mjs\n    classification: slightly promising\n```",
+      "date": "2024-06-09T13:05:03.979347",
+      "usage": {
+        "prompt_tokens": 17982,
+        "completion_tokens": 795,
+        "cost": 0.329355
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cross-Site Scripting (XSS) via user-controlled JavaScript code execution in src/core.mjs",
+      "analysis": "The scriptReplacer and styleReplacer functions in src/core.mjs take user-controlled content and include it directly in a script or style tag without proper sanitization or escaping. This allows an attacker to inject arbitrary JavaScript code that will get executed in the context of the application.\n\nFor example, if content contains something like </script><script>alert(1)</script>, this would break out of the current script tag and execute the attacker's JavaScript.\n\nTo exploit this, an attacker would need to find a way to control the content variable, likely by injecting malicious JavaScript into an external script or style that gets processed by this code.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "scriptReplacer",
+        "styleReplacer"
+      ],
+      "filenames": [
+        "src/core.mjs"
+      ]
+    },
+    {
+      "headline": "Command Injection via sriHashesModule path in src/main.mjs",
+      "analysis": "The sriHashesModule option is passed from the plugin config into getAstroBuildDone and then to processStaticFiles without any validation or sanitization.\n\nIf an attacker can control the value of sriHashesModule, they could potentially inject shell metacharacters and execute arbitrary commands when this path is used in file system operations like readFile, writeFile, etc.\n\nFor example, setting sriHashesModule to something like ; rm -rf / would delete files on the server when processStaticFiles tries to read/write this \"path\".\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "getAstroBuildDone",
+        "processStaticFiles"
+      ],
+      "filenames": [
+        "src/main.mjs",
+        "src/core.mjs"
+      ]
+    },
+    {
+      "headline": "Directory Traversal via publicDir in e2e test fixtures",
+      "analysis": "Several of the astro.config.mjs files in the e2e test fixtures construct file paths by concatenating rootDir with relative paths like src/generated/sri.mjs.\n\nrootDir is set to new URL('.', import.meta.url).pathname. Depending on how the tests are run and what import.meta.url is set to, an attacker may be able to manipulate this to perform a directory traversal and access files outside the intended directory.\n\nFor example, if an attacker could set import.meta.url to file:///tmp/exploit/astro.config.mjs, then rootDir would be /tmp/exploit. Accessing /tmp/exploit/../../../etc/passwd would then traverse out of rootDir and access sensitive files.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [],
+      "filenames": [
+        "e2e/fixtures/hybrid/astro.config.mjs",
+        "e2e/fixtures/hybrid2/astro.config.mjs",
+        "e2e/fixtures/hybrid3/astro.config.mjs"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-30250": "2024-04-04T15:15:39",
+        "CVE-2024-29896": "2024-03-28T13:15:47"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

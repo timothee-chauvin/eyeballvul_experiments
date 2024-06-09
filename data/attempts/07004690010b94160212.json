@@ -1,0 +1,115 @@
+{
+  "commit": "f229c1e8e0c5951213cf3652cfa32c2b7d10bbb8",
+  "repo_url": "https://github.com/idurar/idurar-erp-crm",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "a7346cd23da9c109d4d3"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Incorrect Validation of Array Index with Uncontrolled Find Operations\n    analysis: |\n      The code performs find operations on MongoDB models using user input without proper validation or sanitization. For example, in controllers/erpControllers/adminController.js, the search function directly uses req.query fields in the MongoDB find query without validating or sanitizing the input. This could allow an attacker to inject malicious query operators and access unintended records or cause DoS conditions.\n      \n      Similarly, other controller files like clientController.js, invoiceController.js, etc. also use unvalidated user input in MongoDB find operations, leading to potential injection vulnerabilities.\n    cwe: CWE-129\n    function_names:\n      - search\n      - filter \n    filenames:\n      - controllers/erpControllers/adminController.js\n      - controllers/erpControllers/clientController.js  \n      - controllers/erpControllers/invoiceController.js\n    classification: very promising\n\n  - headline: Mass Assignment Vulnerability \n    analysis: |\n      Many of the update functions in the controller files use req.body directly to update MongoDB records without any whitelisting of permitted fields. This leads to a mass assignment vulnerability where a malicious user can set any field in the database record, including sensitive or admin-only fields.\n\n      For example, the update function in adminController.js sets fields like role and email directly from req.body. An attacker could exploit this to elevate privileges or set arbitrary email.\n    cwe: CWE-915\n    function_names:\n      - update\n    filenames:\n      - controllers/erpControllers/adminController.js\n    classification: very promising\n\n  - headline: Insecure JSON Web Token Implementation\n    analysis: |\n      The JSON Web Token (JWT) implementation in authJwtController.js has some insecure practices:\n      \n      1. The JWT secret is hardcoded in the .env file. This secret should be randomly generated per environment and kept secure.\n      \n      2. The code does not validate the signature algorithm used in JWTs. An attacker can alter the algorithm to 'none' and bypass signature verification.\n\n      3. There is no validation if the token is expired, allowing usage of expired JWTs.\n    cwe: CWE-347\n    function_names:\n      - isValidAdminToken  \n    filenames: \n      - controllers/erpControllers/authJwtController.js  \n    classification: very promising\n\n  - headline: Missing SSL/TLS Encryption for Sensitive Cookies\n    analysis: | \n      The code sets sensitive authentication cookies without the secure flag in authJwtController.js. This could allow the cookie to be transmitted over unencrypted connections, leading to interception and hijacking of admin sessions.\n\n      It also sets the sameSite attribute to 'none' without checking if the connection is over SSL/TLS, allowing the cookie to be sent cross-site and enabling CSRF attacks.\n    cwe: CWE-614\n    function_names:\n      - login\n    filenames:\n      - controllers/erpControllers/authJwtController.js\n    classification: very promising\n\n  - headline: Insufficient Password Strength Requirements\n    analysis: |\n      The code allows admins to set very weak passwords with only a minimum length requirement of 8 characters. There are no complexity requirements enforced.\n\n      Short and simple passwords are susceptible to brute-force and dictionary attacks. Strong password policies should be enforced.\n    cwe: CWE-521\n    function_names:\n      - createadminController.js\n    filenames: \n      - controllers/erpControllers/adminController.js\n    classification: slightly promising\n\n  - headline: Cross-Site Scripting (XSS) via Unsanitized File/Folder Names\n    analysis: |  \n      The code generates PDF file names and folder names using unsanitized IDs without any validation or escaping. For example, in invoiceController.js and quoteController.js, the fileId is constructed using unsanitized result._id.\n\n      If an attacker can control the ID value, they could inject malicious JavaScript code that gets executed when a victim accesses the generated PDF link or file path.\n    cwe: CWE-79\n    function_names:\n      - create\n    filenames:\n      - controllers/erpControllers/invoiceController.js\n      - controllers/erpControllers/quoteController.js  \n    classification: slightly promising\n\n```\n\nThe analysis focuses on the most critical issues I could identify based on CWE classification. There may be additional lower-severity issues that require a deeper review. Let me know if you would like me to investigate any areas further!",
+      "date": "2024-06-09T12:33:16.831748",
+      "usage": {
+        "prompt_tokens": 80488,
+        "completion_tokens": 1116,
+        "cost": 1.29102
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Incorrect Validation of Array Index with Uncontrolled Find Operations",
+      "analysis": "The code performs find operations on MongoDB models using user input without proper validation or sanitization. For example, in controllers/erpControllers/adminController.js, the search function directly uses req.query fields in the MongoDB find query without validating or sanitizing the input. This could allow an attacker to inject malicious query operators and access unintended records or cause DoS conditions.\n\nSimilarly, other controller files like clientController.js, invoiceController.js, etc. also use unvalidated user input in MongoDB find operations, leading to potential injection vulnerabilities.\n",
+      "classification": "very promising",
+      "cwe": "CWE-129",
+      "function_names": [
+        "search",
+        "filter"
+      ],
+      "filenames": [
+        "controllers/erpControllers/adminController.js",
+        "controllers/erpControllers/clientController.js",
+        "controllers/erpControllers/invoiceController.js"
+      ]
+    },
+    {
+      "headline": "Mass Assignment Vulnerability",
+      "analysis": "Many of the update functions in the controller files use req.body directly to update MongoDB records without any whitelisting of permitted fields. This leads to a mass assignment vulnerability where a malicious user can set any field in the database record, including sensitive or admin-only fields.\n\nFor example, the update function in adminController.js sets fields like role and email directly from req.body. An attacker could exploit this to elevate privileges or set arbitrary email.\n",
+      "classification": "very promising",
+      "cwe": "CWE-915",
+      "function_names": [
+        "update"
+      ],
+      "filenames": [
+        "controllers/erpControllers/adminController.js"
+      ]
+    },
+    {
+      "headline": "Insecure JSON Web Token Implementation",
+      "analysis": "The JSON Web Token (JWT) implementation in authJwtController.js has some insecure practices:\n\n1. The JWT secret is hardcoded in the .env file. This secret should be randomly generated per environment and kept secure.\n\n2. The code does not validate the signature algorithm used in JWTs. An attacker can alter the algorithm to 'none' and bypass signature verification.\n\n3. There is no validation if the token is expired, allowing usage of expired JWTs.\n",
+      "classification": "very promising",
+      "cwe": "CWE-347",
+      "function_names": [
+        "isValidAdminToken"
+      ],
+      "filenames": [
+        "controllers/erpControllers/authJwtController.js"
+      ]
+    },
+    {
+      "headline": "Missing SSL/TLS Encryption for Sensitive Cookies",
+      "analysis": "The code sets sensitive authentication cookies without the secure flag in authJwtController.js. This could allow the cookie to be transmitted over unencrypted connections, leading to interception and hijacking of admin sessions.\n\nIt also sets the sameSite attribute to 'none' without checking if the connection is over SSL/TLS, allowing the cookie to be sent cross-site and enabling CSRF attacks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-614",
+      "function_names": [
+        "login"
+      ],
+      "filenames": [
+        "controllers/erpControllers/authJwtController.js"
+      ]
+    },
+    {
+      "headline": "Insufficient Password Strength Requirements",
+      "analysis": "The code allows admins to set very weak passwords with only a minimum length requirement of 8 characters. There are no complexity requirements enforced.\n\nShort and simple passwords are susceptible to brute-force and dictionary attacks. Strong password policies should be enforced.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-521",
+      "function_names": [
+        "createadminController.js"
+      ],
+      "filenames": [
+        "controllers/erpControllers/adminController.js"
+      ]
+    },
+    {
+      "headline": "Cross-Site Scripting (XSS) via Unsanitized File/Folder Names",
+      "analysis": "The code generates PDF file names and folder names using unsanitized IDs without any validation or escaping. For example, in invoiceController.js and quoteController.js, the fileId is constructed using unsanitized result._id.\n\nIf an attacker can control the ID value, they could inject malicious JavaScript code that gets executed when a victim accesses the generated PDF link or file path.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "create"
+      ],
+      "filenames": [
+        "controllers/erpControllers/invoiceController.js",
+        "controllers/erpControllers/quoteController.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 4
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-52265": "2023-12-30T23:15:42"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

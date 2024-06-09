@@ -1,0 +1,90 @@
+{
+  "commit": "437e6dad7a67c3ab2b129024a74a6b1d51e79823",
+  "repo_url": "https://github.com/nbluis/static-server",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "1c2d0d7cc4e8cc952d31"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Use of unvalidated input in path operations\n    analysis: |\n      The requestHandler function in server.js takes the request URL path, decodes it, and performs file system operations based on it without validating the path. This could allow an attacker to craft malicious paths containing '..' or other special characters to access files outside the intended root directory.\n\n      For example, a request to 'http://server/%2e%2e/%2e%2e/etc/passwd' would result in path traversal and potentially expose sensitive files on the server.\n\n      While there is a validPath check, it is performed after the decodeURIComponent which could still allow some bypasses depending on the Node.js version and OS.\n    cwe: CWE-22\n    function_names:\n      - requestHandler\n      - handler  \n    filenames:\n      - server.js\n    classification: very promising\n\n  - headline: Symbolic link following\n    analysis: |\n      The getFileStats function in server.js has an option to follow symbolic links (if the 'followSymlink' option is enabled on the server). Following user-controlled symlinks can allow an attacker to escape the root directory and access sensitive files.\n      \n      For example, an attacker could create a symlink that points to a sensitive file like '/etc/passwd', then request that symlink. If the server follows it, the actual file contents would be returned.\n    cwe: CWE-59\n    function_names:\n      - getFileStats\n    filenames:\n      - server.js  \n    classification: very promising\n\n  - headline: Insufficient validation of Range headers\n    analysis: |\n      The parseRanges function in server.js parses the Range HTTP headers to support partial content requests. However, the parsing is quite permissive and does not check for excessively large ranges, overlapping ranges, etc.\n      \n      Unconstrained Range headers can potentially cause the server to waste resources assembling huge responses, result in out-of-bounds reads, or expose unintended parts of a file.\n    cwe: CWE-20\n    function_names:  \n      - parseRanges\n    filenames:\n      - server.js\n    classification: slightly promising\n\n  - headline: Unbounded memory allocation in range handling \n    analysis: |\n      If a request specifies multiple ranges, the sendFile function will read and concatenate all the requested parts into a single response buffer. \n      \n      For well-behaved clients this is fine, but a malicious client could specify an excessive number of ranges to cause the server to allocate gigabytes of memory and potentially crash.\n      \n      The aggregated size of requested ranges should be checked against a reasonable limit before allocating memory.\n    cwe: CWE-789\n    function_names:\n      - sendFile\n    filenames:  \n      - server.js\n    classification: slightly promising\n```",
+      "date": "2024-06-09T13:42:39.011626",
+      "usage": {
+        "prompt_tokens": 10734,
+        "completion_tokens": 673,
+        "cost": 0.211485
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of unvalidated input in path operations",
+      "analysis": "The requestHandler function in server.js takes the request URL path, decodes it, and performs file system operations based on it without validating the path. This could allow an attacker to craft malicious paths containing '..' or other special characters to access files outside the intended root directory.\n\nFor example, a request to 'http://server/%2e%2e/%2e%2e/etc/passwd' would result in path traversal and potentially expose sensitive files on the server.\n\nWhile there is a validPath check, it is performed after the decodeURIComponent which could still allow some bypasses depending on the Node.js version and OS.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "requestHandler",
+        "handler"
+      ],
+      "filenames": [
+        "server.js"
+      ]
+    },
+    {
+      "headline": "Symbolic link following",
+      "analysis": "The getFileStats function in server.js has an option to follow symbolic links (if the 'followSymlink' option is enabled on the server). Following user-controlled symlinks can allow an attacker to escape the root directory and access sensitive files.\n\nFor example, an attacker could create a symlink that points to a sensitive file like '/etc/passwd', then request that symlink. If the server follows it, the actual file contents would be returned.\n",
+      "classification": "very promising",
+      "cwe": "CWE-59",
+      "function_names": [
+        "getFileStats"
+      ],
+      "filenames": [
+        "server.js"
+      ]
+    },
+    {
+      "headline": "Insufficient validation of Range headers",
+      "analysis": "The parseRanges function in server.js parses the Range HTTP headers to support partial content requests. However, the parsing is quite permissive and does not check for excessively large ranges, overlapping ranges, etc.\n\nUnconstrained Range headers can potentially cause the server to waste resources assembling huge responses, result in out-of-bounds reads, or expose unintended parts of a file.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "parseRanges"
+      ],
+      "filenames": [
+        "server.js"
+      ]
+    },
+    {
+      "headline": "Unbounded memory allocation in range handling",
+      "analysis": "If a request specifies multiple ranges, the sendFile function will read and concatenate all the requested parts into a single response buffer. \n\nFor well-behaved clients this is fine, but a malicious client could specify an excessive number of ranges to cause the server to allocate gigabytes of memory and potentially crash.\n\nThe aggregated size of requested ranges should be checked against a reasonable limit before allocating memory.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-789",
+      "function_names": [
+        "sendFile"
+      ],
+      "filenames": [
+        "server.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "0": "CVE-2023-26152"
+      },
+      "vuln_dates": {
+        "CVE-2023-26152": "2023-10-03T05:15:50"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

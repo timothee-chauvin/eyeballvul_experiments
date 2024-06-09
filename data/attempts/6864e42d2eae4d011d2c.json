@@ -1,0 +1,82 @@
+{
+  "commit": "4d2b65e34c6d01800273009d60756205c08cb0c3",
+  "repo_url": "https://github.com/icewhaletech/casaos-userservice",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "0060cb6f10c91c1a2599"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Arbitrary command injection in cleanup scripts\n    analysis: |\n      The cleanup scripts in build/sysroot/usr/share/casaos/cleanup/service.d/user-service read user input\n      with `read -r input` and then use that input in a case statement without properly sanitizing it first. \n      This could allow an attacker to break out of the case statement and inject arbitrary commands.\n\n      For example, if the attacker entered \"; malicious command\" at the prompt, the \"; malicious command\" \n      part would be executed as a separate command after the case statement, allowing arbitrary code execution.\n\n      The scripts also call rm -rf on user-supplied paths, which could potentially be abused to delete\n      unintended files or directories.\n    cwe: CWE-78\n    function_names:\n      - onCtrlC\n    filenames:\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/jammy/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/arch/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/debian/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/debian/bullseye/cleanup-user-service.sh\n    classification: very promising\n  - headline: Potential path traversal via CASA_DB_PATH\n    analysis: |\n      The cleanup scripts set CASA_DB_PATH by extracting it from the configuration file using grep. \n      The extracted value is then used to construct file paths for deletion with rm.\n\n      However, there is no validation on the value of CASA_DB_PATH. If an attacker could control\n      the contents of the configuration file, they may be able to include relative paths containing\n      \"../\" to traverse outside the intended directory and have rm delete unintended files.\n    cwe: CWE-22\n    function_names:\n      - Show\n    filenames:\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/jammy/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/arch/cleanup-user-service.sh \n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/debian/cleanup-user-service.sh\n      - build/sysroot/usr/share/casaos/cleanup/service.d/user-service/debian/bullseye/cleanup-user-service.sh\n    classification: slightly promising\n  - headline: Using curl to download migration tools over HTTP\n    analysis: |  \n      The migration script build/scripts/migration/script.d/02-migrate-user-service.sh uses curl to\n      download migration tool archives over HTTP without TLS. The archives are extracted and the tools\n      inside are executed.\n      \n      An attacker able to intercept this HTTP traffic, e.g. on an insecure network, could perform a \n      man-in-the-middle attack to send a malicious archive containing executables that would then run\n      with the privileges of the user running this migration script.\n    cwe: CWE-829\n    function_names: \n      - __get_download_domain  \n    filenames:\n      - build/scripts/migration/script.d/02-migrate-user-service.sh\n    classification: very promising\n```",
+      "date": "2024-06-09T12:31:50.439495",
+      "usage": {
+        "prompt_tokens": 14131,
+        "completion_tokens": 947,
+        "cost": 0.28299
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Arbitrary command injection in cleanup scripts",
+      "analysis": "The cleanup scripts in build/sysroot/usr/share/casaos/cleanup/service.d/user-service read user input\nwith read -r input and then use that input in a case statement without properly sanitizing it first. \nThis could allow an attacker to break out of the case statement and inject arbitrary commands.\n\nFor example, if the attacker entered \"; malicious command\" at the prompt, the \"; malicious command\" \npart would be executed as a separate command after the case statement, allowing arbitrary code execution.\n\nThe scripts also call rm -rf on user-supplied paths, which could potentially be abused to delete\nunintended files or directories.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "onCtrlC"
+      ],
+      "filenames": [
+        "build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/cleanup-user-service.sh",
+        "build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/jammy/cleanup-user-service.sh",
+        "build/sysroot/usr/share/casaos/cleanup/service.d/user-service/arch/cleanup-user-service.sh"
+      ]
+    },
+    {
+      "headline": "Potential path traversal via CASA_DB_PATH",
+      "analysis": "The cleanup scripts set CASA_DB_PATH by extracting it from the configuration file using grep. \nThe extracted value is then used to construct file paths for deletion with rm.\n\nHowever, there is no validation on the value of CASA_DB_PATH. If an attacker could control\nthe contents of the configuration file, they may be able to include relative paths containing\n\"../\" to traverse outside the intended directory and have rm delete unintended files.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "Show"
+      ],
+      "filenames": [
+        "build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/cleanup-user-service.sh",
+        "build/sysroot/usr/share/casaos/cleanup/service.d/user-service/ubuntu/jammy/cleanup-user-service.sh",
+        "build/sysroot/usr/share/casaos/cleanup/service.d/user-service/arch/cleanup-user-service.sh"
+      ]
+    },
+    {
+      "headline": "Using curl to download migration tools over HTTP",
+      "analysis": "The migration script build/scripts/migration/script.d/02-migrate-user-service.sh uses curl to\ndownload migration tool archives over HTTP without TLS. The archives are extracted and the tools\ninside are executed.\n\nAn attacker able to intercept this HTTP traffic, e.g. on an insecure network, could perform a \nman-in-the-middle attack to send a malicious archive containing executables that would then run\nwith the privileges of the user running this migration script.\n",
+      "classification": "very promising",
+      "cwe": "CWE-829",
+      "function_names": [
+        "__get_download_domain"
+      ],
+      "filenames": [
+        "build/scripts/migration/script.d/02-migrate-user-service.sh"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 4,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-28232": "2024-04-01T17:15:45",
+        "CVE-2024-24766": "2024-03-06T19:15:07",
+        "CVE-2024-24767": "2024-03-06T18:15:46",
+        "CVE-2024-24765": "2024-03-06T18:15:46"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

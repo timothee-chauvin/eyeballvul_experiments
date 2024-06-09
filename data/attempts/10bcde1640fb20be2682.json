@@ -1,0 +1,40 @@
+{
+  "commit": "9ae014027d2db7df7d3c958342be236ec34ed952",
+  "repo_url": "https://github.com/jenkinsci/google-login-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "3d40280aafd2d2e3b607"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper validation of state in OAuthSession\n    analysis: |\n      The OAuthSession class uses a randomly generated UUID as the \"state\" parameter in the OAuth flow to prevent CSRF attacks. However, the state validation in the doFinishLogin method is flawed:\n\n      ```java\n      if (! uuid.equals(responseUrl.getState())) {\n          return HttpResponses.error(401, \"State is invalid\");\n      }\n      ```\n\n      This validation can be bypassed by an attacker by omitting the state parameter entirely in the response URL. The responseUrl.getState() call will return null in that case, which will not equal the expected random UUID, but the code does not check for a null value before performing the equals() check. Therefore, an attacker could forge a response URL without a state parameter to bypass the CSRF protection.\n    cwe: CWE-352\n    function_names:\n      - OAuthSession.doFinishLogin\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/googlelogin/OAuthSession.java\n    classification: very promising\n\n  - headline: Unsafe domain validation in GoogleOAuth2SecurityRealm\n    analysis: |\n      The GoogleOAuth2SecurityRealm class allows restricting access to users belonging to a specific Google Apps domain. The domain is configured as a comma-separated list of allowed domains. The isDomainValid method checks if the user's domain matches any of the configured allowed domains:\n\n      ```java\n      StringTokenizer tokenizer = new StringTokenizer(domain, \",\");\n      while (tokenizer.hasMoreElements()) {\n          if (tokenizer.nextToken().equals(tokenDomain)) {\n              return true;\n          }\n      }\n      ```\n\n      However, the tokenizer.nextToken() call does not trim the extracted domain token. Therefore, if the list of allowed domains contains any leading/trailing spaces, an attacker could potentially bypass the domain validation check. For example, if the allowed domains are configured as \"example.com, foobar.com\", an attacker could pass \"foobar.com \" (with a trailing space) as their domain and it would be accepted as valid.\n    cwe: CWE-20\n    function_names:\n      - GoogleOAuth2SecurityRealm.isDomainValid\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/googlelogin/GoogleOAuth2SecurityRealm.java  \n    classification: very promising\n\n  - headline: SSRF vulnerability in GoogleOAuth2SecurityRealm\n    analysis: |\n      The GoogleOAuth2SecurityRealm class makes an HTTP request to the Google userinfo endpoint to fetch details about the authenticated user:\n\n      ```java\n      GenericUrl url = new GenericUrl(\"https://www.googleapis.com/userinfo/v2/me\");\n      HttpRequest request = requestFactory.buildGetRequest(url);\n      GoogleUserInfo info = request.execute().parseAs(GoogleUserInfo.class);\n      ```\n\n      The URL being accessed is hardcoded, but the request is made using an HttpRequestFactory that is initialized with custom request initializers from the OAuth credential:\n\n      ```java  \n      HttpRequestFactory requestFactory =\n        HTTP_TRANSPORT.createRequestFactory(new HttpRequestInitializer() {\n          public void initialize(HttpRequest request) throws IOException {\n            credential.initialize(request);\n            request.setParser(new JsonObjectParser(JSON_FACTORY));\n          }\n      });\n      ```\n\n      If the `credential.initialize` method allows overriding the request URL, this could lead to a SSRF vulnerability where an attacker controlled URL could be accessed by Jenkins during the login process. More details about the `Credential` class implementation are needed to determine the full impact.\n    cwe: CWE-918\n    function_names:\n      - GoogleOAuth2SecurityRealm.doCommenceLogin\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/googlelogin/GoogleOAuth2SecurityRealm.java\n    classification: slightly promising\n```",
+      "date": "2024-06-09T12:49:08.823770",
+      "usage": {
+        "prompt_tokens": 9066,
+        "completion_tokens": 956,
+        "cost": 0.20769
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 3,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-41936": "2023-09-06T13:15:10",
+        "CVE-2018-1000173": "2018-05-08T15:29:00",
+        "CVE-2018-1000174": "2018-05-08T15:29:00"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

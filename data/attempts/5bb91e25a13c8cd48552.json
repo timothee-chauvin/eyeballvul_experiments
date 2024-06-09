@@ -1,0 +1,78 @@
+{
+  "commit": "8de9efa2e22a7efa544e8b6fc9807c9d1745b732",
+  "repo_url": "https://github.com/jsonata-js/jsonata",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "a2bf477349cb5f1edcd7"
+  ],
+  "responses": [
+    {
+      "content": "Based on the provided codebase, here are the potential security vulnerabilities I identified:\n\n```yaml\nleads:\n  - headline: Unvalidated user input used in regular expressions\n    analysis: |\n      The codebase allows user-provided regular expression patterns to be executed via the jsonata() function and regex functions like $match, $split, etc.\n      User input is not validated before being used to construct RegExp objects, which could allow injection of malicious regex patterns leading to regular expression denial of service (ReDoS) attacks.\n    cwe: CWE-20   \n    function_names:\n      - jsonata\n      - match\n      - evaluateMatcher\n    filenames:\n      - src/jsonata.js\n      - src/functions.js\n    classification: very promising\n\n  - headline: Potential arbitrary code execution via eval() \n    analysis: |  \n      The $eval() function allows evaluating arbitrary JSONata expressions provided as a string argument.\n      If unfiltered user input is allowed into $eval(), it could enable arbitrary code execution in the context of the application using the jsonata library.\n    cwe: CWE-94\n    function_names:\n      - functionEval\n    filenames:\n      - src/functions.js  \n    classification: very promising\n\n  - headline: Unvalidated URLs passed to HTTP request functions\n    analysis: |\n      The httpget() function used in some test cases does not validate or sanitize the provided URL before using it to make an HTTP request using the request library. \n      This could allow malicious URLs to be passed in, enabling server-side request forgery (SSRF) attacks against internal network resources.\n    cwe: CWE-918\n    function_names:\n      - httpget\n    filenames:\n      - test/async-function.js\n    classification: slightly promising\n```\n\nThe most severe issues are:\n1. Potential for ReDoS attacks via unvalidated regex patterns \n2. Risk of arbitrary code execution through unsafe use of eval\n3. Possible SSRF if unfiltered URLs are passed to httpget\n\nI recommend validating and sanitizing all user-provided input used in regular expressions, avoiding use of eval() with unfiltered input, and validating URLs passed to functions that make HTTP requests.\n\nLet me know if you need any clarification or have additional questions!",
+      "date": "2024-06-09T12:57:59.916910",
+      "usage": {
+        "prompt_tokens": 100878,
+        "completion_tokens": 536,
+        "cost": 1.55337
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unvalidated user input used in regular expressions",
+      "analysis": "The codebase allows user-provided regular expression patterns to be executed via the jsonata() function and regex functions like $match, $split, etc.\nUser input is not validated before being used to construct RegExp objects, which could allow injection of malicious regex patterns leading to regular expression denial of service (ReDoS) attacks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "jsonata",
+        "match",
+        "evaluateMatcher"
+      ],
+      "filenames": [
+        "src/jsonata.js",
+        "src/functions.js"
+      ]
+    },
+    {
+      "headline": "Potential arbitrary code execution via eval()",
+      "analysis": "The $eval() function allows evaluating arbitrary JSONata expressions provided as a string argument.\nIf unfiltered user input is allowed into $eval(), it could enable arbitrary code execution in the context of the application using the jsonata library.\n",
+      "classification": "very promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "functionEval"
+      ],
+      "filenames": [
+        "src/functions.js"
+      ]
+    },
+    {
+      "headline": "Unvalidated URLs passed to HTTP request functions",
+      "analysis": "The httpget() function used in some test cases does not validate or sanitize the provided URL before using it to make an HTTP request using the request library. \nThis could allow malicious URLs to be passed in, enabling server-side request forgery (SSRF) attacks against internal network resources.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "httpget"
+      ],
+      "filenames": [
+        "test/async-function.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-27307": "2024-03-06T20:15:47"
+      },
+      "scoring_model": "gpt-4o-2024-05-13",
+      "type": "llm",
+      "instruction_template_hash": "8998f09cf57fca8a6e03"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
