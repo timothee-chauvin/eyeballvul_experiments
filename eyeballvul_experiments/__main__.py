@@ -296,15 +296,15 @@ def write_cache(cache: dict[str, int]) -> None:
 
 async def main():
     models = [
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
         "claude-3-haiku-20240307",
-        "gpt-4-turbo-2024-04-09",
+        "claude-3-sonnet-20240229",
+        "claude-3-opus-20240229",
         "gpt-4o-2024-05-13",
+        "gpt-4-turbo-2024-04-09",
     ]
     cutoff_date = "2023-09-01"
     max_size_bytes = 600_000
-    cost_limit = 100
+    cost_limit = 500
 
     cache = read_cache()
 
