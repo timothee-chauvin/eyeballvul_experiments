@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 
 import yaml
-from eyeballvul import EyeballvulScore, compute_score
+from eyeballvul import EyeballvulScore, acompute_score
 from pydantic import BaseModel
 from typeguard import typechecked
 
@@ -68,14 +68,14 @@ class Attempt(BaseModel):
                 logging.warning(e)
         return leads
 
-    def add_score(self):
+    async def add_score(self):
         """
         Compute and add a score to `self.scores`.
 
         Only leads marked as `very promising` are considered.
         """
         kept_leads = [lead for lead in self.leads if lead.classification == "very promising"]
-        score = compute_score(self.commit, [lead.format() for lead in kept_leads])
+        score = await acompute_score(self.commit, [lead.format() for lead in kept_leads])
         self.scores.append(score)
 
     def cost(self):

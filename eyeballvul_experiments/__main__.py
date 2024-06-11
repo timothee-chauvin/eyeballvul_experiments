@@ -187,7 +187,7 @@ async def do_attempt(
         attempt = await query_model(model, revision, repo_dir, max_size_bytes)
         attempt.log()  # in case something goes wrong later...
         attempt.parse()
-        attempt.add_score()
+        await attempt.add_score()
         attempt.log()
         return (attempt.cost(), {})
     except RepositoryTooLargeError as e:
