@@ -294,7 +294,7 @@ def write_cache(cache: dict[str, int]) -> None:
         f.write("\n")
 
 
-async def main():
+async def run_models():
     models = [
         "claude-3-haiku-20240307",
         "claude-3-sonnet-20240229",
@@ -334,6 +334,10 @@ async def main():
         if total_cost > cost_limit:
             logging.info(f"Cost limit reached: ${total_cost:.2f}")
             return
+
+
+async def main():
+    await run_models()
 
 
 if __name__ == "__main__":
