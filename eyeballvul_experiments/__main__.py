@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from eyeballvul import EyeballvulRevision, get_revisions
+from eyeballvul.score import instruction_template_hash
 from typeguard import typechecked
 
 from eyeballvul_experiments.attempt import Attempt, SimpleResponse
@@ -336,8 +337,29 @@ async def run_models():
             return
 
 
+async def re_score_all(add_if_exists: bool = False):
+    """Re-score all attempts, unless those that have already been scored with the current
+    instruction template hash if `add_if_exists` is False."""
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    total = len(attempt_filenames)
+    for i, attempt_filename in enumerate(attempt_filenames):
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+            if not add_if_exists and any(
+                score.instruction_template_hash == instruction_template_hash
+                for score in attempt.scores
+            ):
+                logging.info(
+                    f"({i+1}/{total}) Skipping {attempt.get_hash()} because it has already been scored."
+                )
+            else:
+                logging.info(f"({i+1}/{total}) Scoring {attempt.get_hash()}...")
+                await attempt.add_score()
+                attempt.log()
+
+
 async def main():
-    await run_models()
+    await re_score_all(add_if_exists=False)
 
 
 if __name__ == "__main__":
