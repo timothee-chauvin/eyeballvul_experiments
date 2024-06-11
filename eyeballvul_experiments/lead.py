@@ -23,8 +23,8 @@ class Lead(BaseModel):
         """Format the lead for the scoring model."""
         return (
             f"headline: {self.headline}\n"
-            f"analysis: |\n{self.analysis}\n"
+            f"analysis: {self.analysis}\n"
             f"cwe: {self.cwe}\n"
-            f"function_names:\n{self.function_names}\n"
-            f"filenames:\n{self.filenames}\n"
+            f"function_names: {self.function_names}\n"
+            f"filenames: {self.filenames}"
         )
