@@ -25,6 +25,7 @@ class Paths(NamedTuple):
     plots: Path
     results: Path
     cache: Path
+    human_baselines: Path
 
 
 class Config:
@@ -41,6 +42,7 @@ class Config:
         plots=data_path / "plots",
         results=data_path / "results",
         cache=data_path / "cache",
+        human_baselines=data_path / "human_baselines",
     )
 
 
