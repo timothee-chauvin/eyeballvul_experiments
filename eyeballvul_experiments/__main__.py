@@ -337,12 +337,11 @@ async def run_models():
             return
 
 
-async def re_score_all(add_if_exists: bool = False):
-    """Re-score all attempts, unless those that have already been scored with the current
-    instruction template hash if `add_if_exists` is False."""
-    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
-    total = len(attempt_filenames)
-    for i, attempt_filename in enumerate(attempt_filenames):
+async def re_score_attempt(
+    semaphore, task_id: str, attempt_filename: str, add_if_exists: bool = False
+):
+    """Using a semaphore to avoid being rate-limited."""
+    async with semaphore:
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
             if not add_if_exists and any(
@@ -350,12 +349,26 @@ async def re_score_all(add_if_exists: bool = False):
                 for score in attempt.scores
             ):
                 logging.info(
-                    f"({i+1}/{total}) Skipping {attempt.get_hash()} because it has already been scored."
+                    f"({task_id}) Skipping {attempt.get_hash()} because it has already been scored."
                 )
             else:
-                logging.info(f"({i+1}/{total}) Scoring {attempt.get_hash()}...")
+                logging.info(f"({task_id}) Scoring {attempt.get_hash()}...")
                 await attempt.add_score()
                 attempt.log()
+
+
+async def re_score_all(add_if_exists: bool = False):
+    """Re-score all attempts, unless those that have already been scored with the current
+    instruction template hash if `add_if_exists` is False."""
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    total = len(attempt_filenames)
+    max_concurrent_tasks = 5
+    semaphore = asyncio.Semaphore(max_concurrent_tasks)
+    tasks = [
+        asyncio.create_task(re_score_attempt(semaphore, f"{i+1}/{total}", filename, add_if_exists))
+        for i, filename in enumerate(attempt_filenames)
+    ]
+    await asyncio.gather(*tasks)
 
 
 async def main():
