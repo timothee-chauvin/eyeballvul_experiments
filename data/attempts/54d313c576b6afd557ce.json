@@ -1,0 +1,64 @@
+{
+  "commit": "cb80c5e80144fcd9f6ac283ffb564f3b863cfbb2",
+  "repo_url": "https://github.com/apache/sling-org-apache-sling-servlets-resolver",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "dde8dda3c3fda9e05150"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Servlet resolution uses shared ResourceResolver\n    analysis: |\n      The `SlingServletResolver` uses a shared `ResourceResolver` to resolve servlets for requests\n      that are not made within the context of an existing request. The shared `ResourceResolver`\n      is acquired during component activation and is closed during deactivation. However, if a new\n      servlet is registered after component activation, the servlet resolver will not be aware of it.\n      If the servlet is registered before activation, it is initialized during activation. \n      \n      An attacker could register a malicious servlet and then trigger a request outside the\n      context of an existing request, causing the `SlingServletResolver` to resolve to the malicious servlet.\n    cwe: CWE-287\n    function_names:\n      - bindServlet\n    filenames:\n      - src/main/java/org/apache/sling/servlets/resolver/internal/resource/ServletMounter.java\n    classification: slightly promising\n  - headline: RequestWrapper rewrites resource type for include calls\n    analysis: |\n      The `RequestWrapper` used for `BundledScriptServlet` overrides the `getRequestDispatcher` methods\n      and forces the `resourceType` of the included resource. The forced resource type will contain the\n      version information of the bundle that provides the resource.  This could lead to a bypass\n      of security mechanisms that rely on resource type checks to determine whether a user is authorized to access\n      a resource. \n\n      For example, an attacker could create a bundle that provides a resource with a resource type that\n      includes a specific version. The attacker could then include this resource in a request to a resource\n      that is protected by a security mechanism that only allows access to resources with a specific resource type. \n      By specifying the versioned resource type in the `RequestDispatcherOptions`, the attacker could bypass the\n      security mechanism and gain access to the protected resource.\n    cwe: CWE-863\n    function_names:\n      - getRequestDispatcher\n      - processOptions\n    filenames:\n      - src/main/java/org/apache/sling/servlets/resolver/internal/bundle/RequestWrapper.java\n    classification: slightly promising\n```",
+      "date": "2024-06-12T11:39:58.268057",
+      "usage": {
+        "prompt_tokens": 102093,
+        "completion_tokens": 454,
+        "cost": 0.064659375
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Servlet resolution uses shared ResourceResolver",
+      "analysis": "The SlingServletResolver uses a shared ResourceResolver to resolve servlets for requests\nthat are not made within the context of an existing request. The shared ResourceResolver\nis acquired during component activation and is closed during deactivation. However, if a new\nservlet is registered after component activation, the servlet resolver will not be aware of it.\nIf the servlet is registered before activation, it is initialized during activation. \n\nAn attacker could register a malicious servlet and then trigger a request outside the\ncontext of an existing request, causing the SlingServletResolver to resolve to the malicious servlet.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-287",
+      "function_names": [
+        "bindServlet"
+      ],
+      "filenames": [
+        "src/main/java/org/apache/sling/servlets/resolver/internal/resource/ServletMounter.java"
+      ]
+    },
+    {
+      "headline": "RequestWrapper rewrites resource type for include calls",
+      "analysis": "The RequestWrapper used for BundledScriptServlet overrides the getRequestDispatcher methods\nand forces the resourceType of the included resource. The forced resource type will contain the\nversion information of the bundle that provides the resource.  This could lead to a bypass\nof security mechanisms that rely on resource type checks to determine whether a user is authorized to access\na resource. \n\nFor example, an attacker could create a bundle that provides a resource with a resource type that\nincludes a specific version. The attacker could then include this resource in a request to a resource\nthat is protected by a security mechanism that only allows access to resources with a specific resource type. \nBy specifying the versioned resource type in the RequestDispatcherOptions, the attacker could bypass the\nsecurity mechanism and gain access to the protected resource.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-863",
+      "function_names": [
+        "getRequestDispatcher",
+        "processOptions"
+      ],
+      "filenames": [
+        "src/main/java/org/apache/sling/servlets/resolver/internal/bundle/RequestWrapper.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-23673": "2024-02-06T10:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

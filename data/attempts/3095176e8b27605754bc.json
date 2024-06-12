@@ -1,0 +1,153 @@
+{
+  "commit": "e740c549e59a3a58dca615478dc5dcee3fb915d8",
+  "repo_url": "https://github.com/artifexsoftware/jbig2dec",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "2eb5f77dbe83b172e106"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Integer Overflow in `jbig2_image_new`\n    analysis: |\n      The function `jbig2_image_new` in `jbig2_image.c` calculates the required memory size for a new image by multiplying the `stride` (calculated from the image `width`) and `height`. The result is stored in a signed `int64_t` variable (`check`). However, this variable is later cast to an `int` for the allocation, creating a potential integer overflow vulnerability.\n      If an attacker can control the `width` and `height` values provided to the function, they can trigger an integer overflow during the calculation of `check`. This could lead to a heap overflow when allocating the image data buffer (`image->data`).\n    cwe: CWE-190\n    function_names:\n      - jbig2_image_new\n    filenames:\n      - jbig2_image.c\n    classification: very promising\n  - headline: Integer Overflow in `jbig2_image_resize`\n    analysis: |\n      The function `jbig2_image_resize` in `jbig2_image.c` calculates the new memory size for a resized image. If the image width is not changed, the function multiplies the existing `image->stride` and the new `height` to determine the required memory size. The multiplication result is stored in a signed `int64_t` variable (`check`). However, the result is later cast to an `int` when resizing the data buffer with `jbig2_renew`.\n      This creates a potential integer overflow vulnerability similar to the one in `jbig2_image_new`. If an attacker can control the new `height` value provided to the function, they could trigger an integer overflow.\n    cwe: CWE-190\n    function_names:\n      - jbig2_image_resize\n    filenames:\n      - jbig2_image.c\n    classification: slightly promising\n  - headline: Potential Heap Overflow in `jbig2_image_compose`\n    analysis: |\n      In `jbig2_image.c`, the function `jbig2_image_compose` copies data from a source image (`src`) to a destination image (`dst`) based on the provided offset (`x`, `y`) and composition operator (`op`). While the code includes checks to prevent writing outside the `dst` image boundaries, it lacks a sufficient check for the source image size.\n      Specifically, the code calculates the number of bytes to copy based on the width and stride of the source image, but doesn't verify that the calculated size fits within the allocated `src->data` buffer. This could lead to a heap overflow if an attacker can provide a crafted source image with a larger width or stride than expected, potentially resulting in a crash or arbitrary code execution.\n    cwe: CWE-129\n    function_names:\n      - jbig2_image_compose\n    filenames:\n      - jbig2_image.c\n    classification: slightly promising\n  - headline: Missing Check for Null Pointers in `jbig2_decode_refinement_region`\n    analysis: |\n      The function `jbig2_decode_refinement_region` in `jbig2_refinement.c` attempts to find a reference image for decoding. If a reference segment is found, it retrieves the image from the segment's result. However, the code does not check if the retrieved image pointer (`ref->result`) is null before cloning it.\n      This could lead to a null pointer dereference if the referenced segment doesn't have a valid image result, potentially causing a crash.\n    cwe: CWE-476\n    function_names:\n      - jbig2_decode_refinement_region\n    filenames:\n      - jbig2_refinement.c\n    classification: slightly promising\n  - headline: Missing Bounds Check in `jbig2_decode_symbol_dict`\n    analysis: |\n      The function `jbig2_decode_symbol_dict` in `jbig2_symbol_dict.c` decodes symbol dictionary data. While decoding symbols in a height class, the function checks if the current symbol index (`NSYMSDECODED`) exceeds the number of new symbols (`params->SDNUMNEWSYMS`). However, there's a missing check for the `NSYMSDECODED` index before accessing the `SDNEWSYMS->glyphs` array.\n      If the decoding process encounters an error or unexpected data that leads to a higher `NSYMSDECODED` than `params->SDNUMNEWSYMS`, the function could access memory outside the bounds of the `SDNEWSYMS->glyphs` array, resulting in a potential crash or information disclosure.\n    cwe: CWE-129\n    function_names:\n      - jbig2_decode_symbol_dict\n    filenames:\n      - jbig2_symbol_dict.c\n    classification: slightly promising\n  - headline: Potential Integer Overflow in `jbig2_table`\n    analysis: |\n      The function `jbig2_table` in `jbig2_huffman.c` parses a code table segment. During the parsing, the function calculates the upper bound for the loop iterating through the table lines using `boffset + HTPS`. This calculation does not account for potential integer overflows if `boffset` and `HTPS` are large enough.\n      While the code has a check `boffset + HTPS >= lines_data_bitlen`, it relies on the assumption that `lines_data_bitlen` is calculated correctly. However, if the input data is crafted to cause an integer overflow during the `boffset + HTPS` calculation, it could bypass the check and lead to a heap buffer overflow or other unexpected behavior.\n    cwe: CWE-190\n    function_names:\n      - jbig2_table\n    filenames:\n      - jbig2_huffman.c\n    classification: not promising\n  - headline: Missing Check for Out-of-Bounds Access in `jbig2_decode_gray_scale_image`\n    analysis: |\n      The function `jbig2_decode_gray_scale_image` in `jbig2_halftone.c` decodes a gray-scale image and stores the results in the `GSVALS` array. However, the code does not check if the pattern index (`gray_val`) retrieved from the gray-scale image data is within the bounds of the `HPATS->patterns` array before accessing it.\n      If the gray-scale image data contains an out-of-bounds pattern index, it could lead to a read access violation when accessing `HPATS->patterns[gray_val]`, potentially causing a crash.\n    cwe: CWE-129\n    function_names:\n      - jbig2_decode_gray_scale_image\n    filenames:\n      - jbig2_halftone.c\n    classification: not promising\n  - headline: Potential Memory Leak in `jbig2_symbol_dictionary`\n    analysis: |\n      In the function `jbig2_symbol_dictionary` in `jbig2_symbol_dict.c`, the `GB_stats` and `GR_stats` arrays are allocated to store arithmetic coding statistics. The code includes a check for a flag indicating whether the statistics should be retained. However, if the flag is set, the function doesn't actually retain the statistics and simply proceeds to free them.\n      This creates a potential memory leak as the allocated memory for `GB_stats` and `GR_stats` is not used and not freed when the flag indicates they should be retained.\n    cwe: CWE-401\n    function_names:\n      - jbig2_symbol_dictionary\n    filenames:\n      - jbig2_symbol_dict.c\n    classification: not promising\n  - headline: Potential Memory Leak in `jbig2_halftone_region`\n    analysis: |\n      The function `jbig2_halftone_region` in `jbig2_halftone.c` allocates the `GB_stats` array for arithmetic coding statistics. Similar to the issue in `jbig2_symbol_dictionary`, if the `params.HMMR` flag is set (indicating MMR decoding), the allocated memory for `GB_stats` is not used and not freed.\n      This leads to a potential memory leak of the `GB_stats` array when MMR decoding is used.\n    cwe: CWE-401\n    function_names:\n      - jbig2_halftone_region\n    filenames:\n      - jbig2_halftone.c\n    classification: not promising\n```",
+      "date": "2024-06-12T11:44:34.115389",
+      "usage": {
+        "prompt_tokens": 157792,
+        "completion_tokens": 1724,
+        "cost": 0.10185250000000001
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Integer Overflow in jbig2_image_new",
+      "analysis": "The function jbig2_image_new in jbig2_image.c calculates the required memory size for a new image by multiplying the stride (calculated from the image width) and height. The result is stored in a signed int64_t variable (check). However, this variable is later cast to an int for the allocation, creating a potential integer overflow vulnerability.\nIf an attacker can control the width and height values provided to the function, they can trigger an integer overflow during the calculation of check. This could lead to a heap overflow when allocating the image data buffer (image->data).\n",
+      "classification": "very promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "jbig2_image_new"
+      ],
+      "filenames": [
+        "jbig2_image.c"
+      ]
+    },
+    {
+      "headline": "Integer Overflow in jbig2_image_resize",
+      "analysis": "The function jbig2_image_resize in jbig2_image.c calculates the new memory size for a resized image. If the image width is not changed, the function multiplies the existing image->stride and the new height to determine the required memory size. The multiplication result is stored in a signed int64_t variable (check). However, the result is later cast to an int when resizing the data buffer with jbig2_renew.\nThis creates a potential integer overflow vulnerability similar to the one in jbig2_image_new. If an attacker can control the new height value provided to the function, they could trigger an integer overflow.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "jbig2_image_resize"
+      ],
+      "filenames": [
+        "jbig2_image.c"
+      ]
+    },
+    {
+      "headline": "Potential Heap Overflow in jbig2_image_compose",
+      "analysis": "In jbig2_image.c, the function jbig2_image_compose copies data from a source image (src) to a destination image (dst) based on the provided offset (x, y) and composition operator (op). While the code includes checks to prevent writing outside the dst image boundaries, it lacks a sufficient check for the source image size.\nSpecifically, the code calculates the number of bytes to copy based on the width and stride of the source image, but doesn't verify that the calculated size fits within the allocated src->data buffer. This could lead to a heap overflow if an attacker can provide a crafted source image with a larger width or stride than expected, potentially resulting in a crash or arbitrary code execution.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-129",
+      "function_names": [
+        "jbig2_image_compose"
+      ],
+      "filenames": [
+        "jbig2_image.c"
+      ]
+    },
+    {
+      "headline": "Missing Check for Null Pointers in jbig2_decode_refinement_region",
+      "analysis": "The function jbig2_decode_refinement_region in jbig2_refinement.c attempts to find a reference image for decoding. If a reference segment is found, it retrieves the image from the segment's result. However, the code does not check if the retrieved image pointer (ref->result) is null before cloning it.\nThis could lead to a null pointer dereference if the referenced segment doesn't have a valid image result, potentially causing a crash.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-476",
+      "function_names": [
+        "jbig2_decode_refinement_region"
+      ],
+      "filenames": [
+        "jbig2_refinement.c"
+      ]
+    },
+    {
+      "headline": "Missing Bounds Check in jbig2_decode_symbol_dict",
+      "analysis": "The function jbig2_decode_symbol_dict in jbig2_symbol_dict.c decodes symbol dictionary data. While decoding symbols in a height class, the function checks if the current symbol index (NSYMSDECODED) exceeds the number of new symbols (params->SDNUMNEWSYMS). However, there's a missing check for the NSYMSDECODED index before accessing the SDNEWSYMS->glyphs array.\nIf the decoding process encounters an error or unexpected data that leads to a higher NSYMSDECODED than params->SDNUMNEWSYMS, the function could access memory outside the bounds of the SDNEWSYMS->glyphs array, resulting in a potential crash or information disclosure.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-129",
+      "function_names": [
+        "jbig2_decode_symbol_dict"
+      ],
+      "filenames": [
+        "jbig2_symbol_dict.c"
+      ]
+    },
+    {
+      "headline": "Potential Integer Overflow in jbig2_table",
+      "analysis": "The function jbig2_table in jbig2_huffman.c parses a code table segment. During the parsing, the function calculates the upper bound for the loop iterating through the table lines using boffset + HTPS. This calculation does not account for potential integer overflows if boffset and HTPS are large enough.\nWhile the code has a check boffset + HTPS >= lines_data_bitlen, it relies on the assumption that lines_data_bitlen is calculated correctly. However, if the input data is crafted to cause an integer overflow during the boffset + HTPS calculation, it could bypass the check and lead to a heap buffer overflow or other unexpected behavior.\n",
+      "classification": "not promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "jbig2_table"
+      ],
+      "filenames": [
+        "jbig2_huffman.c"
+      ]
+    },
+    {
+      "headline": "Missing Check for Out-of-Bounds Access in jbig2_decode_gray_scale_image",
+      "analysis": "The function jbig2_decode_gray_scale_image in jbig2_halftone.c decodes a gray-scale image and stores the results in the GSVALS array. However, the code does not check if the pattern index (gray_val) retrieved from the gray-scale image data is within the bounds of the HPATS->patterns array before accessing it.\nIf the gray-scale image data contains an out-of-bounds pattern index, it could lead to a read access violation when accessing HPATS->patterns[gray_val], potentially causing a crash.\n",
+      "classification": "not promising",
+      "cwe": "CWE-129",
+      "function_names": [
+        "jbig2_decode_gray_scale_image"
+      ],
+      "filenames": [
+        "jbig2_halftone.c"
+      ]
+    },
+    {
+      "headline": "Potential Memory Leak in jbig2_symbol_dictionary",
+      "analysis": "In the function jbig2_symbol_dictionary in jbig2_symbol_dict.c, the GB_stats and GR_stats arrays are allocated to store arithmetic coding statistics. The code includes a check for a flag indicating whether the statistics should be retained. However, if the flag is set, the function doesn't actually retain the statistics and simply proceeds to free them.\nThis creates a potential memory leak as the allocated memory for GB_stats and GR_stats is not used and not freed when the flag indicates they should be retained.\n",
+      "classification": "not promising",
+      "cwe": "CWE-401",
+      "function_names": [
+        "jbig2_symbol_dictionary"
+      ],
+      "filenames": [
+        "jbig2_symbol_dict.c"
+      ]
+    },
+    {
+      "headline": "Potential Memory Leak in jbig2_halftone_region",
+      "analysis": "The function jbig2_halftone_region in jbig2_halftone.c allocates the GB_stats array for arithmetic coding statistics. Similar to the issue in jbig2_symbol_dictionary, if the params.HMMR flag is set (indicating MMR decoding), the allocated memory for GB_stats is not used and not freed.\nThis leads to a potential memory leak of the GB_stats array when MMR decoding is used.\n",
+      "classification": "not promising",
+      "cwe": "CWE-401",
+      "function_names": [
+        "jbig2_halftone_region"
+      ],
+      "filenames": [
+        "jbig2_halftone.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 4,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2017-7976"
+      },
+      "vuln_dates": {
+        "CVE-2023-46361": "2023-10-31T06:15:08",
+        "CVE-2017-9216": "2017-05-24T05:29:00",
+        "CVE-2017-7975": "2017-04-19T16:59:00",
+        "CVE-2017-7885": "2017-04-17T00:59:00",
+        "CVE-2017-7976": "2017-04-19T17:59:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

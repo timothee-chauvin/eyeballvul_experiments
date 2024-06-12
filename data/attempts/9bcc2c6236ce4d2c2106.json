@@ -1,0 +1,104 @@
+{
+  "commit": "79a34636f82bc9d807196b45835783c800119f98",
+  "repo_url": "https://github.com/gradio-app/gradio",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "9d4be6731e45f4d4ef28"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Missing authentication in queue mode\n    analysis: |\n      When the Gradio interface is launched with `enable_queue=True`, authentication\n      and encryption are disabled with the error message \"ValueError: Cannot queue\n      with encryption or authentication enabled.\"\n      An attacker could therefore access the interface even if authentication is set.\n    cwe: CWE-862\n    function_names:\n      - start_server\n    filenames:\n      - gradio/networking.py\n    classification: very promising\n  - headline: Local file disclosure through file component\n    analysis: |\n      When using the File component, if examples are loaded from a directory and encryption\n      is enabled, any file within that directory can be downloaded by an attacker.\n      For instance:\n        `iface = gr.Interface(fn, \"textbox\", \"file\", examples=\"my_examples_dir\", encryption=True)`\n      If `my_examples_dir` contained a file \"passwords.txt\", an attacker could download\n      it by modifying the URL to `http://localhost:7860/file/my_examples_dir/passwords.txt`.\n    cwe: CWE-22\n    function_names:\n      - file\n    filenames:\n      - gradio/networking.py\n    classification: very promising\n  - headline: Cross-site scripting via flagging\n    analysis: |\n      A malicious user can inject arbitrary HTML in the flagging data via the flag option,\n      which is then displayed to the admin in the interface if they use the flagged examples.\n      For example, using `calculator.py` as a base, if an attacker creates an interface\n      with:\n        `iface = gr.Interface(calculator,  [\"number\", gr.inputs.Radio([\"add\", \"subtract\", \"multiply\", \"divide\"]), \"number\"], \"number\", examples=[[1, \"add\", \"<img src=x onerror=alert(1)>\"]], flagging_options=[\"this\", \"or\", \"that\"],)`\n      then the admin is vulnerable to XSS if they then launch the interface with:\n        `iface.launch(flagging_options=[\"this\", \"or\", \"that\"], examples=\"flagged\")`\n    cwe: CWE-79\n    function_names:\n      - flag_data\n      - main\n    filenames:\n      - gradio/networking.py\n    classification: slightly promising\n  - headline: Unprotected admin interface\n    analysis: |\n      By default, if the `auth` parameter is not set, the admin interface is unprotected.\n      In particular, the `/file/` endpoint allows downloading arbitrary files by providing\n      the path. There is also a `/enable_sharing/` endpoint that allows setting a share\n      URL.\n    cwe: CWE-306\n    function_names:\n      - file\n      - enable_sharing\n    filenames:\n      - gradio/networking.py\n    classification: slightly promising\n```",
+      "date": "2024-06-12T12:44:15.520983",
+      "usage": {
+        "prompt_tokens": 121087,
+        "completion_tokens": 588,
+        "cost": 0.07678187500000001
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Missing authentication in queue mode",
+      "analysis": "When the Gradio interface is launched with enable_queue=True, authentication\nand encryption are disabled with the error message \"ValueError: Cannot queue\nwith encryption or authentication enabled.\"\nAn attacker could therefore access the interface even if authentication is set.\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "start_server"
+      ],
+      "filenames": [
+        "gradio/networking.py"
+      ]
+    },
+    {
+      "headline": "Local file disclosure through file component",
+      "analysis": "When using the File component, if examples are loaded from a directory and encryption\nis enabled, any file within that directory can be downloaded by an attacker.\nFor instance:\n  iface = gr.Interface(fn, \"textbox\", \"file\", examples=\"my_examples_dir\", encryption=True)\nIf my_examples_dir contained a file \"passwords.txt\", an attacker could download\nit by modifying the URL to http://localhost:7860/file/my_examples_dir/passwords.txt.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "file"
+      ],
+      "filenames": [
+        "gradio/networking.py"
+      ]
+    },
+    {
+      "headline": "Cross-site scripting via flagging",
+      "analysis": "A malicious user can inject arbitrary HTML in the flagging data via the flag option,\nwhich is then displayed to the admin in the interface if they use the flagged examples.\nFor example, using calculator.py as a base, if an attacker creates an interface\nwith:\n  iface = gr.Interface(calculator,  [\"number\", gr.inputs.Radio([\"add\", \"subtract\", \"multiply\", \"divide\"]), \"number\"], \"number\", examples=[[1, \"add\", \"<img src=x onerror=alert(1)>\"]], flagging_options=[\"this\", \"or\", \"that\"],)\nthen the admin is vulnerable to XSS if they then launch the interface with:\n  iface.launch(flagging_options=[\"this\", \"or\", \"that\"], examples=\"flagged\")\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "flag_data",
+        "main"
+      ],
+      "filenames": [
+        "gradio/networking.py"
+      ]
+    },
+    {
+      "headline": "Unprotected admin interface",
+      "analysis": "By default, if the auth parameter is not set, the admin interface is unprotected.\nIn particular, the /file/ endpoint allows downloading arbitrary files by providing\nthe path. There is also a /enable_sharing/ endpoint that allows setting a share\nURL.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-306",
+      "function_names": [
+        "file",
+        "enable_sharing"
+      ],
+      "filenames": [
+        "gradio/networking.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 13,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2023-51449"
+      },
+      "vuln_dates": {
+        "CVE-2023-6572": "2023-12-14T14:15:46",
+        "CVE-2023-51449": "2023-12-22T21:15:09",
+        "CVE-2022-24770": "2022-03-17T21:15:08",
+        "CVE-2021-43831": "2021-12-15T20:15:08",
+        "CVE-2024-0964": "2024-02-05T23:15:08",
+        "CVE-2024-34510": "2024-05-05T20:15:07",
+        "CVE-2024-1561": "2024-04-16T00:15:08",
+        "CVE-2024-1728": "2024-04-10T17:15:53",
+        "CVE-2024-1727": "2024-03-21T20:15:07",
+        "CVE-2024-1729": "2024-03-29T05:15:45",
+        "CVE-2024-2206": "2024-03-27T01:15:46",
+        "CVE-2024-1540": "2024-03-27T16:15:09",
+        "CVE-2024-4253": "2024-06-04T08:15:10",
+        "CVE-2024-4941": "2024-06-06T18:15:18"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

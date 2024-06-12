@@ -1,0 +1,41 @@
+{
+  "commit": "b537cab466329b1b077e0e5e3c14edad2b7142f7",
+  "repo_url": "https://github.com/cure53/dompurify",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "7e2a30b651c874584040"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: DOM Clobbering via crafted \"id\" or \"name\" attribute values\n    analysis: |\n      The function `_isValidAttribute` attempts to prevent DOM clobbering by checking if an attribute value, when used as a property name, would collide with properties of the `document` or `formElement` objects. However, the check is only performed if `SANITIZE_DOM` is true, and it only covers the attributes `id` and `name`. An attacker could potentially use other attribute names, or disable `SANITIZE_DOM` to bypass this protection. For example:\n      ```html\n      <img src=\"x\" name=\"getElementsByTagName\">\n      ```\n      would successfully clobber the `getElementsByTagName` property of the `document` object if `SANITIZE_DOM` is false. A similar attack could be performed using an `id` attribute. This could lead to various attacks, such as overwriting methods of the global `document` object.\n    cwe: CWE-693\n    function_names:\n      - _isValidAttribute\n    filenames:\n      - src/purify.js\n    classification: slightly promising\n  - headline: Potential bypass of URI scheme whitelist via unicode variation selectors\n    analysis: |\n      The function `_isValidAttribute` checks if a URI scheme is allowed by testing it against a regular expression. However, it does not account for unicode variation selectors, which can be used to bypass the regex. The variation selectors could be used to introduce characters that are not matched by the regex, but are still interpreted as part of the scheme by the browser. This could allow an attacker to use a forbidden URI scheme, potentially leading to XSS.\n      For example, an attacker could use the variation selector `\\uFE0E` to create a URI like this:\n      ```\n      javasc\\uFE0Eript:alert(1)\n      ```\n      which would bypass a regex that only matches `javascript:`. A working proof-of-concept exploit would involve constructing a URI that uses variation selectors to bypass the specific regex used by `_isValidAttribute`, and then injecting that URI into an attribute value that is not properly sanitized.\n    cwe: CWE-176\n    function_names:\n      - _isValidAttribute\n    filenames:\n      - src/purify.js\n    classification: slightly promising\n  - headline: Incomplete sanitization of SCRIPT tags in SAFE_FOR_JQUERY mode\n    analysis: |\n      The `_sanitizeElements` function attempts to prevent XSS in \"SAFE_FOR_JQUERY\" mode by replacing `<` characters with `&lt;` in the `innerHTML` of elements that do not have children. This is intended to prevent jQuery from interpreting the content as HTML. However, this replacement is not performed if the element is a `SCRIPT` tag, which means that jQuery could still execute malicious code if it is injected into a `SCRIPT` tag. This vulnerability could potentially be exploited by injecting a `SCRIPT` tag with malicious code into the DOM, and then using jQuery to access the `innerHTML` of that tag.\n    cwe: CWE-79\n    function_names:\n      - _sanitizeElements\n    filenames:\n      - src/purify.js\n    classification: slightly promising\n  - headline: Regular expression denial of service via catastrophic backtracking\n    analysis: |\n      The regular expressions `MUSTACHE_EXPR` and `ERB_EXPR` used to sanitize template expressions in SAFE_FOR_TEMPLATES mode are vulnerable to catastrophic backtracking. An attacker could craft a malicious input string that would cause these regexes to take an extremely long time to execute, potentially leading to a denial of service. For example, an input string containing a very long sequence of nested curly braces or angle brackets could trigger this vulnerability. A proof-of-concept exploit would involve constructing a malicious input string that would cause catastrophic backtracking in the relevant regexes, and then passing that string to the `sanitize` function in SAFE_FOR_TEMPLATES mode.\n    cwe: CWE-1333\n    function_names:\n      - sanitize\n    filenames:\n      - src/purify.js\n      - src/regexp.js\n    classification: slightly promising\n  - headline: Potential XSS via user-controlled hooks\n    analysis: |\n      The `addHook` function allows users to add custom hooks that are executed during the sanitization process. An attacker could potentially inject a malicious hook that would bypass the sanitization logic and inject arbitrary HTML or JavaScript into the output. For example, an attacker could add a hook to the `afterSanitizeAttributes` entry point that would inject a `SCRIPT` tag with malicious code into the DOM.\n      It's important to note that this vulnerability only exists if an attacker can control the configuration of DOMPurify, including the hooks that are added. If the configuration is controlled by a trusted source, then this vulnerability is not exploitable.\n    cwe: CWE-94\n    function_names:\n      - addHook\n      - _executeHook\n    filenames:\n      - src/purify.js\n    classification: not promising\n```",
+      "date": "2024-06-12T11:59:14.224327",
+      "usage": {
+        "prompt_tokens": 114682,
+        "completion_tokens": 1038,
+        "cost": 0.07362250000000001
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 4,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-25155": "2023-11-07T03:09:22",
+        "CVE-2020-26870": "2020-10-07T16:15:18",
+        "CVE-2019-20374": "2020-01-09T23:15:10",
+        "CVE-2019-16728": "2019-09-24T05:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
