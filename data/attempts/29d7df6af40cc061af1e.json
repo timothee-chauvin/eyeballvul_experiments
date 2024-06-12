@@ -1,0 +1,164 @@
+{
+  "commit": "13440867688db99b4e507470310ec7ab48e709c9",
+  "repo_url": "https://github.com/ffay/lanproxy",
+  "model": "claude-3-haiku-20240307",
+  "chunk_hashes": [
+    "0099a571d9709bbf5758"
+  ],
+  "responses": [
+    {
+      "content": "Based on the provided codebase, here is the list of security vulnerabilities I was able to identify:\n\n```yaml\nleads:\n  - headline: Improper Input Validation (CWE-20)\n    analysis: |\n      The codebase does not properly validate user input, which could lead to various injection vulnerabilities, such as:\n      - Command Injection (CWE-77): User input may be used in system commands without proper validation and sanitization.\n      - SQL Injection (CWE-89): User input may be used in SQL queries without proper validation and sanitization.\n      - Cross-Site Scripting (CWE-79): User input may be displayed on the web page without proper validation and sanitization, allowing the injection of malicious scripts.\n    cwe: CWE-20\n    function_names:\n      - handleConnectMessage\n      - handleTransferMessage\n    filenames:\n      - proxy-client/src/main/java/org/fengfei/lanproxy/client/handlers/ClientChannelHandler.java\n      - proxy-server/src/main/java/org/fengfei/lanproxy/server/handlers/ServerChannelHandler.java\n    classification: slightly promising\n\n  - headline: Use of Uninitialized Resource (CWE-908)\n    analysis: |\n      The codebase uses resources (channels) that may not be properly initialized, leading to potential crashes or other undefined behavior. This can be seen in the `handleConnectMessage` method of the `ClientChannelHandler` class, where the `realServerChannel` is used before it is properly initialized.\n    cwe: CWE-908\n    function_names:\n      - handleConnectMessage\n    filenames:\n      - proxy-client/src/main/java/org/fengfei/lanproxy/client/handlers/ClientChannelHandler.java\n    classification: slightly promising\n\n  - headline: Uncontrolled Resource Consumption (CWE-400)\n    analysis: |\n      The codebase does not properly manage the size of the proxy channel pool, which can lead to resource exhaustion. The `ClientChannelMannager` class has a `MAX_POOL_SIZE` constant that limits the pool size, but this value may not be sufficient for all use cases, potentially leading to denial-of-service attacks.\n    cwe: CWE-400\n    function_names:\n      - borrowProxyChanel\n      - returnProxyChanel\n    filenames:\n      - proxy-client/src/main/java/org/fengfei/lanproxy/client/ClientChannelMannager.java\n    classification: slightly promising\n\n  - headline: Improper Handling of Exceptional Conditions (CWE-754)\n    analysis: |\n      The codebase does not properly handle exceptions that may occur during the execution of the code. This can lead to unexpected behavior, crashes, or information leakage. For example, in the `handleConnectMessage` method of the `ClientChannelHandler` class, any exceptions that occur during the connection to the real server will be propagated to the client, potentially revealing sensitive information.\n    cwe: CWE-754\n    function_names:\n      - handleConnectMessage\n    filenames:\n      - proxy-client/src/main/java/org/fengfei/lanproxy/client/handlers/ClientChannelHandler.java\n    classification: slightly promising\n\n  - headline: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') (CWE-78)\n    analysis: |\n      The codebase uses user-provided input (the `clientKey`) in the construction of an OS command, which can lead to OS command injection vulnerabilities. This can be seen in the `addCmdChannel` method of the `ProxyChannelManager` class, where the `clientKey` is used without proper validation or sanitization.\n    cwe: CWE-78\n    function_names:\n      - addCmdChannel\n    filenames:\n      - proxy-server/src/main/java/org/fengfei/lanproxy/server/ProxyChannelManager.java\n    classification: slightly promising\n\n  - headline: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') (CWE-89)\n    analysis: |\n      The codebase does not properly validate or sanitize user input, which could lead to SQL injection vulnerabilities. This can be seen in the `api_invoke` function in the `lanproxy-config/index.html` file, where user input is used in the construction of an AJAX request without proper validation.\n    cwe: CWE-89\n    function_names:\n      - api_invoke\n    filenames:\n      - proxy-server/webpages/lanproxy-config/index.html\n    classification: slightly promising\n\n  - headline: Uncontrolled Recursion (CWE-674)\n    analysis: |\n      The codebase contains a recursive function, `changeDeptTree`, in the `RouteConfig` class of the `lanproxy-config/html/client/list.html` file. This function can potentially cause a stack overflow if the input data is malformed or crafted to trigger a deep recursion, leading to a denial-of-service vulnerability.\n    cwe: CWE-674\n    function_names:\n      - changeDeptTree\n    filenames:\n      - proxy-server/webpages/lanproxy-config/html/client/list.html\n    classification: slightly promising\n\n  - headline: Incorrect Calculation (CWE-682)\n    analysis: |\n      The codebase contains several instances of incorrect calculations, such as in the `MatchingBraceOutdent` class, where the calculation of the `s.left` and `s.top` values may be incorrect and lead to rendering issues or unexpected behavior.\n    cwe: CWE-682\n    function_names:\n      - checkOutdent\n      - autoOutdent\n    filenames:\n      - proxy-server/webpages/ace/mode-json.js\n    classification: slightly promising\n\n  - headline: Improper Resource Shutdown or Release (CWE-404)\n    analysis: |\n      The codebase does not properly release or shut down resources, such as the `workerGroup` in the `ProxyClientContainer` class. This can lead to resource leaks and potential denial-of-service issues.\n    cwe: CWE-404\n    function_names:\n      - stop\n    filenames:\n      - proxy-client/src/main/java/org/fengfei/lanproxy/client/ProxyClientContainer.java\n    classification: slightly promising\n\n  - headline: Externally Controlled Reference to a Resource in Another Sphere (CWE-610)\n    analysis: |\n      The codebase uses user-provided input (the `clientKey`) to access resources, such as in the `getCmdChannel` and `getCmdChannel` methods of the `ProxyChannelManager` class. This can lead to resource access control issues, where a malicious user could potentially access resources they should not have access to.\n    cwe: CWE-610\n    function_names:\n      - getCmdChannel\n      - getCmdChannel\n    filenames:\n      - proxy-server/src/main/java/org/fengfei/lanproxy/server/ProxyChannelManager.java\n    classification: slightly promising\n```\n\nThe codebase has several security vulnerabilities, the most severe of which are:\n\n1. **Improper Input Validation (CWE-20)**: The codebase does not properly validate user input, which can lead to various injection vulnerabilities, such as command injection, SQL injection, and cross-site scripting.\n\n2. **Uncontrolled Recursion (CWE-674)**: The codebase contains a recursive function that can potentially cause a stack overflow if the input data is malformed or crafted to trigger a deep recursion, leading to a denial-of-service vulnerability.\n\n3. **Externally Controlled Reference to a Resource in Another Sphere (CWE-610)**: The codebase uses user-provided input to access resources, which can lead to resource access control issues, where a malicious user could potentially access resources they should not have access to.\n\n4. **Incorrect Calculation (CWE-682)**: The codebase contains several instances of incorrect calculations, which can lead to rendering issues or unexpected behavior.\n\n5. **Improper Resource Shutdown or Release (CWE-404)**: The codebase does not properly release or shut down resources, which can lead to resource leaks and potential denial-of-service issues.\n\nThe other vulnerabilities, such as use of uninitialized resources (CWE-908) and improper handling of exceptional conditions (CWE-754), are also concerning and should be addressed.\n\nOverall, the codebase has several security vulnerabilities that should be addressed to ensure the security and reliability of the application.",
+      "date": "2024-06-12T16:30:30.410735",
+      "usage": {
+        "prompt_tokens": 189761,
+        "completion_tokens": 2099,
+        "cost": 0.050064
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper Input Validation (CWE-20)",
+      "analysis": "The codebase does not properly validate user input, which could lead to various injection vulnerabilities, such as:\n- Command Injection (CWE-77): User input may be used in system commands without proper validation and sanitization.\n- SQL Injection (CWE-89): User input may be used in SQL queries without proper validation and sanitization.\n- Cross-Site Scripting (CWE-79): User input may be displayed on the web page without proper validation and sanitization, allowing the injection of malicious scripts.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "handleConnectMessage",
+        "handleTransferMessage"
+      ],
+      "filenames": [
+        "proxy-client/src/main/java/org/fengfei/lanproxy/client/handlers/ClientChannelHandler.java",
+        "proxy-server/src/main/java/org/fengfei/lanproxy/server/handlers/ServerChannelHandler.java"
+      ]
+    },
+    {
+      "headline": "Use of Uninitialized Resource (CWE-908)",
+      "analysis": "The codebase uses resources (channels) that may not be properly initialized, leading to potential crashes or other undefined behavior. This can be seen in the handleConnectMessage method of the ClientChannelHandler class, where the realServerChannel is used before it is properly initialized.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-908",
+      "function_names": [
+        "handleConnectMessage"
+      ],
+      "filenames": [
+        "proxy-client/src/main/java/org/fengfei/lanproxy/client/handlers/ClientChannelHandler.java"
+      ]
+    },
+    {
+      "headline": "Uncontrolled Resource Consumption (CWE-400)",
+      "analysis": "The codebase does not properly manage the size of the proxy channel pool, which can lead to resource exhaustion. The ClientChannelMannager class has a MAX_POOL_SIZE constant that limits the pool size, but this value may not be sufficient for all use cases, potentially leading to denial-of-service attacks.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "borrowProxyChanel",
+        "returnProxyChanel"
+      ],
+      "filenames": [
+        "proxy-client/src/main/java/org/fengfei/lanproxy/client/ClientChannelMannager.java"
+      ]
+    },
+    {
+      "headline": "Improper Handling of Exceptional Conditions (CWE-754)",
+      "analysis": "The codebase does not properly handle exceptions that may occur during the execution of the code. This can lead to unexpected behavior, crashes, or information leakage. For example, in the handleConnectMessage method of the ClientChannelHandler class, any exceptions that occur during the connection to the real server will be propagated to the client, potentially revealing sensitive information.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-754",
+      "function_names": [
+        "handleConnectMessage"
+      ],
+      "filenames": [
+        "proxy-client/src/main/java/org/fengfei/lanproxy/client/handlers/ClientChannelHandler.java"
+      ]
+    },
+    {
+      "headline": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') (CWE-78)",
+      "analysis": "The codebase uses user-provided input (the clientKey) in the construction of an OS command, which can lead to OS command injection vulnerabilities. This can be seen in the addCmdChannel method of the ProxyChannelManager class, where the clientKey is used without proper validation or sanitization.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "addCmdChannel"
+      ],
+      "filenames": [
+        "proxy-server/src/main/java/org/fengfei/lanproxy/server/ProxyChannelManager.java"
+      ]
+    },
+    {
+      "headline": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') (CWE-89)",
+      "analysis": "The codebase does not properly validate or sanitize user input, which could lead to SQL injection vulnerabilities. This can be seen in the api_invoke function in the lanproxy-config/index.html file, where user input is used in the construction of an AJAX request without proper validation.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "api_invoke"
+      ],
+      "filenames": [
+        "proxy-server/webpages/lanproxy-config/index.html"
+      ]
+    },
+    {
+      "headline": "Uncontrolled Recursion (CWE-674)",
+      "analysis": "The codebase contains a recursive function, changeDeptTree, in the RouteConfig class of the lanproxy-config/html/client/list.html file. This function can potentially cause a stack overflow if the input data is malformed or crafted to trigger a deep recursion, leading to a denial-of-service vulnerability.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-674",
+      "function_names": [
+        "changeDeptTree"
+      ],
+      "filenames": [
+        "proxy-server/webpages/lanproxy-config/html/client/list.html"
+      ]
+    },
+    {
+      "headline": "Incorrect Calculation (CWE-682)",
+      "analysis": "The codebase contains several instances of incorrect calculations, such as in the MatchingBraceOutdent class, where the calculation of the s.left and s.top values may be incorrect and lead to rendering issues or unexpected behavior.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-682",
+      "function_names": [
+        "checkOutdent",
+        "autoOutdent"
+      ],
+      "filenames": [
+        "proxy-server/webpages/ace/mode-json.js"
+      ]
+    },
+    {
+      "headline": "Improper Resource Shutdown or Release (CWE-404)",
+      "analysis": "The codebase does not properly release or shut down resources, such as the workerGroup in the ProxyClientContainer class. This can lead to resource leaks and potential denial-of-service issues.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-404",
+      "function_names": [
+        "stop"
+      ],
+      "filenames": [
+        "proxy-client/src/main/java/org/fengfei/lanproxy/client/ProxyClientContainer.java"
+      ]
+    },
+    {
+      "headline": "Externally Controlled Reference to a Resource in Another Sphere (CWE-610)",
+      "analysis": "The codebase uses user-provided input (the clientKey) to access resources, such as in the getCmdChannel and getCmdChannel methods of the ProxyChannelManager class. This can lead to resource access control issues, where a malicious user could potentially access resources they should not have access to.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-610",
+      "function_names": [
+        "getCmdChannel",
+        "getCmdChannel"
+      ],
+      "filenames": [
+        "proxy-server/src/main/java/org/fengfei/lanproxy/server/ProxyChannelManager.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-3019": "2021-01-05T05:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

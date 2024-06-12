@@ -1,0 +1,104 @@
+{
+  "commit": "22f1f794d438e5cb234dbc161f8f9abfd5c3f04b",
+  "repo_url": "https://github.com/jenkinsci/ontrack-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "b13cdf6dc5f1739f3d9b"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output with security leads based on the provided codebase:\n```yaml\nleads:\n  - headline: Missing Authorization in OntrackDSLStep\n    analysis: |\n      The OntrackDSLStep class does not perform any authorization checks before running the provided Ontrack DSL script. This could allow low privileged users to execute arbitrary Ontrack DSL code and gain unauthorized access to Ontrack projects, branches, builds, etc.\n      \n      To exploit this, an attacker could craft a malicious Ontrack DSL script and provide it as the scriptText parameter. This script would then execute with full permissions when the OntrackDSLStep runs.\n\n      The DSL script is executed via a GroovyShell on lines 125-130 without any prior authorization checks:\n      \n        GroovyShell shell = new GroovyShell(binding);\n        Object shellResult = shell.evaluate(script);\n\n    cwe: CWE-862\n    function_names:\n      - perform\n    filenames:\n      - src/main/java/net/nemerosa/ontrack/jenkins/OntrackDSLStep.java  \n    classification: very promising\n\n  - headline: Missing Authorization in OntrackDSLNotifier \n    analysis: |  \n      Similar to OntrackDSLStep, the OntrackDSLNotifier class also does not perform any authorization checks before running the user-provided Ontrack DSL script. A malicious user could provide a DSL script that gets executed with full permissions.\n\n      The perform method executes the DSL script on lines 100-102:\n        \n        GroovyShell shell = new GroovyShell(binding);\n        dsl.run(script);\n\n      This DSL script is not validated or sandboxed prior to execution.\n    cwe: CWE-862\n    function_names:\n      - perform  \n    filenames:\n      - src/main/java/net/nemerosa/ontrack/jenkins/OntrackDSLNotifier.java\n    classification: very promising\n  \n  - headline: Script Injection in SandboxDSLLauncher\n    analysis: | \n      The SandboxDSLLauncher runs user-provided Groovy scripts in a sandboxed GroovyShell. However, it allows full access to methods in net.nemerosa.ontrack.dsl.* packages via a custom whitelist:\n\n        @Override\n        public boolean permitsMethod(Method method, Object receiver, Object[] args) {\n          return method.getDeclaringClass().getPackage().getName().startsWith(\"net.nemerosa.ontrack.dsl\");  \n        }\n      \n      If the ontrack.dsl API exposed any sensitive operations or had vulnerabilities, this could potentially be exploited by a crafted script.\n    cwe: CWE-94\n    function_names: \n      - permitsMethod\n    filenames:\n      - src/main/java/net/nemerosa/ontrack/jenkins/dsl/OntrackDSLWhitelist.java\n    classification: slightly promising\n\n  - headline: Missing Input Validation in OntrackDSLRunner\n    analysis: |\n      The injectEnvironment and injectProperties methods in OntrackDSLRunner use untrusted input from the provided environmentVariables and propertyValues parameters to set variables in the binding used when evaluating DSL scripts.\n\n      If an attacker could control the values of environmentVariables or propertyValues, they may be able to influence the behavior of the DSL script in unintended ways by manipulating the binding. \n\n      While concerning, exploitation depends heavily on what the DSL scripts themselves do with the injected variables, so this is only slightly promising without more context.\n    cwe: CWE-915\n    function_names:\n      - injectEnvironment\n      - injectProperties  \n    filenames:\n      - src/main/java/net/nemerosa/ontrack/jenkins/dsl/OntrackDSLRunner.java\n    classification: slightly promising\n\n  - headline: Incorrect Permission Assignment for Security Mode\n    analysis: |  \n      The OntrackConfiguration class allows configuring a security mode for running Ontrack DSL scripts. If the security mode is set to NONE, then a DefaultDSLLauncher is used which executes scripts without any sandboxing.\n\n      An attacker may be able to trick an administrator into setting the security mode to NONE via the configure method, which would disable script security and allow arbitrary code execution.\n\n      However, this requires compromising an admin account, so exploitability is limited. Setting insecure defaults would be more concerning.\n    cwe: CWE-732\n    function_names:\n      - configure\n    filenames: \n      - src/main/java/net/nemerosa/ontrack/jenkins/OntrackConfiguration.java  \n    classification: slightly promising\n```",
+      "date": "2024-06-12T18:57:38.579718",
+      "usage": {
+        "prompt_tokens": 76941,
+        "completion_tokens": 1156,
+        "cost": 1.240815
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Missing Authorization in OntrackDSLStep",
+      "analysis": "The OntrackDSLStep class does not perform any authorization checks before running the provided Ontrack DSL script. This could allow low privileged users to execute arbitrary Ontrack DSL code and gain unauthorized access to Ontrack projects, branches, builds, etc.\n\nTo exploit this, an attacker could craft a malicious Ontrack DSL script and provide it as the scriptText parameter. This script would then execute with full permissions when the OntrackDSLStep runs.\n\nThe DSL script is executed via a GroovyShell on lines 125-130 without any prior authorization checks:\n\n  GroovyShell shell = new GroovyShell(binding);\n  Object shellResult = shell.evaluate(script);\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "perform"
+      ],
+      "filenames": [
+        "src/main/java/net/nemerosa/ontrack/jenkins/OntrackDSLStep.java"
+      ]
+    },
+    {
+      "headline": "Missing Authorization in OntrackDSLNotifier",
+      "analysis": "Similar to OntrackDSLStep, the OntrackDSLNotifier class also does not perform any authorization checks before running the user-provided Ontrack DSL script. A malicious user could provide a DSL script that gets executed with full permissions.\n\nThe perform method executes the DSL script on lines 100-102:\n  \n  GroovyShell shell = new GroovyShell(binding);\n  dsl.run(script);\n\nThis DSL script is not validated or sandboxed prior to execution.\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "perform"
+      ],
+      "filenames": [
+        "src/main/java/net/nemerosa/ontrack/jenkins/OntrackDSLNotifier.java"
+      ]
+    },
+    {
+      "headline": "Script Injection in SandboxDSLLauncher",
+      "analysis": "The SandboxDSLLauncher runs user-provided Groovy scripts in a sandboxed GroovyShell. However, it allows full access to methods in net.nemerosa.ontrack.dsl.* packages via a custom whitelist:\n\n  @Override\n  public boolean permitsMethod(Method method, Object receiver, Object[] args) {\n    return method.getDeclaringClass().getPackage().getName().startsWith(\"net.nemerosa.ontrack.dsl\");  \n  }\n\nIf the ontrack.dsl API exposed any sensitive operations or had vulnerabilities, this could potentially be exploited by a crafted script.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "permitsMethod"
+      ],
+      "filenames": [
+        "src/main/java/net/nemerosa/ontrack/jenkins/dsl/OntrackDSLWhitelist.java"
+      ]
+    },
+    {
+      "headline": "Missing Input Validation in OntrackDSLRunner",
+      "analysis": "The injectEnvironment and injectProperties methods in OntrackDSLRunner use untrusted input from the provided environmentVariables and propertyValues parameters to set variables in the binding used when evaluating DSL scripts.\n\nIf an attacker could control the values of environmentVariables or propertyValues, they may be able to influence the behavior of the DSL script in unintended ways by manipulating the binding. \n\nWhile concerning, exploitation depends heavily on what the DSL scripts themselves do with the injected variables, so this is only slightly promising without more context.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-915",
+      "function_names": [
+        "injectEnvironment",
+        "injectProperties"
+      ],
+      "filenames": [
+        "src/main/java/net/nemerosa/ontrack/jenkins/dsl/OntrackDSLRunner.java"
+      ]
+    },
+    {
+      "headline": "Incorrect Permission Assignment for Security Mode",
+      "analysis": "The OntrackConfiguration class allows configuring a security mode for running Ontrack DSL scripts. If the security mode is set to NONE, then a DefaultDSLLauncher is used which executes scripts without any sandboxing.\n\nAn attacker may be able to trick an administrator into setting the security mode to NONE via the configure method, which would disable script security and allow arbitrary code execution.\n\nHowever, this requires compromising an admin account, so exploitability is limited. Setting insecure defaults would be more concerning.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "configure"
+      ],
+      "filenames": [
+        "src/main/java/net/nemerosa/ontrack/jenkins/OntrackConfiguration.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2019-10306",
+        "1": "CVE-2019-10306"
+      },
+      "vuln_dates": {
+        "CVE-2019-10306": "2019-04-18T17:29:00",
+        "CVE-2022-34192": "2022-06-23T17:15:16"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

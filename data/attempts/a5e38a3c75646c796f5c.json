@@ -1,0 +1,77 @@
+{
+  "commit": "2a0d30f72cff7c01c0a6da545e3779bb30506a2d",
+  "repo_url": "https://github.com/atlassian/gajira-comment",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "9acd824d751ed31bcb34"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Prototype Pollution in index.js\n    analysis: |\n      The index.js file uses the lodash library to perform templating on the user-supplied comment. The lodash templating syntax is set to use the `{{...}}` delimiters, which can allow an attacker to perform prototype pollution attacks by specifying properties like `__proto__` or `constructor.prototype` in the template string.\n\n      For example, if the `comment` input contains a string like `{{constructor.prototype.someProperty = 'polluted'}}`, it would modify the prototype of the `Object` class, potentially affecting the behavior of other parts of the application that rely on the integrity of built-in object properties.\n    cwe: CWE-1321\n    function_names:\n      - exec\n    filenames:\n      - index.js\n    classification: very promising\n\n  - headline: Command Injection in index.js \n    analysis: |\n      The index.js file uses the `exec` function to execute git commands based on user input. The `command` variable is constructed by concatenating hard-coded strings with the `options.head` and `options.base` values, which come from the `githubEvent` object. \n\n      If an attacker can control the values of `options.head` or `options.base`, they could inject arbitrary commands to be executed by the `exec` function. For example, setting `options.head` to `'$(rm -rf /)'` would delete the entire filesystem when the command is executed.\n\n      To exploit this, an attacker would need to find a way to control the `githubEvent` object, perhaps by compromising the GitHub Actions workflow or the repository itself.\n    cwe: CWE-78\n    function_names:\n      - exec\n    filenames:\n      - index.js\n    classification: slightly promising\n\n  - headline: SSRF in Jira.js\n    analysis: |  \n      The Jira.js file has several methods that make HTTP requests to a Jira API using a user-provided `baseUrl` parameter. If the `baseUrl` can be controlled by an attacker, they could potentially force the application to make requests to arbitrary hosts, leading to Server-Side Request Forgery (SSRF).\n\n      For example, the `addComment` method makes a POST request to `${this.baseUrl}/rest/api/2/issue/${issueId}/comment`. An attacker who controls `baseUrl` could set it to `http://internal-service/admin/deleteAll` to make the application send a POST request to that internal URL.\n\n      The impact depends on what the attacker can reach from the application server. They may be able to access internal admin interfaces, metadata APIs like 169.254.169.254, or other sensitive endpoints.\n    cwe: CWE-918\n    function_names:\n      - addComment\n      - createIssue \n      - fetch\n    filenames:\n      - common/net/Jira.js\n    classification: slightly promising\n```",
+      "date": "2024-06-12T15:01:38.151681",
+      "usage": {
+        "prompt_tokens": 4982,
+        "completion_tokens": 698,
+        "cost": 0.12708
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Prototype Pollution in index.js",
+      "analysis": "The index.js file uses the lodash library to perform templating on the user-supplied comment. The lodash templating syntax is set to use the {{...}} delimiters, which can allow an attacker to perform prototype pollution attacks by specifying properties like __proto__ or constructor.prototype in the template string.\n\nFor example, if the comment input contains a string like {{constructor.prototype.someProperty = 'polluted'}}, it would modify the prototype of the Object class, potentially affecting the behavior of other parts of the application that rely on the integrity of built-in object properties.\n",
+      "classification": "very promising",
+      "cwe": "CWE-1321",
+      "function_names": [
+        "exec"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Command Injection in index.js",
+      "analysis": "The index.js file uses the exec function to execute git commands based on user input. The command variable is constructed by concatenating hard-coded strings with the options.head and options.base values, which come from the githubEvent object. \n\nIf an attacker can control the values of options.head or options.base, they could inject arbitrary commands to be executed by the exec function. For example, setting options.head to '$(rm -rf /)' would delete the entire filesystem when the command is executed.\n\nTo exploit this, an attacker would need to find a way to control the githubEvent object, perhaps by compromising the GitHub Actions workflow or the repository itself.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "exec"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "SSRF in Jira.js",
+      "analysis": "The Jira.js file has several methods that make HTTP requests to a Jira API using a user-provided baseUrl parameter. If the baseUrl can be controlled by an attacker, they could potentially force the application to make requests to arbitrary hosts, leading to Server-Side Request Forgery (SSRF).\n\nFor example, the addComment method makes a POST request to ${this.baseUrl}/rest/api/2/issue/${issueId}/comment. An attacker who controls baseUrl could set it to http://internal-service/admin/deleteAll to make the application send a POST request to that internal URL.\n\nThe impact depends on what the attacker can reach from the application server. They may be able to access internal admin interfaces, metadata APIs like 169.254.169.254, or other sensitive endpoints.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "addComment",
+        "createIssue",
+        "fetch"
+      ],
+      "filenames": [
+        "common/net/Jira.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-14189": "2020-11-09T22:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,80 @@
+{
+  "commit": "2db2bcd1a833c1a85258e27e02a5d68e078cd38d",
+  "repo_url": "https://github.com/jenkinsci/zephyr-for-jira-test-management-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "15546d6f7035e71a4329"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: Sensitive information exposed in exception messages\n    analysis: |\n      The code catches exceptions in several places and prints the exception message or stack trace, which may include sensitive information. For example:\n      \n      In ServerInfo.findServerAddressIsValidZephyrURL():\n      e.printStackTrace();\n      \n      In TestCaseUtil.processTestCaseDetails():\n      e.printStackTrace();\n\n      Exposing detailed error messages can leak system information to attackers. Exceptions should be logged securely without exposing details to the user.\n    cwe: CWE-209\n    function_names:\n      - findServerAddressIsValidZephyrURL\n      - processTestCaseDetails  \n    filenames:\n      - src/main/java/com/thed/zephyr/jenkins/utils/rest/ServerInfo.java\n      - src/main/java/com/thed/zephyr/jenkins/utils/rest/TestCaseUtil.java\n    classification: slightly promising\n\n  - headline: Overly permissive CORS configuration \n    analysis: |  \n      In ServerInfo.findServerAddressIsValidZephyrCloudURL(), the code adds headers allowing access from any origin when making HTTP requests:\n\n      executionsURLRequest.addHeader(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON);\n      executionsURLRequest.addHeader(HEADER_AUTHORIZATION, jwtHeaderValue);\n      executionsURLRequest.addHeader(HEADER_ZFJC_ACCESS_KEY, restClient.getAccessKey());\n\n      Allowing unrestricted cross-origin access can enable cross-site request forgery (CSRF) attacks. CORS headers should be more restrictive and only allow access from trusted origins.\n    cwe: CWE-346\n    function_names:\n      - findServerAddressIsValidZephyrCloudURL\n    filenames:\n      - src/main/java/com/thed/zephyr/jenkins/utils/rest/ServerInfo.java  \n    classification: slightly promising\n\n  - headline: Storing passwords in plaintext\n    analysis: |\n      The ZephyrInstance and ZephyrCloudInstance classes store Jira/Zephyr passwords as plaintext fields.\n\n      Passwords should never be stored in plaintext. They should be securely hashed using a salt and a secure hashing algorithm like bcrypt, scrypt, PBKDF2, etc.\n    cwe: CWE-256\n    function_names: []\n    filenames:\n      - src/main/java/com/thed/zephyr/jenkins/model/ZephyrInstance.java\n      - src/main/java/com/thed/zephyr/jenkins/model/ZephyrCloudInstance.java\n    classification: very promising\n```\n\nThe code has some issues around exception handling exposing sensitive details, an overly permissive CORS policy, and storing passwords insecurely in plaintext. However, I didn't see any blatant injection flaws or other severe issues just from reviewing this portion of the codebase. A more thorough security review and penetration testing would be advisable to identify any additional vulnerabilities.",
+      "date": "2024-06-12T19:36:03.834352",
+      "usage": {
+        "prompt_tokens": 49555,
+        "completion_tokens": 755,
+        "cost": 0.79995
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Sensitive information exposed in exception messages",
+      "analysis": "The code catches exceptions in several places and prints the exception message or stack trace, which may include sensitive information. For example:\n\nIn ServerInfo.findServerAddressIsValidZephyrURL():\ne.printStackTrace();\n\nIn TestCaseUtil.processTestCaseDetails():\ne.printStackTrace();\n\nExposing detailed error messages can leak system information to attackers. Exceptions should be logged securely without exposing details to the user.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [
+        "findServerAddressIsValidZephyrURL",
+        "processTestCaseDetails"
+      ],
+      "filenames": [
+        "src/main/java/com/thed/zephyr/jenkins/utils/rest/ServerInfo.java",
+        "src/main/java/com/thed/zephyr/jenkins/utils/rest/TestCaseUtil.java"
+      ]
+    },
+    {
+      "headline": "Overly permissive CORS configuration",
+      "analysis": "In ServerInfo.findServerAddressIsValidZephyrCloudURL(), the code adds headers allowing access from any origin when making HTTP requests:\n\nexecutionsURLRequest.addHeader(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON);\nexecutionsURLRequest.addHeader(HEADER_AUTHORIZATION, jwtHeaderValue);\nexecutionsURLRequest.addHeader(HEADER_ZFJC_ACCESS_KEY, restClient.getAccessKey());\n\nAllowing unrestricted cross-origin access can enable cross-site request forgery (CSRF) attacks. CORS headers should be more restrictive and only allow access from trusted origins.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-346",
+      "function_names": [
+        "findServerAddressIsValidZephyrCloudURL"
+      ],
+      "filenames": [
+        "src/main/java/com/thed/zephyr/jenkins/utils/rest/ServerInfo.java"
+      ]
+    },
+    {
+      "headline": "Storing passwords in plaintext",
+      "analysis": "The ZephyrInstance and ZephyrCloudInstance classes store Jira/Zephyr passwords as plaintext fields.\n\nPasswords should never be stored in plaintext. They should be securely hashed using a salt and a secure hashing algorithm like bcrypt, scrypt, PBKDF2, etc.\n",
+      "classification": "very promising",
+      "cwe": "CWE-256",
+      "function_names": [],
+      "filenames": [
+        "src/main/java/com/thed/zephyr/jenkins/model/ZephyrInstance.java",
+        "src/main/java/com/thed/zephyr/jenkins/model/ZephyrCloudInstance.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2020-2154"
+      },
+      "vuln_dates": {
+        "CVE-2020-2216": "2020-07-02T15:15:18",
+        "CVE-2020-2215": "2020-07-02T15:15:18",
+        "CVE-2020-2154": "2020-03-09T16:15:14"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

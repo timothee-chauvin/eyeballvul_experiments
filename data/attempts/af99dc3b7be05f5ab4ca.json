@@ -1,0 +1,191 @@
+{
+  "commit": "15c51b9dd5dfe3ede3d8c2de72073e3a678ff5a2",
+  "repo_url": "https://github.com/encode/httpx",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "b27c99b509d3d8ee0af3",
+    "8d0be8fd7668ea39f508"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: |\n      Insecure Cookies Handling in Requests\n    analysis: |\n      The library does not handle cookies securely. For example, in the test conftest, it stores sensitive cookies without proper security mechanisms. These cookies should be marked as HttpOnly and Secure to reduce the risk of attacks such as cross-site scripting or exposure over non-HTTPS connections. The library doesn't ensure cookie security but relies on the supplied headers which can lead to exposure of sensitive information.\n    cwe: CWE-200\n    function_names:\n      - extract_cookies\n      - set_cookie_header\n    filenames:\n      - httpx/_models.py\n      - tests/test_cookies.py\n    classification: very promising\n\n  - headline: |\n      Improper Handling of JSON Data\n    analysis: |\n      The library improperly handles JSON data input, using user-provided JSON data without validation. When it receives a malformed JSON string in the `json` argument, it can cause exceptions, resulting in unexpected behavior or crashes. Specially crafted JSON data can take advantage of this to disrupt the service. Moreover, the validation callback used in command-line invocation is not rigorous enough to handle complex attacks, which can be used to bypass security checks.\n    cwe: CWE-20\n    function_names:\n      - validate_json\n    filenames:\n      - tests/test_multipart.py\n      - httpx/_main.py\n    classification: very promising\n\n  - headline: |\n      Missing Synchronization Primitive Handling\n    analysis: |\n      In the concurrency utilities, the handling of concurrent operations using asynchronous libraries does not include mechanisms to avoid race conditions. For example, the `serve` method in the test server class operates on shared resources without proper synchronization. This can lead to undefined behavior due to race conditions when multiple threads access shared resources concurrently.\n    cwe: CWE-362\n    function_names:\n      - serve\n      - serve_in_thread\n    filenames:\n      - tests/conftest.py\n    classification: slightly promising\n\n  - headline: |\n      Insecure Storage of Sensitive Data in Cookies\n    analysis: |\n      In the Cookies class definition, sensitive cookies are stored without encryption and without flags like HttpOnly and Secure by default. This exposes them to potential theft through XSS and transmission over unencrypted channels. This vulnerability is prevalent across various modules handling cookies, which may reuse these insecure practices.\n    cwe: CWE-311\n    function_names:\n      - set\n    filenames:\n      - httpx/_models.py\n      - tests/test_cookies.py\n    classification: slightly promising\n\n  - headline: |\n      Using Weak Cryptographic Algorithm for Digests\n    analysis: |\n      The `DigestAuth` class uses algorithms like MD5 which are known to be weak due to their susceptibility to collision attacks. Continued usage of such algorithms makes the authentication process vulnerable to various attacks. It is crucial to update the algorithm to a more secure option or provide mechanisms to use stronger algorithms.\n    cwe: CWE-327\n    function_names:\n      - _build_auth_header\n    filenames:\n      - httpx/_auth.py\n    classification: very promising\n\n  - headline: |\n      Potential Denial of Service (DoS) due to Unrestricted File Upload Handling\n    analysis: |\n      The library's handling of file uploads via multipart/form-data requests can lead to Denial of Service (DoS) attacks. Specifically, the `encode_multipart_data` function doesn't restrict file sizes or the number of files that can be uploaded, making it possible to exploit the system by uploading extremely large files or a large number of files. The system should incorporate checks and limits to mitigate such risks.\n    cwe: CWE-400\n    function_names:\n      - encode_multipart_data\n    filenames:\n      - httpx/_multipart.py\n      - tests/test_multipart.py\n    classification: very promising\n\n  - headline: |\n      Insecure Deserialization in Event Hooks\n    analysis: |\n      The dynamic execution of request and response hooks can lead to insecure deserialization issues. The library does not validate or sanitize the hooks before executing them, allowing an attacker to supply malicious serialized data that could execute arbitrary code upon deserialization.\n    cwe: CWE-502\n    function_names:\n      - send\n      - request\n    filenames:\n      - httpx/_client.py\n    classification: slightly promising\n```",
+      "date": "2024-06-12T16:17:05.833149",
+      "usage": {
+        "prompt_tokens": 119865,
+        "completion_tokens": 900,
+        "cost": 0.612825
+      }
+    },
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Potential Command Injection via httpx.HTTPTransport Configuration\"\n    analysis: |\n      In `httpx/_transports/default.py`, the `HTTPTransport` and `AsyncHTTPTransport` constructors allow proxy configuration through the `Proxy` class. The proxy URL and headers are used directly without adequate validation or sanitization. This can lead to command injection if an attacker controls the proxy configuration.\n    cwe: CWE-78\n    function_names:\n      - HTTPTransport.__init__\n      - AsyncHTTPTransport.__init__\n    filenames:\n      - httpx/_transports/default.py\n    classification: very promising\n    \n  - headline: \"Missing Input Validation in MockTransport Handler\"\n    analysis: |\n      In `httpx/_transports/mock.py`, the `MockTransport` class directly uses a handler without validating the URL or headers. This is particularly evident in `handle_request` and `handle_async_request` methods. An attacker could craft a request that exploits this lack of validation.\n    cwe: CWE-20\n    function_names:\n      - MockTransport.handle_request\n      - MockTransport.handle_async_request\n    filenames:\n      - httpx/_transports/mock.py\n    classification: very promising\n    \n  - headline: \"XML Injection via Improper Handling in Custom Transports\"\n    analysis: |\n      In `httpx/_transports/default.py`, the use of the `create_ssl_context` function throughout the file does not sanitize or validate the SSL context configuration. This can open doors to XML Injection, especially with the configurations passed from untrusted sources.\n    cwe: CWE-91\n    function_names:\n      - HTTPTransport.__init__\n      - AsyncHTTPTransport.__init__\n    filenames:\n      - httpx/_transports/default.py\n    classification: slightly promising\n    \n  - headline: \"Improper Error Handling Leading to Information Exposure\"\n    analysis: |\n      The error handling logic in `map_httpcore_exceptions` function in `httpx/_transports/default.py` uses the original exception's message without sanitizing it. This can lead to unintended information disclosure if exception messages contain sensitive information.\n    cwe: CWE-209\n    function_names:\n      - map_httpcore_exceptions\n    filenames:\n      - httpx/_transports/default.py\n    classification: slightly promising\n```",
+      "date": "2024-06-12T16:17:27.929709",
+      "usage": {
+        "prompt_tokens": 13821,
+        "completion_tokens": 479,
+        "cost": 0.07629
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insecure Cookies Handling in Requests\n",
+      "analysis": "The library does not handle cookies securely. For example, in the test conftest, it stores sensitive cookies without proper security mechanisms. These cookies should be marked as HttpOnly and Secure to reduce the risk of attacks such as cross-site scripting or exposure over non-HTTPS connections. The library doesn't ensure cookie security but relies on the supplied headers which can lead to exposure of sensitive information.\n",
+      "classification": "very promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "extract_cookies",
+        "set_cookie_header"
+      ],
+      "filenames": [
+        "httpx/_models.py",
+        "tests/test_cookies.py"
+      ]
+    },
+    {
+      "headline": "Improper Handling of JSON Data\n",
+      "analysis": "The library improperly handles JSON data input, using user-provided JSON data without validation. When it receives a malformed JSON string in the json argument, it can cause exceptions, resulting in unexpected behavior or crashes. Specially crafted JSON data can take advantage of this to disrupt the service. Moreover, the validation callback used in command-line invocation is not rigorous enough to handle complex attacks, which can be used to bypass security checks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "validate_json"
+      ],
+      "filenames": [
+        "tests/test_multipart.py",
+        "httpx/_main.py"
+      ]
+    },
+    {
+      "headline": "Missing Synchronization Primitive Handling\n",
+      "analysis": "In the concurrency utilities, the handling of concurrent operations using asynchronous libraries does not include mechanisms to avoid race conditions. For example, the serve method in the test server class operates on shared resources without proper synchronization. This can lead to undefined behavior due to race conditions when multiple threads access shared resources concurrently.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-362",
+      "function_names": [
+        "serve",
+        "serve_in_thread"
+      ],
+      "filenames": [
+        "tests/conftest.py"
+      ]
+    },
+    {
+      "headline": "Insecure Storage of Sensitive Data in Cookies\n",
+      "analysis": "In the Cookies class definition, sensitive cookies are stored without encryption and without flags like HttpOnly and Secure by default. This exposes them to potential theft through XSS and transmission over unencrypted channels. This vulnerability is prevalent across various modules handling cookies, which may reuse these insecure practices.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-311",
+      "function_names": [
+        "set"
+      ],
+      "filenames": [
+        "httpx/_models.py",
+        "tests/test_cookies.py"
+      ]
+    },
+    {
+      "headline": "Using Weak Cryptographic Algorithm for Digests\n",
+      "analysis": "The DigestAuth class uses algorithms like MD5 which are known to be weak due to their susceptibility to collision attacks. Continued usage of such algorithms makes the authentication process vulnerable to various attacks. It is crucial to update the algorithm to a more secure option or provide mechanisms to use stronger algorithms.\n",
+      "classification": "very promising",
+      "cwe": "CWE-327",
+      "function_names": [
+        "_build_auth_header"
+      ],
+      "filenames": [
+        "httpx/_auth.py"
+      ]
+    },
+    {
+      "headline": "Potential Denial of Service (DoS) due to Unrestricted File Upload Handling\n",
+      "analysis": "The library's handling of file uploads via multipart/form-data requests can lead to Denial of Service (DoS) attacks. Specifically, the encode_multipart_data function doesn't restrict file sizes or the number of files that can be uploaded, making it possible to exploit the system by uploading extremely large files or a large number of files. The system should incorporate checks and limits to mitigate such risks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "encode_multipart_data"
+      ],
+      "filenames": [
+        "httpx/_multipart.py",
+        "tests/test_multipart.py"
+      ]
+    },
+    {
+      "headline": "Insecure Deserialization in Event Hooks\n",
+      "analysis": "The dynamic execution of request and response hooks can lead to insecure deserialization issues. The library does not validate or sanitize the hooks before executing them, allowing an attacker to supply malicious serialized data that could execute arbitrary code upon deserialization.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "send",
+        "request"
+      ],
+      "filenames": [
+        "httpx/_client.py"
+      ]
+    },
+    {
+      "headline": "Potential Command Injection via httpx.HTTPTransport Configuration",
+      "analysis": "In httpx/_transports/default.py, the HTTPTransport and AsyncHTTPTransport constructors allow proxy configuration through the Proxy class. The proxy URL and headers are used directly without adequate validation or sanitization. This can lead to command injection if an attacker controls the proxy configuration.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "HTTPTransport.__init__",
+        "AsyncHTTPTransport.__init__"
+      ],
+      "filenames": [
+        "httpx/_transports/default.py"
+      ]
+    },
+    {
+      "headline": "Missing Input Validation in MockTransport Handler",
+      "analysis": "In httpx/_transports/mock.py, the MockTransport class directly uses a handler without validating the URL or headers. This is particularly evident in handle_request and handle_async_request methods. An attacker could craft a request that exploits this lack of validation.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "MockTransport.handle_request",
+        "MockTransport.handle_async_request"
+      ],
+      "filenames": [
+        "httpx/_transports/mock.py"
+      ]
+    },
+    {
+      "headline": "XML Injection via Improper Handling in Custom Transports",
+      "analysis": "In httpx/_transports/default.py, the use of the create_ssl_context function throughout the file does not sanitize or validate the SSL context configuration. This can open doors to XML Injection, especially with the configurations passed from untrusted sources.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-91",
+      "function_names": [
+        "HTTPTransport.__init__",
+        "AsyncHTTPTransport.__init__"
+      ],
+      "filenames": [
+        "httpx/_transports/default.py"
+      ]
+    },
+    {
+      "headline": "Improper Error Handling Leading to Information Exposure",
+      "analysis": "The error handling logic in map_httpcore_exceptions function in httpx/_transports/default.py uses the original exception's message without sanitizing it. This can lead to unintended information disclosure if exception messages contain sensitive information.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [
+        "map_httpcore_exceptions"
+      ],
+      "filenames": [
+        "httpx/_transports/default.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 6
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-41945": "2022-04-28T14:15:07"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

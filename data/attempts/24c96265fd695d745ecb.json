@@ -1,0 +1,78 @@
+{
+  "commit": "23170b836d31a2231011472b6e8a91bf98bf6b26",
+  "repo_url": "https://github.com/containrrr/shoutrrr",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "6bb9b5fed14dc16b18a0"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Command injection in shoutrrr notify command\n    analysis: |\n      The shoutrrr CLI tool has a \"notify\" command which takes a message and sends it using a user-provided service URL. However, the message parameter is passed directly to a shell command without any validation or sanitization. This allows an attacker to inject arbitrary shell commands by crafting a malicious message string containing special characters like semicolons, ampersands, pipes etc.\n\n      For example, sending a message like \"hello; cat /etc/passwd\" would cause the /etc/passwd file to be printed after the \"hello\" message. More severe attacks like deleting files or spawning reverse shells are also possible.\n\n      This is a critical vulnerability that allows remote command execution on any system running the shoutrrr tool, given that an attacker can control the contents of a message being sent.\n    cwe: CWE-78\n    function_names: \n      - RunCli\n    filenames:\n      - cli/cmd.go\n    classification: very promising\n  \n  - headline: Environment variable injection in default stream type\n    analysis: |\n      When setting the default steam type using the SHOUTRRR_DEFAULT env var, the value is used to construct a service URL without any validation. Since env vars can contain arbitrary characters, this allows for injection of special characters that change the meaning of the URL.\n      \n      For example, setting SHOUTRRR_DEFAULT to \"discord&url=http://attacker.com\" would override the service URL to an attacker controlled server, potentially leaking any notifications sent. While not as severe as the command injection, this could still allow stealing of sensitive data sent via notifications.\n    cwe: CWE-74\n    function_names:\n      - getDefaultStream\n    filenames: \n      - cli/cmd.go  \n    classification: slightly promising\n\n  - headline: Cleartext storage of secrets in URLs\n    analysis: |\n      Service URLs configured for shoutrrr can contain sensitive tokens, passwords or API keys needed to authenticate to the notification service. These URLs can come from config files, env vars or CLI flags.\n\n      However, the URLs are stored and logged exactly as provided, with no encryption or masking of the sensitive parts. This could leak secrets if the URLs are logged or stored insecurely. Best practice would be to store secrets separately and not directly in the URL strings.\n    cwe: CWE-312\n    function_names:\n      - RunCli\n      - makeNotification \n      - sendNotification\n    filenames:\n      - cli/cmd.go\n      - cli/utils.go \n    classification: slightly promising\n```",
+      "date": "2024-06-12T15:48:00.436768",
+      "usage": {
+        "prompt_tokens": 3235,
+        "completion_tokens": 607,
+        "cost": 0.09405
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Command injection in shoutrrr notify command",
+      "analysis": "The shoutrrr CLI tool has a \"notify\" command which takes a message and sends it using a user-provided service URL. However, the message parameter is passed directly to a shell command without any validation or sanitization. This allows an attacker to inject arbitrary shell commands by crafting a malicious message string containing special characters like semicolons, ampersands, pipes etc.\n\nFor example, sending a message like \"hello; cat /etc/passwd\" would cause the /etc/passwd file to be printed after the \"hello\" message. More severe attacks like deleting files or spawning reverse shells are also possible.\n\nThis is a critical vulnerability that allows remote command execution on any system running the shoutrrr tool, given that an attacker can control the contents of a message being sent.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "RunCli"
+      ],
+      "filenames": [
+        "cli/cmd.go"
+      ]
+    },
+    {
+      "headline": "Environment variable injection in default stream type",
+      "analysis": "When setting the default steam type using the SHOUTRRR_DEFAULT env var, the value is used to construct a service URL without any validation. Since env vars can contain arbitrary characters, this allows for injection of special characters that change the meaning of the URL.\n\nFor example, setting SHOUTRRR_DEFAULT to \"discord&url=http://attacker.com\" would override the service URL to an attacker controlled server, potentially leaking any notifications sent. While not as severe as the command injection, this could still allow stealing of sensitive data sent via notifications.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-74",
+      "function_names": [
+        "getDefaultStream"
+      ],
+      "filenames": [
+        "cli/cmd.go"
+      ]
+    },
+    {
+      "headline": "Cleartext storage of secrets in URLs",
+      "analysis": "Service URLs configured for shoutrrr can contain sensitive tokens, passwords or API keys needed to authenticate to the notification service. These URLs can come from config files, env vars or CLI flags.\n\nHowever, the URLs are stored and logged exactly as provided, with no encryption or masking of the sensitive parts. This could leak secrets if the URLs are logged or stored insecurely. Best practice would be to store secrets separately and not directly in the URL strings.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "RunCli",
+        "makeNotification",
+        "sendNotification"
+      ],
+      "filenames": [
+        "cli/cmd.go",
+        "cli/utils.go"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-25891": "2022-07-15T20:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

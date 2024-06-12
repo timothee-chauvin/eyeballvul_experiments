@@ -1,0 +1,77 @@
+{
+  "commit": "127f2fbb585228b5a900a71abe7337b0a38699c8",
+  "repo_url": "https://github.com/ericnorris/striptags",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "4c9c30d93286ef3e8c74"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection') in striptags_internal function\n    analysis: |\n      The striptags_internal function does not properly sanitize or escape the user-supplied 'html' parameter before outputting it. This could allow an attacker to inject malicious HTML or JavaScript code into the output.\n\n      For example, if the 'html' parameter contains a string like '<script>alert(\"XSS\")</script>', this script tag will be passed through unmodified to the output when the tag is not in the allowable_tags set. This could result in Cross-Site Scripting (XSS) if the output is rendered in a web browser.\n\n      To fix this vulnerability, special characters like <, >, &, ', and \" should be properly escaped in the output when not part of an allowed tag. Alternatively, a well-tested library could be used for HTML sanitization instead of implementing it from scratch.\n    cwe: CWE-79\n    function_names:\n      - striptags_internal\n    filenames:\n      - src/striptags.js\n    classification: very promising\n    \n  - headline: External control of critical resource in parse_allowable_tags function\n    analysis: |\n      The parse_allowable_tags function allows the caller to specify which HTML tags should be allowed in the output via the 'allowable_tags' parameter. However, the function does not place any restrictions on which tags can be allowed. This gives external callers control over a critical resource - the set of tags that will not be stripped from the input.\n\n      For example, if a caller specifies 'script' as an allowed tag, then any <script> tags in the input will be passed through to the output unmodified. This could allow an attacker to inject malicious JavaScript that will be executed when the output is rendered.\n\n      To fix this vulnerability, the parse_allowable_tags function should have a strict allowlist of tags that are allowed to be parsed from the 'allowable_tags' parameter. Any other tags should be ignored. The striptags library should never accept 'script' or other dangerous tags as allowable.\n    cwe: CWE-732\n    function_names:  \n      - parse_allowable_tags\n    filenames:\n      - src/striptags.js  \n    classification: very promising\n\n  - headline: Improper neutralization of input in normalize_tag function\n    analysis: |  \n      The normalize_tag function uses a regular expression to extract the tag name from a string like '<div>'. However, it does not validate or sanitize the extracted tag name before returning it.\n\n      An attacker could potentially bypass allowable tag checks by supplying a malformed tag string that injects additional characters after the tag name. For example, a string like '<script<>' would return 'script<' from normalize_tag, which would not match 'script' in the allowable tags set, bypassing that protection.\n\n      To fix this vulnerability, normalize_tag should sanitize the extracted tag name to only allow alphanumeric characters and lowercase the result before returning it. This will ensure it is normalized in a safe way without risking improper neutralization.\n    cwe: CWE-20 \n    function_names:\n      - normalize_tag\n    filenames:\n      - src/striptags.js\n    classification: slightly promising\n```",
+      "date": "2024-06-12T16:18:39.467293",
+      "usage": {
+        "prompt_tokens": 6484,
+        "completion_tokens": 782,
+        "cost": 0.15591
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection') in striptags_internal function",
+      "analysis": "The striptags_internal function does not properly sanitize or escape the user-supplied 'html' parameter before outputting it. This could allow an attacker to inject malicious HTML or JavaScript code into the output.\n\nFor example, if the 'html' parameter contains a string like '<script>alert(\"XSS\")</script>', this script tag will be passed through unmodified to the output when the tag is not in the allowable_tags set. This could result in Cross-Site Scripting (XSS) if the output is rendered in a web browser.\n\nTo fix this vulnerability, special characters like <, >, &, ', and \" should be properly escaped in the output when not part of an allowed tag. Alternatively, a well-tested library could be used for HTML sanitization instead of implementing it from scratch.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "striptags_internal"
+      ],
+      "filenames": [
+        "src/striptags.js"
+      ]
+    },
+    {
+      "headline": "External control of critical resource in parse_allowable_tags function",
+      "analysis": "The parse_allowable_tags function allows the caller to specify which HTML tags should be allowed in the output via the 'allowable_tags' parameter. However, the function does not place any restrictions on which tags can be allowed. This gives external callers control over a critical resource - the set of tags that will not be stripped from the input.\n\nFor example, if a caller specifies 'script' as an allowed tag, then any <script> tags in the input will be passed through to the output unmodified. This could allow an attacker to inject malicious JavaScript that will be executed when the output is rendered.\n\nTo fix this vulnerability, the parse_allowable_tags function should have a strict allowlist of tags that are allowed to be parsed from the 'allowable_tags' parameter. Any other tags should be ignored. The striptags library should never accept 'script' or other dangerous tags as allowable.\n",
+      "classification": "very promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "parse_allowable_tags"
+      ],
+      "filenames": [
+        "src/striptags.js"
+      ]
+    },
+    {
+      "headline": "Improper neutralization of input in normalize_tag function",
+      "analysis": "The normalize_tag function uses a regular expression to extract the tag name from a string like '<div>'. However, it does not validate or sanitize the extracted tag name before returning it.\n\nAn attacker could potentially bypass allowable tag checks by supplying a malformed tag string that injects additional characters after the tag name. For example, a string like '<script<>' would return 'script<' from normalize_tag, which would not match 'script' in the allowable tags set, bypassing that protection.\n\nTo fix this vulnerability, normalize_tag should sanitize the extracted tag name to only allow alphanumeric characters and lowercase the result before returning it. This will ensure it is normalized in a safe way without risking improper neutralization.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "normalize_tag"
+      ],
+      "filenames": [
+        "src/striptags.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "0": "CVE-2021-32696"
+      },
+      "vuln_dates": {
+        "CVE-2021-32696": "2021-06-18T20:15:07"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

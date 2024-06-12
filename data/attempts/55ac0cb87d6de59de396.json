@@ -1,0 +1,42 @@
+{
+  "commit": "24876fd6443e7e899274a35c805cb4f0e492e9b9",
+  "repo_url": "https://github.com/jenkinsci/mercurial-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "9cbad99b305083d1f9ba"
+  ],
+  "responses": [
+    {
+      "content": "Here are the key security vulnerabilities I found in the provided codebase:\n\nleads:\n  - headline: Arbitrary command execution via insecure Mercurial tool configuration\n    analysis: |\n      The MercurialInstallation class allows configuring the path to the Mercurial executable via the \"executable\" field. This is passed through a string replace but is not otherwise validated or sanitized before being used in command invocations in the HgExe class. An attacker could provide a malicious executable path that injects additional shell commands, leading to arbitrary command execution.\n    cwe: CWE-78\n    function_names:\n      - MercurialInstallation.executableWithSubstitution\n      - HgExe.findHgExe\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialInstallation.java\n      - src/main/java/hudson/plugins/mercurial/HgExe.java  \n    classification: very promising\n\n  - headline: Missing escaping of Mercurial config values \n    analysis: |  \n      The MercurialInstallation class allows specifying custom configuration options via the \"config\" field. These config values are written directly to Mercurial config files without any escaping. If untrusted input is used for config values, it could allow injecting malicious Mercurial config directives and potentially executing arbitrary code via certain config options.\n    cwe: CWE-74\n    function_names:\n      - MercurialInstallation.DescriptorImpl.doCheckConfig\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialInstallation.java\n    classification: promising\n\n  - headline: Incorrect permission assignment when writing SSH key \n    analysis: |\n      When using SSH credentials, the HgExe class writes the SSH private key to a temporary file with 0600 permissions. However, it does this after the file has already been created, so there is a window where the file has the default umask permissions and may be readable to other users on the system. The private key should be written with the secure permissions atomically.\n    cwe: CWE-276\n    function_names:\n      - HgExe\n    filenames: \n      - src/main/java/hudson/plugins/mercurial/HgExe.java\n    classification: slightly promising\n\n  - headline: SSRF and data exfiltration via SCM polling endpoint\n    analysis: |\n      The MercurialStatus class implements an unauthenticated endpoint that accepts a Mercurial repository URL as a parameter. It then probes this URL to check for changes. If an attacker provides an internal URL or local file path, it could potentially be used for SSRF attacks to access internal resources or scan the local filesystem. Outgoing poll results may also leak sensitive data about internal repositories.\n    cwe: CWE-918\n    function_names:\n      - MercurialStatus.doNotifyCommit\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialStatus.java  \n    classification: slightly promising\n\nThis covers the most severe potential vulnerabilities I could identify based on the provided source code. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-12T18:55:18.874302",
+      "usage": {
+        "prompt_tokens": 108028,
+        "completion_tokens": 776,
+        "cost": 1.67862
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 5,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-2305": "2020-11-04T15:15:11",
+        "CVE-2020-2306": "2020-11-04T15:15:11",
+        "CVE-2022-30948": "2022-05-17T15:15:08",
+        "CVE-2022-43410": "2022-10-19T16:15:10",
+        "CVE-2018-1000112": "2018-03-13T13:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

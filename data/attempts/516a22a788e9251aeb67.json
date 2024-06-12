@@ -1,0 +1,78 @@
+{
+  "commit": "150f4331481fcfac48b870d2335c82c7b7a2eeb0",
+  "repo_url": "https://github.com/braintree/sanitize-url",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "f2714468a8fbed78ec1f"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper validation of URLs with invalid protocols\n    analysis: |\n      The `sanitizeUrl` function attempts to validate and sanitize URLs to prevent dangerous URLs from being used. However, the regex used to detect invalid protocols (`invalidProtocolRegex`) is not comprehensive enough. It allows protocols like \"javascript:\" to be considered valid if they are preceded by certain characters like \"&!*\". \n\n      For example, the URL \"&!*javascript:alert(document.domain)\" would bypass the sanitization and could lead to XSS attacks if the URL is used in HTML contexts like <a href> or <iframe src>.\n\n      To fix this, the regex should be updated to disallow any non-alphanumeric characters before the protocol. Alternatively, consider using a stricter allowlist approach instead of a denylist.\n    cwe: CWE-20\n    function_names:\n      - sanitizeUrl\n    filenames:\n      - src/index.ts\n    classification: very promising\n\n  - headline: Incomplete sanitization of URLs with control characters\n    analysis: |\n      The `sanitizeUrl` function strips out some control characters from URLs using the `ctrlCharactersRegex`. However, the regex is not comprehensive and misses some dangerous Unicode characters that can be used to obfuscate malicious URLs.\n\n      For example, the Unicode character U+202E (RIGHT-TO-LEFT OVERRIDE) is not stripped, which could allow an attacker to craft a URL like \"http://example.com/U+202Ejavascript:alert(1)\" which may appear safe but actually executes JavaScript if used in certain HTML contexts.\n\n      To fix this, expand the `ctrlCharactersRegex` to include a wider range of Unicode control characters, or consider using a well-tested library for URL parsing and sanitization instead of regex.\n    cwe: CWE-20\n    function_names:\n      - sanitizeUrl\n    filenames:\n      - src/index.ts  \n    classification: slightly promising\n\n  - headline: Insufficient testing of URL sanitization edge cases\n    analysis: |\n      While the test suite for `sanitizeUrl` covers many important test cases, there are some additional edge cases that are not covered. This could allow some malicious URLs to bypass sanitization.\n\n      For example, there are no tests for URLs containing both ctrl characters and obfuscated \"javascript:\" protocols, like the \"http://example.com/U+202Ejavascript:alert(1)\" example mentioned above.\n\n      Other possible edge cases to consider:\n      - Non-printable ASCII characters before protocol\n      - Null bytes in protocol\n      - URL encoded characters in protocol\n      - Uncommon or new protocols like \"sftp://\"\n      - URLs starting with IP address rather than hostname\n\n      Expanding test coverage will help identify any holes in the sanitization logic.\n    cwe: CWE-20 \n    function_names:\n      - sanitizeUrl\n    filenames:\n      - src/__tests__/test.ts\n    classification: slightly promising\n```",
+      "date": "2024-06-12T15:20:51.835605",
+      "usage": {
+        "prompt_tokens": 5348,
+        "completion_tokens": 699,
+        "cost": 0.132645
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper validation of URLs with invalid protocols",
+      "analysis": "The sanitizeUrl function attempts to validate and sanitize URLs to prevent dangerous URLs from being used. However, the regex used to detect invalid protocols (invalidProtocolRegex) is not comprehensive enough. It allows protocols like \"javascript:\" to be considered valid if they are preceded by certain characters like \"&!*\". \n\nFor example, the URL \"&!*javascript:alert(document.domain)\" would bypass the sanitization and could lead to XSS attacks if the URL is used in HTML contexts like <a href> or <iframe src>.\n\nTo fix this, the regex should be updated to disallow any non-alphanumeric characters before the protocol. Alternatively, consider using a stricter allowlist approach instead of a denylist.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "sanitizeUrl"
+      ],
+      "filenames": [
+        "src/index.ts"
+      ]
+    },
+    {
+      "headline": "Incomplete sanitization of URLs with control characters",
+      "analysis": "The sanitizeUrl function strips out some control characters from URLs using the ctrlCharactersRegex. However, the regex is not comprehensive and misses some dangerous Unicode characters that can be used to obfuscate malicious URLs.\n\nFor example, the Unicode character U+202E (RIGHT-TO-LEFT OVERRIDE) is not stripped, which could allow an attacker to craft a URL like \"http://example.com/U+202Ejavascript:alert(1)\" which may appear safe but actually executes JavaScript if used in certain HTML contexts.\n\nTo fix this, expand the ctrlCharactersRegex to include a wider range of Unicode control characters, or consider using a well-tested library for URL parsing and sanitization instead of regex.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "sanitizeUrl"
+      ],
+      "filenames": [
+        "src/index.ts"
+      ]
+    },
+    {
+      "headline": "Insufficient testing of URL sanitization edge cases",
+      "analysis": "While the test suite for sanitizeUrl covers many important test cases, there are some additional edge cases that are not covered. This could allow some malicious URLs to bypass sanitization.\n\nFor example, there are no tests for URLs containing both ctrl characters and obfuscated \"javascript:\" protocols, like the \"http://example.com/U+202Ejavascript:alert(1)\" example mentioned above.\n\nOther possible edge cases to consider:\n- Non-printable ASCII characters before protocol\n- Null bytes in protocol\n- URL encoded characters in protocol\n- Uncommon or new protocols like \"sftp://\"\n- URLs starting with IP address rather than hostname\n\nExpanding test coverage will help identify any holes in the sanitization logic.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "sanitizeUrl"
+      ],
+      "filenames": [
+        "src/__tests__/test.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2021-23648"
+      },
+      "vuln_dates": {
+        "CVE-2022-48345": "2023-02-24T06:15:11",
+        "CVE-2021-23648": "2022-03-16T16:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

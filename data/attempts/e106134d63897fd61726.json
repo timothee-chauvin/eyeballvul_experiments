@@ -1,0 +1,101 @@
+{
+  "commit": "23d6cac36a16b81b46c26649cb357c3938d1fd95",
+  "repo_url": "https://github.com/fastify/fastify-http-proxy",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "846181db4f753e4f73d4"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Uncontrolled Resource Consumption in HTTP proxy\n    analysis: |\n      The HTTP proxy functionality in index.js does not limit the number of simultaneous connections or requests that can be proxied. This could allow remote attackers to consume excessive server resources by making many concurrent requests to the proxy.\n      \n      Since the proxy uses the fastify-reply-from module to forward requests upstream, it inherits any potential resource consumption issues in that module as well. \n\n      Overall, the lack of connection/request limiting and unbounded queueing could lead to a Denial of Service condition if abused by attackers.\n    cwe: CWE-770\n    function_names: \n      - httpProxy\n      - handler\n    filenames:\n      - index.js  \n    classification: very promising\n\n  - headline: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') in HTTP proxy\n    analysis: |\n      The HTTP proxy in index.js passes request URLs from the client directly to fastify-reply-from to proxy the request upstream. However, it does not appear to properly validate or sanitize the URL before using it.\n\n      If the upstream server is specified as a domain name rather than an IP address, an attacker could potentially inject shell metacharacters into the domain name portion of the URL. This could allow them to execute arbitrary OS commands on the server when the URL is resolved.\n\n      While this requires the proxy to be configured with an upstream domain name rather than IP address, it could still be a significant vulnerability in some deployments.\n    cwe: CWE-78 \n    function_names:\n      - httpProxy\n      - handler\n    filenames:\n      - index.js\n    classification: slightly promising\n\n  - headline: Header Injection in HTTP proxy via 'location' header\n    analysis: |\n      The HTTP proxy in index.js rewrites the 'location' header from upstream responses by replacing the configured rewritePrefix with the proxy's prefix.\n\n      However, it does not validate the contents of the 'location' header before performing this string replacement. An attacker who controls the upstream server could inject newline characters and additional headers into the 'location' value.\n\n      This would allow them to inject arbitrary headers into the proxied response, potentially enabling various attacks like response splitting, cache poisoning, etc. \n    cwe: CWE-113\n    function_names:\n      - rewriteHeaders\n    filenames: \n      - index.js\n    classification: very promising\n\n  - headline: Improper Neutralization of CRLF Sequences in HTTP Headers ('HTTP Response Splitting') in WebSocket proxy  \n    analysis: | \n      The WebSocket proxy functionality does not sanitize or validate incoming messages before forwarding them on to the upstream server or back to the client.\n\n      This could allow an attacker to inject malicious data into the WebSocket messages, including CRLF sequences to split HTTP responses and inject additional headers/content.\n\n      If exploited, this could allow cache poisoning attacks, as well as cross-site scripting and other attacks if the injected content is reflected back to other clients.\n    cwe: CWE-113\n    function_names:\n      - proxyWebSockets\n    filenames:\n      - index.js  \n    classification: slightly promising\n\n  - headline: Incorrect Permission Assignment for Critical Resource in WebSocket proxy\n    analysis: |  \n      When setting up the WebSocket proxy server, the 'wsServerOptions' object from the proxy configuration is passed directly to the ws.WebSocketServer constructor.\n\n      This could allow a user to misconfigure the WebSocket server with overly permissive settings. For example, if the 'perMessageDeflate' compression option is enabled, it could allow zip bomb attacks.\n\n      In general, exposing the raw WebSocket server configuration to the end user broadens the attack surface and could enable privilege escalation if abused.\n    cwe: CWE-732\n    function_names:\n      - setupWebSocketProxy\n    filenames:\n      - index.js\n    classification: slightly promising\n```",
+      "date": "2024-06-12T16:28:15.996467",
+      "usage": {
+        "prompt_tokens": 10781,
+        "completion_tokens": 935,
+        "cost": 0.23184
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Uncontrolled Resource Consumption in HTTP proxy",
+      "analysis": "The HTTP proxy functionality in index.js does not limit the number of simultaneous connections or requests that can be proxied. This could allow remote attackers to consume excessive server resources by making many concurrent requests to the proxy.\n\nSince the proxy uses the fastify-reply-from module to forward requests upstream, it inherits any potential resource consumption issues in that module as well. \n\nOverall, the lack of connection/request limiting and unbounded queueing could lead to a Denial of Service condition if abused by attackers.\n",
+      "classification": "very promising",
+      "cwe": "CWE-770",
+      "function_names": [
+        "httpProxy",
+        "handler"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') in HTTP proxy",
+      "analysis": "The HTTP proxy in index.js passes request URLs from the client directly to fastify-reply-from to proxy the request upstream. However, it does not appear to properly validate or sanitize the URL before using it.\n\nIf the upstream server is specified as a domain name rather than an IP address, an attacker could potentially inject shell metacharacters into the domain name portion of the URL. This could allow them to execute arbitrary OS commands on the server when the URL is resolved.\n\nWhile this requires the proxy to be configured with an upstream domain name rather than IP address, it could still be a significant vulnerability in some deployments.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "httpProxy",
+        "handler"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Header Injection in HTTP proxy via 'location' header",
+      "analysis": "The HTTP proxy in index.js rewrites the 'location' header from upstream responses by replacing the configured rewritePrefix with the proxy's prefix.\n\nHowever, it does not validate the contents of the 'location' header before performing this string replacement. An attacker who controls the upstream server could inject newline characters and additional headers into the 'location' value.\n\nThis would allow them to inject arbitrary headers into the proxied response, potentially enabling various attacks like response splitting, cache poisoning, etc. \n",
+      "classification": "very promising",
+      "cwe": "CWE-113",
+      "function_names": [
+        "rewriteHeaders"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Improper Neutralization of CRLF Sequences in HTTP Headers ('HTTP Response Splitting') in WebSocket proxy",
+      "analysis": "The WebSocket proxy functionality does not sanitize or validate incoming messages before forwarding them on to the upstream server or back to the client.\n\nThis could allow an attacker to inject malicious data into the WebSocket messages, including CRLF sequences to split HTTP responses and inject additional headers/content.\n\nIf exploited, this could allow cache poisoning attacks, as well as cross-site scripting and other attacks if the injected content is reflected back to other clients.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-113",
+      "function_names": [
+        "proxyWebSockets"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Incorrect Permission Assignment for Critical Resource in WebSocket proxy",
+      "analysis": "When setting up the WebSocket proxy server, the 'wsServerOptions' object from the proxy configuration is passed directly to the ws.WebSocketServer constructor.\n\nThis could allow a user to misconfigure the WebSocket server with overly permissive settings. For example, if the 'perMessageDeflate' compression option is enabled, it could allow zip bomb attacks.\n\nIn general, exposing the raw WebSocket server configuration to the end user broadens the attack surface and could enable privilege escalation if abused.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "setupWebSocketProxy"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-21322": "2021-03-02T04:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

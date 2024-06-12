@@ -1,0 +1,67 @@
+{
+  "commit": "15c51b9dd5dfe3ede3d8c2de72073e3a678ff5a2",
+  "repo_url": "https://github.com/encode/httpx",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "8090fcb6e628c01c1ff9"
+  ],
+  "responses": [
+    {
+      "content": "Here are a few key security vulnerabilities I noticed in the provided codebase:\n\n```yaml\nleads:\n  - headline: Use of exec and eval with untrusted input\n    analysis: |\n      The guess_json_utf function in httpx/_utils.py uses eval() on untrusted JSON data.\n      This could allow execution of arbitrary code if the JSON contains malicious payloads.\n      The json module should be used for parsing JSON instead.\n    cwe: CWE-95\n    function_names:\n      - guess_json_utf\n    filenames:\n      - httpx/_utils.py\n    classification: very promising\n\n  - headline: SSRF and request splitting via untrusted URLs\n    analysis: |\n      The httpx library takes URLs from untrusted sources and uses them to make HTTP requests. \n      If the URLs are not properly validated, this could enable Server-Side Request Forgery (SSRF) attacks\n      that cause the library to make unexpected requests to internal or external systems.\n      Newline characters in the URLs could also potentially enable request splitting.\n      Proper input validation should be applied to all URLs before use.\n    cwe: CWE-918\n    function_names:\n      - request\n      - send\n    filenames:\n      - httpx/_client.py \n      - httpx/_api.py\n    classification: very promising\n\n  - headline: Use of cookies without validation or signing\n    analysis: |  \n      The Cookies class in httpx/_models.py takes arbitrary user supplied cookie data\n      without validating the names/values or signing the cookies to prevent tampering.\n      An attacker could potentially set malicious cookie names or values that lead to vulnerabilities\n      like injection if the cookies are used unsafely by the application.\n      Strict validation should be applied to cookie names, values, and metadata. Signing of cookies\n      should also be considered.\n    cwe: CWE-565\n    function_names:\n      - Cookies\n    filenames: \n      - httpx/_models.py\n    classification: promising\n```\n\nA few other lower severity issues to consider:\n\n- Use of dangerous defaults like verify=False that disable SSL verification\n- Potential XXE if parsing untrusted XML\n- Lack of defenses against DNS rebinding when making requests\n- Possible header injection in models like Headers \n\nIn summary, the most concerning issues are unsafe parsing of JSON with eval, SSRF via unvalidated URLs, and use of unvalidated cookies. I'd recommend focusing security efforts there first. Let me know if you have any other questions!",
+      "date": "2024-06-12T16:17:41.621547",
+      "usage": {
+        "prompt_tokens": 167025,
+        "completion_tokens": 592,
+        "cost": 2.549775
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of exec and eval with untrusted input",
+      "analysis": "The guess_json_utf function in httpx/_utils.py uses eval() on untrusted JSON data.\nThis could allow execution of arbitrary code if the JSON contains malicious payloads.\nThe json module should be used for parsing JSON instead.\n",
+      "classification": "very promising",
+      "cwe": "CWE-95",
+      "function_names": [
+        "guess_json_utf"
+      ],
+      "filenames": [
+        "httpx/_utils.py"
+      ]
+    },
+    {
+      "headline": "SSRF and request splitting via untrusted URLs",
+      "analysis": "The httpx library takes URLs from untrusted sources and uses them to make HTTP requests. \nIf the URLs are not properly validated, this could enable Server-Side Request Forgery (SSRF) attacks\nthat cause the library to make unexpected requests to internal or external systems.\nNewline characters in the URLs could also potentially enable request splitting.\nProper input validation should be applied to all URLs before use.\n",
+      "classification": "very promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "request",
+        "send"
+      ],
+      "filenames": [
+        "httpx/_client.py",
+        "httpx/_api.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2021-41945"
+      },
+      "vuln_dates": {
+        "CVE-2021-41945": "2022-04-28T14:15:07"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

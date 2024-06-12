@@ -1,0 +1,190 @@
+{
+  "commit": "24876fd6443e7e899274a35c805cb4f0e492e9b9",
+  "repo_url": "https://github.com/jenkinsci/mercurial-plugin",
+  "model": "claude-3-sonnet-20240229",
+  "chunk_hashes": [
+    "9cbad99b305083d1f9ba"
+  ],
+  "responses": [
+    {
+      "content": "Unfortunately the provided codebase contains many security vulnerabilities. Here is a YAML representation of the identified vulnerabilities according to the specified schema:\n\n```yaml\nleads:\n  - headline: Code injection vulnerability\n    analysis: |\n      The MercurialSCM class allows users to specify a revision or revset via the \"revision\" field. This value is\n      passed directly to the Mercurial command line without any sanitization, enabling code injection attacks.\n    cwe: CWE-94\n    function_names:\n      - hudson.plugins.mercurial.MercurialSCM.update\n      - hudson.plugins.mercurial.MercurialSCM.clone\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialSCM.java\n    classification: very promising\n\n  - headline: Path traversal vulnerability\n    analysis: |\n      The MercurialSCM class allows users to specify a \"subdir\" field that determines where the\n      Mercurial repository will be checked out. This value is not properly sanitized, allowing path traversal\n      attacks where an attacker could write to arbitrary locations on the server's filesystem.\n    cwe: CWE-22\n    function_names:\n      - hudson.plugins.mercurial.MercurialSCM.workspace2Repo\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialSCM.java\n    classification: very promising\n\n  - headline: Cleartext storage of sensitive information\n    analysis: |\n      The HgExe class writes SSH private key credentials to a temporary file on disk in cleartext. This potentially\n      exposes these credentials to local attackers who can access the Jenkins file system.\n    cwe: CWE-312\n    function_names:\n      - hudson.plugins.mercurial.HgExe\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/HgExe.java\n    classification: very promising\n\n  - headline: Insecure permission assignment for critical resource\n    analysis: |\n      The HgExe class creates a temporary file containing the SSH private key, but sets overly permissive file\n      permissions of 0600 on this file. On multi-user systems, these permissions may allow unauthorized users\n      to read the private key file.\n    cwe: CWE-732\n    function_names:\n      - hudson.plugins.mercurial.HgExe\n    filenames:  \n      - src/main/java/hudson/plugins/mercurial/HgExe.java\n    classification: very promising\n   \n  - headline: Improper neutralization of special elements in output used by a downstream component\n    analysis: |  \n      The MercurialChangeLogParser class does not properly sanitize the output from Mercurial commands before\n      writing it to an XML file. This could potentially enable XML injection attacks if malicious data is\n      injected into the Mercurial output.\n    cwe: CWE-1236\n    function_names:\n      - hudson.plugins.mercurial.MercurialChangeLogParser.parse  \n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialChangeLogParser.java\n    classification: slightly promising\n\n  - headline: Improper restriction of operations within bounds of memory buffer\n    analysis: |\n      The MercurialChangeSet class constructs the shortened commit ID by taking a substring of the full\n      commit hash without validating that the hash is long enough. This could potentially enable\n      buffer overflows if malicious Git data is injected.\n    cwe: CWE-119  \n    function_names:\n      - hudson.plugins.mercurial.MercurialChangeSet.getShortNode\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialChangeSet.java\n    classification: slightly promising\n    \n  - headline: Use of a broken or risky cryptographic algorithm\n    analysis: |\n      The Cache class uses the SHA-1 hashing algorithm to generate a repository cache directory name.\n      SHA-1 is no longer considered a secure hashing algorithm due to potential collisions. An attacker\n      could potentially cause a collision and access another project's repository cache.\n    cwe: CWE-327\n    function_names:  \n      - hudson.plugins.mercurial.Cache.hashSource\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/Cache.java  \n    classification: slightly promising\n        \n  - headline: Improper control of generation of error message\n    analysis: |\n      The MercurialSCM class logs sensitive information like Mercurial command output and stack traces to\n      error messages that are displayed to users. These could potentially leak sensitive information.\n    cwe: CWE-209\n    function_names: []\n    filenames:  \n      - src/main/java/hudson/plugins/mercurial/MercurialSCM.java\n    classification: slightly promising\n\n  - headline: Open redirect vulnerability  \n    analysis: |\n      The MercurialStatus class does not validate that notification URLs point to the local Jenkins instance\n      before triggering builds. This could enable an SSRF-like vulnerability where the server follows\n      redirects to arbitrary external URLs controlled by an attacker.\n    cwe: CWE-601 \n    function_names:\n      - hudson.plugins.mercurial.MercurialStatus.handleNotifyCommit\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialStatus.java\n    classification: slightly promising\n\n  - headline: Missing authentication for critical function\n    analysis: |   \n      The MercurialStatus class exposes a URL endpoint that can trigger builds on the Jenkins master. This\n      endpoint does not require any authentication, allowing anonymous users to initiate builds.\n    cwe: CWE-306\n    function_names:\n      - hudson.plugins.mercurial.MercurialStatus.doNotifyCommit  \n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialStatus.java\n    classification: very promising\n      \n  - headline: Insufficient verification of data authenticity  \n    analysis: |\n      The MercurialStatus class does not verify the authenticity of notification requests, allowing\n      anyone to trigger builds by sending fake notifications.\n    cwe: CWE-345\n    function_names: \n      - hudson.plugins.mercurial.MercurialStatus.doNotifyCommit\n    filenames:\n      - src/main/java/hudson/plugins/mercurial/MercurialStatus.java  \n    classification: very promising\n\n  - headline: Use of insufficiently random values\n    analysis: |\n      The Cache class generates repository cache directory names by hashing the repository URL using a\n      non-cryptographic hash function. The hash values are not sufficiently random and could lead to\n      collisions between different repositories.\n    cwe: CWE-330\n    function_names:\n      - hudson.plugins.mercurial.Cache.hashSource\n    filenames:  \n      - src/main/java/hudson/plugins/mercurial/Cache.java\n    classification: slightly promising\n        \n```\n\nThe vulnerabilities range from code injection and path traversal allowing full server compromise, to information exposure, insufficient authentication, and weak randomness issues. Many of the issues stem from lack of input validation and unsafe integration with external Mercurial data. Prompt remediation is highly recommended.",
+      "date": "2024-06-12T18:55:00.810006",
+      "usage": {
+        "prompt_tokens": 108028,
+        "completion_tokens": 1789,
+        "cost": 0.350919
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Code injection vulnerability",
+      "analysis": "The MercurialSCM class allows users to specify a revision or revset via the \"revision\" field. This value is\npassed directly to the Mercurial command line without any sanitization, enabling code injection attacks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialSCM.update",
+        "hudson.plugins.mercurial.MercurialSCM.clone"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialSCM.java"
+      ]
+    },
+    {
+      "headline": "Path traversal vulnerability",
+      "analysis": "The MercurialSCM class allows users to specify a \"subdir\" field that determines where the\nMercurial repository will be checked out. This value is not properly sanitized, allowing path traversal\nattacks where an attacker could write to arbitrary locations on the server's filesystem.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialSCM.workspace2Repo"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialSCM.java"
+      ]
+    },
+    {
+      "headline": "Cleartext storage of sensitive information",
+      "analysis": "The HgExe class writes SSH private key credentials to a temporary file on disk in cleartext. This potentially\nexposes these credentials to local attackers who can access the Jenkins file system.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "hudson.plugins.mercurial.HgExe"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/HgExe.java"
+      ]
+    },
+    {
+      "headline": "Insecure permission assignment for critical resource",
+      "analysis": "The HgExe class creates a temporary file containing the SSH private key, but sets overly permissive file\npermissions of 0600 on this file. On multi-user systems, these permissions may allow unauthorized users\nto read the private key file.\n",
+      "classification": "very promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "hudson.plugins.mercurial.HgExe"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/HgExe.java"
+      ]
+    },
+    {
+      "headline": "Improper neutralization of special elements in output used by a downstream component",
+      "analysis": "The MercurialChangeLogParser class does not properly sanitize the output from Mercurial commands before\nwriting it to an XML file. This could potentially enable XML injection attacks if malicious data is\ninjected into the Mercurial output.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-1236",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialChangeLogParser.parse"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialChangeLogParser.java"
+      ]
+    },
+    {
+      "headline": "Improper restriction of operations within bounds of memory buffer",
+      "analysis": "The MercurialChangeSet class constructs the shortened commit ID by taking a substring of the full\ncommit hash without validating that the hash is long enough. This could potentially enable\nbuffer overflows if malicious Git data is injected.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-119",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialChangeSet.getShortNode"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialChangeSet.java"
+      ]
+    },
+    {
+      "headline": "Use of a broken or risky cryptographic algorithm",
+      "analysis": "The Cache class uses the SHA-1 hashing algorithm to generate a repository cache directory name.\nSHA-1 is no longer considered a secure hashing algorithm due to potential collisions. An attacker\ncould potentially cause a collision and access another project's repository cache.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-327",
+      "function_names": [
+        "hudson.plugins.mercurial.Cache.hashSource"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/Cache.java"
+      ]
+    },
+    {
+      "headline": "Improper control of generation of error message",
+      "analysis": "The MercurialSCM class logs sensitive information like Mercurial command output and stack traces to\nerror messages that are displayed to users. These could potentially leak sensitive information.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialSCM.java"
+      ]
+    },
+    {
+      "headline": "Open redirect vulnerability",
+      "analysis": "The MercurialStatus class does not validate that notification URLs point to the local Jenkins instance\nbefore triggering builds. This could enable an SSRF-like vulnerability where the server follows\nredirects to arbitrary external URLs controlled by an attacker.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-601",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialStatus.handleNotifyCommit"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialStatus.java"
+      ]
+    },
+    {
+      "headline": "Missing authentication for critical function",
+      "analysis": "The MercurialStatus class exposes a URL endpoint that can trigger builds on the Jenkins master. This\nendpoint does not require any authentication, allowing anonymous users to initiate builds.\n",
+      "classification": "very promising",
+      "cwe": "CWE-306",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialStatus.doNotifyCommit"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialStatus.java"
+      ]
+    },
+    {
+      "headline": "Insufficient verification of data authenticity",
+      "analysis": "The MercurialStatus class does not verify the authenticity of notification requests, allowing\nanyone to trigger builds by sending fake notifications.\n",
+      "classification": "very promising",
+      "cwe": "CWE-345",
+      "function_names": [
+        "hudson.plugins.mercurial.MercurialStatus.doNotifyCommit"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/MercurialStatus.java"
+      ]
+    },
+    {
+      "headline": "Use of insufficiently random values",
+      "analysis": "The Cache class generates repository cache directory names by hashing the repository URL using a\nnon-cryptographic hash function. The hash values are not sufficiently random and could lead to\ncollisions between different repositories.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-330",
+      "function_names": [
+        "hudson.plugins.mercurial.Cache.hashSource"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/mercurial/Cache.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 3,
+        "fp": 3
+      },
+      "mapping": {
+        "1": "CVE-2022-30948",
+        "4": "CVE-2018-1000112",
+        "5": "CVE-2022-43410"
+      },
+      "vuln_dates": {
+        "CVE-2020-2305": "2020-11-04T15:15:11",
+        "CVE-2020-2306": "2020-11-04T15:15:11",
+        "CVE-2022-30948": "2022-05-17T15:15:08",
+        "CVE-2022-43410": "2022-10-19T16:15:10",
+        "CVE-2018-1000112": "2018-03-13T13:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

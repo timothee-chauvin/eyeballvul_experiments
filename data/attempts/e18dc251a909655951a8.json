@@ -1,0 +1,95 @@
+{
+  "commit": "2e71bdf10b2c719276d0cea38870afc91486aede",
+  "repo_url": "https://github.com/jenkinsci/periodicbackup-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "86b0e7811ffc9342322b"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output for the security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Unsafe deserialization in BackupObject\n    analysis: |\n      The BackupObject class uses unsafe deserialization when deserializing the XML backup file in the getFromFile() and getFromString() methods. This could allow an attacker to cause remote code execution by crafting a malicious serialized BackupObject XML file. The Jenkins XSTREAM object is used directly to deserialize the user-supplied XML without any safety checks or validation.\n    cwe: CWE-502\n    function_names:\n      - BackupObject.getFromFile()\n      - BackupObject.getFromString()\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/periodicbackup/BackupObject.java\n    classification: very promising\n\n  - headline: External control of configuration in FullBackup\n    analysis: |\n      The FullBackup class allows an excludesString configuration option that is used to exclude files/directories from backups using an Ant glob syntax. However, this user-supplied excludesString is not validated, sanitized or restricted in any way. An attacker could potentially supply a malicious excludesString to cause unintended files to be omitted from backups. \n    cwe: CWE-15\n    function_names:\n      - FullBackup.FullBackup()\n      - FullBackup.getExcludes()  \n    filenames:\n      - src/main/java/org/jenkinsci/plugins/periodicbackup/FullBackup.java\n    classification: slightly promising\n\n  - headline: Arbitrary file write during restore\n    analysis: |\n      Both the ReplaceRestorePolicy and OverwriteRestorePolicy classes allow restoring backup files to arbitrary locations on the Jenkins controller filesystem. During restore, files are copied from a temp directory to the Jenkins root directory without validating the paths. An attacker could potentially include files with malicious relative paths (e.g. escaping the Jenkins home dir) in the backup archive to overwrite arbitrary system files during restore.\n    cwe: CWE-22\n    function_names:\n      - ReplaceRestorePolicy.restore()\n      - OverwriteRestorePolicy.restore()\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/periodicbackup/ReplaceRestorePolicy.java\n      - src/main/java/org/jenkinsci/plugins/periodicbackup/OverwriteRestorePolicy.java\n    classification: very promising\n  \n  - headline: CSRF protection bypass\n    analysis: |  \n      The PeriodicBackupLink class processes several sensitive actions like triggering backups, triggering restores, and saving the plugin configuration without any CSRF protection. Attackers could potentially forge malicious HTTP requests to perform these actions. doRestore() is especially sensitive since it allows specifying which backup to restore.\n    cwe: CWE-352\n    function_names:  \n      - PeriodicBackupLink.doBackup()\n      - PeriodicBackupLink.doRestore()\n      - PeriodicBackupLink.doConfigSubmit()\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/periodicbackup/PeriodicBackupLink.java\n    classification: very promising\n```\n\nIn summary, the most concerning vulnerabilities are:\n1. Unsafe deserialization in BackupObject \n2. Arbitrary file write during restore\n3. CSRF protection bypass\n\nI recommend focusing attention on those issues first. Let me know if you need any other details or have additional questions!",
+      "date": "2024-06-12T19:02:02.082107",
+      "usage": {
+        "prompt_tokens": 40925,
+        "completion_tokens": 865,
+        "cost": 0.67875
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unsafe deserialization in BackupObject",
+      "analysis": "The BackupObject class uses unsafe deserialization when deserializing the XML backup file in the getFromFile() and getFromString() methods. This could allow an attacker to cause remote code execution by crafting a malicious serialized BackupObject XML file. The Jenkins XSTREAM object is used directly to deserialize the user-supplied XML without any safety checks or validation.\n",
+      "classification": "very promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "BackupObject.getFromFile()",
+        "BackupObject.getFromString()"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/periodicbackup/BackupObject.java"
+      ]
+    },
+    {
+      "headline": "External control of configuration in FullBackup",
+      "analysis": "The FullBackup class allows an excludesString configuration option that is used to exclude files/directories from backups using an Ant glob syntax. However, this user-supplied excludesString is not validated, sanitized or restricted in any way. An attacker could potentially supply a malicious excludesString to cause unintended files to be omitted from backups. \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-15",
+      "function_names": [
+        "FullBackup.FullBackup()",
+        "FullBackup.getExcludes()"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/periodicbackup/FullBackup.java"
+      ]
+    },
+    {
+      "headline": "Arbitrary file write during restore",
+      "analysis": "Both the ReplaceRestorePolicy and OverwriteRestorePolicy classes allow restoring backup files to arbitrary locations on the Jenkins controller filesystem. During restore, files are copied from a temp directory to the Jenkins root directory without validating the paths. An attacker could potentially include files with malicious relative paths (e.g. escaping the Jenkins home dir) in the backup archive to overwrite arbitrary system files during restore.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "ReplaceRestorePolicy.restore()",
+        "OverwriteRestorePolicy.restore()"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/periodicbackup/ReplaceRestorePolicy.java",
+        "src/main/java/org/jenkinsci/plugins/periodicbackup/OverwriteRestorePolicy.java"
+      ]
+    },
+    {
+      "headline": "CSRF protection bypass",
+      "analysis": "The PeriodicBackupLink class processes several sensitive actions like triggering backups, triggering restores, and saving the plugin configuration without any CSRF protection. Attackers could potentially forge malicious HTTP requests to perform these actions. doRestore() is especially sensitive since it allows specifying which backup to restore.\n",
+      "classification": "very promising",
+      "cwe": "CWE-352",
+      "function_names": [
+        "PeriodicBackupLink.doBackup()",
+        "PeriodicBackupLink.doRestore()",
+        "PeriodicBackupLink.doConfigSubmit()"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/periodicbackup/PeriodicBackupLink.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 2
+      },
+      "mapping": {
+        "2": "CVE-2017-1000086"
+      },
+      "vuln_dates": {
+        "CVE-2017-1000086": "2017-10-05T01:29:03"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

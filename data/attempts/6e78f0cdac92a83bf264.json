@@ -1,0 +1,88 @@
+{
+  "commit": "19407ace218cd80c48f8c7c12bcaf8a651f14563",
+  "repo_url": "https://github.com/jenkinsci/publish-over-ftp-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "c3188ce544b02531cbb5"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Improper input validation of remote file paths\n    analysis: |\n      The BapFtpTransfer class allows specifying source files, excludes, and a remote directory. If these values come from user input and are not properly validated, it could allow an attacker to access arbitrary files or directories on the FTP server by using path traversal characters like \"..\" to break out of the intended remote directory.\n\n      The flatten and remoteDirectorySDF options also impact how remote paths are handled. Improper use of these could enable further unauthorized access on the FTP server filesystem.\n    cwe: CWE-22\n    function_names:\n      - BapFtpTransfer\n    filenames:\n      - src/main/java/jenkins/plugins/publish_over_ftp/BapFtpTransfer.java\n    classification: very promising\n\n  - headline: Use of a broken or risky cryptographic algorithm  \n    analysis: |\n      The BapFtpHostConfiguration class allows specifying a password for authenticating to the FTP server. This password is stored using the Secret class which is marked as deprecated.\n\n      Using a deprecated cryptographic library could indicate the encryption algorithm is outdated or insecure. The password encryption implementation should be reviewed to ensure it follows current security best practices. Weak password encryption could allow an attacker to recover FTP credentials.\n    cwe: CWE-327\n    function_names:\n      - BapFtpHostConfiguration\n    filenames:\n      - src/main/java/jenkins/plugins/publish_over_ftp/BapFtpHostConfiguration.java\n    classification: slightly promising\n\n  - headline: Improper certificate validation  \n    analysis: |    \n      The BapFtpHostConfiguration class has an option to specify a trusted SSL certificate when using implicit/explicit FTP over TLS. However, the certificate does not appear to be strictly validated.\n\n      Specifically, the createFTPClient method will load the user-provided certificate into a TrustManager even if that certificate is not issued by a trusted CA. This could allow an attacker to trick the plugin into trusting a malicious FTP server, enabling man-in-the-middle attacks that compromise data confidentiality and integrity.\n    cwe: CWE-295\n    function_names:\n      - BapFtpHostConfiguration.createFTPClient\n    filenames:  \n      - src/main/java/jenkins/plugins/publish_over_ftp/BapFtpHostConfiguration.java\n    classification: very promising\n\n  - headline: Leftover debug code  \n    analysis: |\n      The BapFtpClient class has a verbose mode that will log all FTP commands and responses to the Jenkins build log, including sensitive authentication commands.\n      \n      While this is a useful debugging feature, it should be disabled in production as it can leak FTP credentials and other sensitive data. There is a risk that verbose mode could accidentally be left enabled, exposing information to anyone with access to build logs.\n    cwe: CWE-489\n    function_names:\n      - BapFtpClient.init  \n    filenames:\n      - src/main/java/jenkins/plugins/publish_over_ftp/BapFtpClient.java\n    classification: slightly promising\n```\n\nThe most serious issues are improper input validation of user-controlled file paths, which could allow unauthorized access to files and directories on the FTP server, and improper certificate validation, which could allow man-in-the-middle attacks. I recommend prioritizing fixes for those issues first. The other findings around weak encryption and leftover debug code are lower severity but still worth investigating and resolving.\n\nLet me know if you have any other questions!",
+      "date": "2024-06-12T19:04:43.198797",
+      "usage": {
+        "prompt_tokens": 67936,
+        "completion_tokens": 871,
+        "cost": 1.084365
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper input validation of remote file paths",
+      "analysis": "The BapFtpTransfer class allows specifying source files, excludes, and a remote directory. If these values come from user input and are not properly validated, it could allow an attacker to access arbitrary files or directories on the FTP server by using path traversal characters like \"..\" to break out of the intended remote directory.\n\nThe flatten and remoteDirectorySDF options also impact how remote paths are handled. Improper use of these could enable further unauthorized access on the FTP server filesystem.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "BapFtpTransfer"
+      ],
+      "filenames": [
+        "src/main/java/jenkins/plugins/publish_over_ftp/BapFtpTransfer.java"
+      ]
+    },
+    {
+      "headline": "Use of a broken or risky cryptographic algorithm",
+      "analysis": "The BapFtpHostConfiguration class allows specifying a password for authenticating to the FTP server. This password is stored using the Secret class which is marked as deprecated.\n\nUsing a deprecated cryptographic library could indicate the encryption algorithm is outdated or insecure. The password encryption implementation should be reviewed to ensure it follows current security best practices. Weak password encryption could allow an attacker to recover FTP credentials.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-327",
+      "function_names": [
+        "BapFtpHostConfiguration"
+      ],
+      "filenames": [
+        "src/main/java/jenkins/plugins/publish_over_ftp/BapFtpHostConfiguration.java"
+      ]
+    },
+    {
+      "headline": "Improper certificate validation",
+      "analysis": "The BapFtpHostConfiguration class has an option to specify a trusted SSL certificate when using implicit/explicit FTP over TLS. However, the certificate does not appear to be strictly validated.\n\nSpecifically, the createFTPClient method will load the user-provided certificate into a TrustManager even if that certificate is not issued by a trusted CA. This could allow an attacker to trick the plugin into trusting a malicious FTP server, enabling man-in-the-middle attacks that compromise data confidentiality and integrity.\n",
+      "classification": "very promising",
+      "cwe": "CWE-295",
+      "function_names": [
+        "BapFtpHostConfiguration.createFTPClient"
+      ],
+      "filenames": [
+        "src/main/java/jenkins/plugins/publish_over_ftp/BapFtpHostConfiguration.java"
+      ]
+    },
+    {
+      "headline": "Leftover debug code",
+      "analysis": "The BapFtpClient class has a verbose mode that will log all FTP commands and responses to the Jenkins build log, including sensitive authentication commands.\n\nWhile this is a useful debugging feature, it should be disabled in production as it can leak FTP credentials and other sensitive data. There is a risk that verbose mode could accidentally be left enabled, exposing information to anyone with access to build logs.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-489",
+      "function_names": [
+        "BapFtpClient.init"
+      ],
+      "filenames": [
+        "src/main/java/jenkins/plugins/publish_over_ftp/BapFtpClient.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-29051": "2022-04-12T20:15:09",
+        "CVE-2022-29050": "2022-04-12T20:15:09"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

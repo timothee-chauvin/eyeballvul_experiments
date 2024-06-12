@@ -1,0 +1,77 @@
+{
+  "commit": "0cb9b1c58544e35f3c6ac97126c68eec2cab499d",
+  "repo_url": "https://github.com/hapijs/formula",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "2471d29e265f0cf45222"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output identifying potential security vulnerabilities in the provided codebase:\n\n```yaml\nleads:\n  - headline: Potential prototype pollution via the constants option\n    analysis: |\n      The Parser constructor allows passing an options object with a `constants` property. The values in the `constants` object are not validated or sanitized before being used. If an attacker can control the contents of `constants`, they could potentially add or modify properties on the Object prototype, leading to a prototype pollution vulnerability.\n      \n      When evaluating the formula, the `constants` values are directly accessed without any property checks, so any prototype properties injected by the attacker would be used during evaluation.\n    cwe: CWE-915\n    function_names:\n      - constructor\n    filenames:\n      - lib/index.js\n    classification: very promising\n\n  - headline: Potential code injection via the functions option  \n    analysis: |\n      The Parser constructor allows passing an options object with a `functions` property defining custom functions that can be invoked in formulas. The values of the `functions` object are not validated to check if they are safe/allowlisted functions.\n\n      An attacker who controls the `functions` option could inject arbitrary code that gets executed when the custom function is invoked in a formula. For example, they could pass a `functions` object like `{ malicious: () => { /* bad code */ }}` and then trigger its execution with a formula containing a call to `malicious()`.\n    cwe: CWE-94\n    function_names:\n      - constructor\n      - _subFormula  \n    filenames:\n      - lib/index.js\n    classification: very promising\n\n  - headline: Potential unsafe formula evaluation\n    analysis: |\n      Formulas are parsed and evaluated using a custom algorithm implemented in the `evaluate` and `_parse` methods. The safety of this evaluation depends on properly validating formula tokens and handled untrusted user input used in formulas.\n\n      While there are some validations like checking the `tokenRx` option, it's unclear if the restrictions are sufficient to prevent potential injection of unwanted content into the formulas. Thorough security review and testing of the formula parsing and evaluation logic is recommended to ensure its robustness against malicious formulas.\n    cwe: CWE-94  \n    function_names:\n      - evaluate\n      - _parse\n    filenames:\n      - lib/index.js  \n    classification: slightly promising\n```",
+      "date": "2024-06-12T17:12:32.229797",
+      "usage": {
+        "prompt_tokens": 16264,
+        "completion_tokens": 559,
+        "cost": 0.285885
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential prototype pollution via the constants option",
+      "analysis": "The Parser constructor allows passing an options object with a constants property. The values in the constants object are not validated or sanitized before being used. If an attacker can control the contents of constants, they could potentially add or modify properties on the Object prototype, leading to a prototype pollution vulnerability.\n\nWhen evaluating the formula, the constants values are directly accessed without any property checks, so any prototype properties injected by the attacker would be used during evaluation.\n",
+      "classification": "very promising",
+      "cwe": "CWE-915",
+      "function_names": [
+        "constructor"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    },
+    {
+      "headline": "Potential code injection via the functions option",
+      "analysis": "The Parser constructor allows passing an options object with a functions property defining custom functions that can be invoked in formulas. The values of the functions object are not validated to check if they are safe/allowlisted functions.\n\nAn attacker who controls the functions option could inject arbitrary code that gets executed when the custom function is invoked in a formula. For example, they could pass a functions object like { malicious: () => { /* bad code */ }} and then trigger its execution with a formula containing a call to malicious().\n",
+      "classification": "very promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "constructor",
+        "_subFormula"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    },
+    {
+      "headline": "Potential unsafe formula evaluation",
+      "analysis": "Formulas are parsed and evaluated using a custom algorithm implemented in the evaluate and _parse methods. The safety of this evaluation depends on properly validating formula tokens and handled untrusted user input used in formulas.\n\nWhile there are some validations like checking the tokenRx option, it's unclear if the restrictions are sufficient to prevent potential injection of unwanted content into the formulas. Thorough security review and testing of the formula parsing and evaluation logic is recommended to ensure its robustness against malicious formulas.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "evaluate",
+        "_parse"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-25166": "2023-02-08T20:15:25"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

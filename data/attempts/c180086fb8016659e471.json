@@ -1,0 +1,39 @@
+{
+  "commit": "2006f3e1a71645886d1bd2eeb1d39f9c19f6fe33",
+  "repo_url": "https://github.com/getgridea/gridea",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "136cfa74e16543c79b15"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output with security vulnerability leads:\n```yaml\nleads:\n  - headline: SQL Injection vulnerability in post deletion\n    analysis: |\n      The deletePost method in the Posts class directly concatenates unsanitized user input into a filesystem path used for deletion:\n\n      ```const postUrl = `${this.postDir}/${post.fileName}.md````\n\n      An attacker could potentially craft a malicious post.fileName that injects directory traversal characters (e.g. ../../) to delete arbitrary files outside the intended posts directory. Although it's a local filesystem operation within the app's context, this still allows unintended deletion of app files.\n    cwe: CWE-90\n    function_names:\n      - Posts.deletePost\n    filenames:\n      - src/server/posts.ts\n    classification: slightly promising\n\n  - headline: Missing origin validation on incoming IPC messages \n    analysis: |\n      The backend event handlers listen for IPC messages like 'app-site-reload', 'html-render', etc. without validating the origin of those messages. This could allow a compromised renderer process or injected script to send arbitrary IPC messages to the main backend process.\n\n      While the impact is limited by the supported message types, it still allows an attacker with code execution in the renderer to perform unintended actions like reloading the site, triggering a publish, deleting posts, etc.\n    cwe: CWE-346\n    function_names:\n      - SiteEvents\n      - PostEvents \n    filenames:\n      - src/server/events/site.ts\n      - src/server/events/post.ts\n    classification: slightly promising\n\n  - headline: Insecure Electron nodeIntegration \n    analysis: |\n      The main BrowserWindow is created with nodeIntegration enabled via contextIsolation:false. This allows a compromised renderer process or injected 3rd party script to access powerful Node.js APIs and system-level capabilities that can be leveraged for code execution or data exfiltration.\n\n      Content loaded in this BrowserWindow should be limited to trusted local content only. Remote content and user uploaded themes must be loaded in a separate BrowserWindow with stronger isolation.\n    cwe: CWE-829\n    function_names:\n      - createWindow\n    filenames:\n      - src/background.ts  \n    classification: very promising\n\n  - headline: Arbitrary file write via theme override  \n    analysis: |\n      The style-override.js files included with themes allow arbitrary file write. The overrides are loaded via a direct require() of the theme's local JavaScript file on disk without any restrictions on filesystem access.\n\n      A malicious theme could provide a style-override.js that reads sensitive files or modifies the app's data on disk. Theme content should be executed in a sandboxed context without Node.js integration.\n    cwe: 'CWE-95'\n    function_names: \n      - Renderer.renderAll\n    filenames:\n      - src/server/renderer.ts\n    classification: very promising\n\n```",
+      "date": "2024-06-12T17:00:32.072449",
+      "usage": {
+        "prompt_tokens": 31283,
+        "completion_tokens": 705,
+        "cost": 0.52212
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-12047": "2019-05-13T15:29:03",
+        "CVE-2022-40274": "2022-09-30T17:15:13"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

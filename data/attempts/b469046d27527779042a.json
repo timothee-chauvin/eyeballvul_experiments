@@ -1,0 +1,88 @@
+{
+  "commit": "1d92eac8dea8efd4a271c0dd6ff59b0ef1d4dc9e",
+  "repo_url": "https://github.com/jenkinsci/aws-codedeploy-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "9cf6724ae4758a1b9ed7"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper restriction of operations within the bounds of a memory buffer\n    analysis: |\n      The zipAndUpload method creates a temporary zip file using user-controlled input from the project name. \n      If the project name is very long, it could potentially cause a buffer overflow when creating the file path\n      string for the zip file, since no length validation is performed on the project name.\n      An attacker could potentially trigger this by creating a project with an extremely long name.\n    cwe: CWE-119\n    function_names:\n      - zipAndUpload\n    filenames:\n      - src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java  \n    classification: slightly promising\n\n  - headline: Improper input validation on S3 bucket name  \n    analysis: |\n      The getS3BucketFromEnv method returns the S3 bucket name specified by the user, after expanding any environment\n      variables. However, there is no validation performed on the bucket name to ensure it only contains allowed\n      characters. \n      \n      The S3 bucket name is later used to construct URLs and key names for uploading the revision ZIP file.\n      If an attacker specifies invalid characters in the S3 bucket name, it could potentially lead to HTTP header\n      injection, open redirects, or XSS attacks, depending on how the constructed URLs are used.\n    cwe: CWE-20\n    function_names:\n      - getS3BucketFromEnv\n    filenames:\n      - src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java\n    classification: slightly promising\n\n  - headline: Uncontrolled resource consumption when polling for deployment status\n    analysis: |  \n      If the waitForCompletion option is enabled, the waitForDeployment method polls the CodeDeploy API in a loop\n      until the deployment completes. However, the wait time is user-controlled via the pollingTimeoutSec and \n      pollingFreqSec parameters.\n      \n      An attacker could misuse this functionality to cause the Jenkins server to get stuck in a long polling loop\n      by specifying very large values for pollingTimeoutSec and small values for pollingFreqSec. This could\n      potentially lead to resource exhaustion on the server.\n    cwe: CWE-400\n    function_names: \n      - waitForDeployment\n    filenames:\n      - src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java\n    classification: not promising\n\n  - headline: Improper exception handling may disclose sensitive information\n    analysis: |\n      Throughout the perform method, any exceptions that occur are caught in a generic catch block that prints\n      the exception message and stack trace to the Jenkins build log using e.printStackTrace(). \n      \n      If an exception occurs that contains sensitive information like AWS access keys, that information could\n      end up getting printed verbatim to the build log, exposing it to anyone with access to the Jenkins console\n      output.\n    cwe: CWE-209 \n    function_names:\n      - perform\n    filenames:\n      - src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java\n    classification: slightly promising\n\n```",
+      "date": "2024-06-12T17:57:11.829119",
+      "usage": {
+        "prompt_tokens": 14906,
+        "completion_tokens": 783,
+        "cost": 0.282315
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper restriction of operations within the bounds of a memory buffer",
+      "analysis": "The zipAndUpload method creates a temporary zip file using user-controlled input from the project name. \nIf the project name is very long, it could potentially cause a buffer overflow when creating the file path\nstring for the zip file, since no length validation is performed on the project name.\nAn attacker could potentially trigger this by creating a project with an extremely long name.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-119",
+      "function_names": [
+        "zipAndUpload"
+      ],
+      "filenames": [
+        "src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java"
+      ]
+    },
+    {
+      "headline": "Improper input validation on S3 bucket name",
+      "analysis": "The getS3BucketFromEnv method returns the S3 bucket name specified by the user, after expanding any environment\nvariables. However, there is no validation performed on the bucket name to ensure it only contains allowed\ncharacters. \n\nThe S3 bucket name is later used to construct URLs and key names for uploading the revision ZIP file.\nIf an attacker specifies invalid characters in the S3 bucket name, it could potentially lead to HTTP header\ninjection, open redirects, or XSS attacks, depending on how the constructed URLs are used.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "getS3BucketFromEnv"
+      ],
+      "filenames": [
+        "src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java"
+      ]
+    },
+    {
+      "headline": "Uncontrolled resource consumption when polling for deployment status",
+      "analysis": "If the waitForCompletion option is enabled, the waitForDeployment method polls the CodeDeploy API in a loop\nuntil the deployment completes. However, the wait time is user-controlled via the pollingTimeoutSec and \npollingFreqSec parameters.\n\nAn attacker could misuse this functionality to cause the Jenkins server to get stuck in a long polling loop\nby specifying very large values for pollingTimeoutSec and small values for pollingFreqSec. This could\npotentially lead to resource exhaustion on the server.\n",
+      "classification": "not promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "waitForDeployment"
+      ],
+      "filenames": [
+        "src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java"
+      ]
+    },
+    {
+      "headline": "Improper exception handling may disclose sensitive information",
+      "analysis": "Throughout the perform method, any exceptions that occur are caught in a generic catch block that prints\nthe exception message and stack trace to the Jenkins build log using e.printStackTrace(). \n\nIf an exception occurs that contains sensitive information like AWS access keys, that information could\nend up getting printed verbatim to the build log, exposing it to anyone with access to the Jenkins console\noutput.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [
+        "perform"
+      ],
+      "filenames": [
+        "src/main/java/com/amazonaws/codedeploy/AWSCodeDeployPublisher.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-1000402": "2018-07-09T13:29:00",
+        "CVE-2018-1000403": "2018-07-09T13:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

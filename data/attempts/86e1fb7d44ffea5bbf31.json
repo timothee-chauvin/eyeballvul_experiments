@@ -1,0 +1,77 @@
+{
+  "commit": "237ac925cb6a308a5523cc048292bb53037f6975",
+  "repo_url": "https://github.com/deislabs/oras",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "c0be9d086a0fa57e73aa"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Insufficient validation of parameters in function git_checkout\n    analysis: |\n      In the function git_checkout in pkg/api/git.go, the paths parameter is user-controlled input that is passed to the exec.Command function without proper sanitization or validation. This could allow an attacker to execute arbitrary commands by including special characters or injecting additional arguments in the git checkout command.\n      \n      To exploit this, an attacker could send a request with a malicious paths value like \"somebranch; malicious_command\". This would result in the git checkout command being constructed as \"git checkout somebranch; malicious_command\", effectively allowing execution of the malicious_command on the server.\n    cwe: CWE-78\n    function_names:\n      - git_checkout\n    filenames:\n      - pkg/api/git.go  \n    classification: very promising\n\n  - headline: Missing authorization checks for sensitive git operations\n    analysis: |  \n      Multiple functions in the pkg/api/git.go file, including git_checkout, git_diff, git_tree, git_show, and git_find_commit, perform sensitive git operations based on user input without any authorization checks. This could allow any user, even unauthenticated ones, to read source code, view commit diffs, check out branches, and potentially modify the git repository if additional vulnerabilities are chained.\n      \n      An attacker could simply make requests to the exposed endpoints like \"/git/checkout\" with arbitrary parameter values to perform git actions on the repository without needing any special privileges. Sensitive information disclosure and modification of source code could result.\n    cwe: CWE-862\n    function_names:\n      - git_checkout\n      - git_diff \n      - git_tree\n    filenames:\n      - pkg/api/git.go\n    classification: very promising\n    \n  - headline: Unrestricted file access through archive download\n    analysis: |\n      The get_archive function in pkg/api/git.go creates a zip archive of files from the git repository and sends it back in the response without any restrictions on the files that can be included. An attacker could potentially download any file readable by the application, including sensitive files outside the repository root, by manipulating the URL parameters.\n      \n      For example, an attacker could request \"/git/archive?file=../../../../etc/passwd\" to retrieve the Linux passwd file which is outside the intended directory. The zipFiles function used appears to accept absolute paths, so this could lead to arbitrary file read vulnerabilities.\n    cwe: CWE-22\n    function_names:\n      - get_archive\n    filenames:  \n      - pkg/api/git.go\n    classification: slightly promising\n```",
+      "date": "2024-06-12T15:56:01.784495",
+      "usage": {
+        "prompt_tokens": 3443,
+        "completion_tokens": 624,
+        "cost": 0.098445
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insufficient validation of parameters in function git_checkout",
+      "analysis": "In the function git_checkout in pkg/api/git.go, the paths parameter is user-controlled input that is passed to the exec.Command function without proper sanitization or validation. This could allow an attacker to execute arbitrary commands by including special characters or injecting additional arguments in the git checkout command.\n\nTo exploit this, an attacker could send a request with a malicious paths value like \"somebranch; malicious_command\". This would result in the git checkout command being constructed as \"git checkout somebranch; malicious_command\", effectively allowing execution of the malicious_command on the server.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "git_checkout"
+      ],
+      "filenames": [
+        "pkg/api/git.go"
+      ]
+    },
+    {
+      "headline": "Missing authorization checks for sensitive git operations",
+      "analysis": "Multiple functions in the pkg/api/git.go file, including git_checkout, git_diff, git_tree, git_show, and git_find_commit, perform sensitive git operations based on user input without any authorization checks. This could allow any user, even unauthenticated ones, to read source code, view commit diffs, check out branches, and potentially modify the git repository if additional vulnerabilities are chained.\n\nAn attacker could simply make requests to the exposed endpoints like \"/git/checkout\" with arbitrary parameter values to perform git actions on the repository without needing any special privileges. Sensitive information disclosure and modification of source code could result.\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "git_checkout",
+        "git_diff",
+        "git_tree"
+      ],
+      "filenames": [
+        "pkg/api/git.go"
+      ]
+    },
+    {
+      "headline": "Unrestricted file access through archive download",
+      "analysis": "The get_archive function in pkg/api/git.go creates a zip archive of files from the git repository and sends it back in the response without any restrictions on the files that can be included. An attacker could potentially download any file readable by the application, including sensitive files outside the repository root, by manipulating the URL parameters.\n\nFor example, an attacker could request \"/git/archive?file=../../../../etc/passwd\" to retrieve the Linux passwd file which is outside the intended directory. The zipFiles function used appears to accept absolute paths, so this could lead to arbitrary file read vulnerabilities.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "get_archive"
+      ],
+      "filenames": [
+        "pkg/api/git.go"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-21272": "2021-01-25T19:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

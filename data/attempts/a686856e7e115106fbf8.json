@@ -1,0 +1,58 @@
+{
+  "commit": "0951f227aa9399ce0bb721cb7c51169eaa517633",
+  "repo_url": "https://github.com/jenkinsci/ghprb-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "00d65da818c2b6e67c66"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper credential storage\n    analysis: |\n      The plugin stores GitHub credentials like access tokens and passwords in plaintext configuration files. For example, in GhprbGitHubAuth:\n\n      private String accessToken;  \n      private String username;\n      private String password;\n      private String serverAPIUrl;\n\n      These sensitive credentials are stored directly in the config.xml files without any encryption. If an attacker gains access to the Jenkins files, they could steal these credentials.\n    cwe: CWE-522 Insufficiently Protected Credentials\n    function_names:\n      - GhprbGitHubAuth\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/ghprb/GhprbGitHubAuth.java\n    classification: very promising\n  - headline: Exposure of sensitive information in build logs\n    analysis: |\n      The GhprbBuildLog class can be configured to include an excerpt of the build log as a comment on pull requests when builds fail. For example:\n\n      if (state != GHCommitState.SUCCESS && numLines > 0) {\n        msg.append(\"\\n\\n**Build Log**\\n*last \").append(numLines).append(\" lines*\\n\");\n        msg.append(\"\\n ```\\n\");  \n        List<String> log = build.getLog(numLines);\n        for (String line : log) {\n          msg.append(line).append('\\n');\n        }\n        msg.append(\"```\\n\");\n      }\n\n      If the build logs contain any sensitive information like credentials, API keys, etc. they could be exposed publicly in the GitHub comments. There should be an option to sanitize/filter sensitive info from logs before posting.\n    cwe: CWE-200 Exposure of Sensitive Information to an Unauthorized Actor\n    function_names:\n      - GhprbBuildLog.postBuildComment\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/ghprb/extensions/comments/GhprbBuildLog.java  \n    classification: slightly promising\n  - headline: CSRF vulnerability\n    analysis: |\n      The GhprbRootAction class, which handles incoming requests from GitHub, overrides the doIndex method:\n\n      public void doIndex(StaplerRequest req, StaplerResponse resp) {\n        // Handle POST requests\n        ...\n      }\n\n      Any POST request to the /ghprbhook/ URL will be handled by this method. There do not appear to be any CSRF protections like checking for a valid crumb/token. An attacker could potentially craft a malicious request to trigger unintended actions.\n\n      There is a GhprbCrumbExclusion class which excludes this URL from CSRF protection. While this is likely done intentionally to allow GitHub POST requests, it increases the attack surface.\n    cwe: CWP-352 Cross-Site Request Forgery (CSRF)\n    function_names:\n      - GhprbRootAction.doIndex\n      - GhprbCrumbExclusion\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/ghprb/GhprbRootAction.java\n    classification: slightly promising\n```",
+      "date": "2024-06-12T18:27:17.395836",
+      "usage": {
+        "prompt_tokens": 121941,
+        "completion_tokens": 774,
+        "cost": 1.887165
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper credential storage",
+      "analysis": "The plugin stores GitHub credentials like access tokens and passwords in plaintext configuration files. For example, in GhprbGitHubAuth:\n\nprivate String accessToken;  \nprivate String username;\nprivate String password;\nprivate String serverAPIUrl;\n\nThese sensitive credentials are stored directly in the config.xml files without any encryption. If an attacker gains access to the Jenkins files, they could steal these credentials.\n",
+      "classification": "very promising",
+      "cwe": "CWE-522 Insufficiently Protected Credentials",
+      "function_names": [
+        "GhprbGitHubAuth"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/ghprb/GhprbGitHubAuth.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 5,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2018-1000143"
+      },
+      "vuln_dates": {
+        "CVE-2023-24436": "2023-01-26T21:18:17",
+        "CVE-2023-24435": "2023-01-26T21:18:17",
+        "CVE-2023-24434": "2023-01-26T21:18:17",
+        "CVE-2018-1000143": "2018-04-05T13:29:00",
+        "CVE-2018-1000142": "2018-04-05T13:29:00",
+        "CVE-2018-1000186": "2018-06-05T20:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

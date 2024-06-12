@@ -1,0 +1,104 @@
+{
+  "commit": "1aba4727f120787982b74491b2426081490c41bd",
+  "repo_url": "https://github.com/haakonnessjoen/mac-telnet",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "ecdd0a300be3d48f60c1"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Use of hard-coded credentials\n    analysis: |\n      The code reads user credentials from a fixed file path defined by the USERSFILE macro.\n      If an attacker can modify this file, they could add a new user with known credentials and gain unauthorized access.\n      The password is also stored in cleartext in this file.\n    cwe: CWE-798\n    function_names:\n      - read_userfile\n    filenames: \n      - users.c\n    classification: slightly promising\n\n  - headline: Cleartext storage of sensitive information  \n    analysis: |\n      User passwords are stored in cleartext in the credentials file read by read_userfile().\n      If this file is compromised, all the stored passwords will be exposed.\n      Passwords should be securely hashed rather than stored in plaintext.\n    cwe: CWE-312\n    function_names:\n      - read_userfile  \n    filenames:\n      - users.c\n      - users.h\n    classification: very promising\n\n  - headline: Improper restriction of excessive authentication attempts\n    analysis: |\n      The code does not seem to place any limit on the number of failed login attempts \n      for the same user account. An attacker could perform a brute-force attack to guess\n      user passwords by repeatedly trying different passwords for a known username.\n      There should be a maximum limit on failed attempts after which the account is temporarily locked.\n    cwe: CWE-307\n    function_names:\n      - user_login\n    filenames:\n      - mactelnetd.c  \n    classification: slightly promising\n\n  - headline: Use of weak cryptographic algorithm\n    analysis: |\n      The code uses the MD5 algorithm to hash a combination of the password and encryption key\n      to authenticate users. However, MD5 is considered a weak hashing algorithm as it is \n      susceptible to collision attacks. A more secure hashing algorithm like SHA-256 should be used.\n    cwe: CWE-327 \n    function_names:\n      - user_login\n      - send_auth \n    filenames:\n      - mactelnetd.c\n      - mactelnet.c\n    classification: very promising\n\n  - headline: Transmission of password in cleartext\n    analysis: |\n      During the user authentication process, the user's plaintext password is concatenated\n      with an encryption key and hashed using MD5. However, this hashed value is transmitted\n      over the network to the server. If an attacker can intercept the network traffic, they\n      can capture this hash and perform offline cracking to retrieve the original password.\n      The password should be transmitted over an encrypted channel instead.\n    cwe: CWE-319  \n    function_names:\n      - send_auth\n      - user_login\n    filenames:\n      - mactelnetd.c\n      - mactelnet.c  \n    classification: slightly promising\n```",
+      "date": "2024-06-12T17:11:00.940365",
+      "usage": {
+        "prompt_tokens": 72081,
+        "completion_tokens": 683,
+        "cost": 1.13244
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of hard-coded credentials",
+      "analysis": "The code reads user credentials from a fixed file path defined by the USERSFILE macro.\nIf an attacker can modify this file, they could add a new user with known credentials and gain unauthorized access.\nThe password is also stored in cleartext in this file.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "read_userfile"
+      ],
+      "filenames": [
+        "users.c"
+      ]
+    },
+    {
+      "headline": "Cleartext storage of sensitive information",
+      "analysis": "User passwords are stored in cleartext in the credentials file read by read_userfile().\nIf this file is compromised, all the stored passwords will be exposed.\nPasswords should be securely hashed rather than stored in plaintext.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "read_userfile"
+      ],
+      "filenames": [
+        "users.c",
+        "users.h"
+      ]
+    },
+    {
+      "headline": "Improper restriction of excessive authentication attempts",
+      "analysis": "The code does not seem to place any limit on the number of failed login attempts \nfor the same user account. An attacker could perform a brute-force attack to guess\nuser passwords by repeatedly trying different passwords for a known username.\nThere should be a maximum limit on failed attempts after which the account is temporarily locked.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-307",
+      "function_names": [
+        "user_login"
+      ],
+      "filenames": [
+        "mactelnetd.c"
+      ]
+    },
+    {
+      "headline": "Use of weak cryptographic algorithm",
+      "analysis": "The code uses the MD5 algorithm to hash a combination of the password and encryption key\nto authenticate users. However, MD5 is considered a weak hashing algorithm as it is \nsusceptible to collision attacks. A more secure hashing algorithm like SHA-256 should be used.\n",
+      "classification": "very promising",
+      "cwe": "CWE-327",
+      "function_names": [
+        "user_login",
+        "send_auth"
+      ],
+      "filenames": [
+        "mactelnetd.c",
+        "mactelnet.c"
+      ]
+    },
+    {
+      "headline": "Transmission of password in cleartext",
+      "analysis": "During the user authentication process, the user's plaintext password is concatenated\nwith an encryption key and hashed using MD5. However, this hashed value is transmitted\nover the network to the server. If an attacker can intercept the network traffic, they\ncan capture this hash and perform offline cracking to retrieve the original password.\nThe password should be transmitted over an encrypted channel instead.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-319",
+      "function_names": [
+        "send_auth",
+        "user_login"
+      ],
+      "filenames": [
+        "mactelnetd.c",
+        "mactelnet.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2016-7115": "2016-08-30T17:59:04"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

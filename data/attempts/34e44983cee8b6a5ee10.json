@@ -1,0 +1,90 @@
+{
+  "commit": "2edc8e02dbf4e500f020342fb9bd956215dd6f01",
+  "repo_url": "https://github.com/allegro/bigflow",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "78e791da84c8292e1bfb"
+  ],
+  "responses": [
+    {
+      "content": "Here are the security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Use of assert statements\n    analysis: |\n      The codebase uses Python assert statements in a few places, such as test code. \n      Assertions are often used for debugging but can introduce vulnerabilities if an attacker \n      can trigger an AssertionError and expose sensitive information in the error message. \n      Assertions should be removed from production code.\n    cwe: CWE-617\n    function_names:\n      - DatasetManagerBaseTestCase.assert_started_jobs\n      - CliTestCase.assert_files_are_equal\n    filenames:\n      - test/test_deploy.py\n      - test/test_cli.py  \n    classification: slightly promising\n\n  - headline: Loading pickle data from untrusted sources\n    analysis: |\n      In a few test files, potentially untrusted pickled data is loaded via pickle.load(). \n      Loading pickled data can lead to arbitrary code execution if the data was \n      crafted maliciously. Even though these instances are just in test code, untrusted pickle \n      data should never be loaded. Use safer serialization formats like JSON instead.\n    cwe: CWE-502\n    function_names:\n      - run0\n      - _recv_testresult_proxy\n    filenames:  \n      - test/testing/test_isolate.py\n    classification: slightly promising\n\n  - headline: Use of os.system in a test\n    analysis: |  \n      One of the tests calls os.system() to execute a shell command. Passing untrusted input\n      to os.system can lead to command injection. Use of os.system should be avoided in \n      favor of safer alternatives like subprocess.run. However, this is in a test file \n      and the input does not appear to be untrusted.\n    cwe: CWE-78\n    function_names:\n      - test_bf_direct  \n    filenames:\n      - test/test_version.py\n    classification: not promising\n\n  - headline: Disabled SSL verification in a test\n    analysis: |\n      One of the tests makes a HTTP request with SSL verification disabled (verify=False). \n      Disabling SSL verification can allow man-in-the-middle attacks. SSL verification should \n      always be enabled. However, this is just in a test case mocking an HTTP request, so the \n      risk is minimal.\n    cwe: CWE-295\n    function_names:\n      - get_vault_token\n    filenames:\n      - bigflow/deploy.py  \n    classification: not promising\n```\n\nIn summary, the main potential issues are:\n1. Use of assert statements which could leak sensitive info \n2. Loading untrusted pickle data which could allow RCE\n3. Use of os.system with untrusted input could allow command injection\n4. Disabling SSL verification could allow MITM attacks\n\nHowever, most of these are in test code and don't appear to be high risk. I would recommend:\n- Removing any asserts from production code \n- Never loading untrusted pickled data\n- Using safe alternatives to os.system\n- Always enabling SSL verification in production\n\nLet me know if you have any other questions!",
+      "date": "2024-06-12T14:45:09.989684",
+      "usage": {
+        "prompt_tokens": 155365,
+        "completion_tokens": 763,
+        "cost": 2.3877
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of assert statements",
+      "analysis": "The codebase uses Python assert statements in a few places, such as test code. \nAssertions are often used for debugging but can introduce vulnerabilities if an attacker \ncan trigger an AssertionError and expose sensitive information in the error message. \nAssertions should be removed from production code.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-617",
+      "function_names": [
+        "DatasetManagerBaseTestCase.assert_started_jobs",
+        "CliTestCase.assert_files_are_equal"
+      ],
+      "filenames": [
+        "test/test_deploy.py",
+        "test/test_cli.py"
+      ]
+    },
+    {
+      "headline": "Loading pickle data from untrusted sources",
+      "analysis": "In a few test files, potentially untrusted pickled data is loaded via pickle.load(). \nLoading pickled data can lead to arbitrary code execution if the data was \ncrafted maliciously. Even though these instances are just in test code, untrusted pickle \ndata should never be loaded. Use safer serialization formats like JSON instead.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "run0",
+        "_recv_testresult_proxy"
+      ],
+      "filenames": [
+        "test/testing/test_isolate.py"
+      ]
+    },
+    {
+      "headline": "Use of os.system in a test",
+      "analysis": "One of the tests calls os.system() to execute a shell command. Passing untrusted input\nto os.system can lead to command injection. Use of os.system should be avoided in \nfavor of safer alternatives like subprocess.run. However, this is in a test file \nand the input does not appear to be untrusted.\n",
+      "classification": "not promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "test_bf_direct"
+      ],
+      "filenames": [
+        "test/test_version.py"
+      ]
+    },
+    {
+      "headline": "Disabled SSL verification in a test",
+      "analysis": "One of the tests makes a HTTP request with SSL verification disabled (verify=False). \nDisabling SSL verification can allow man-in-the-middle attacks. SSL verification should \nalways be enabled. However, this is just in a test case mocking an HTTP request, so the \nrisk is minimal.\n",
+      "classification": "not promising",
+      "cwe": "CWE-295",
+      "function_names": [
+        "get_vault_token"
+      ],
+      "filenames": [
+        "bigflow/deploy.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-25392": "2023-04-10T14:15:09"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
