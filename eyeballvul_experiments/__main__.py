@@ -328,34 +328,22 @@ def write_cache(cache: dict[str, int]) -> None:
         f.write("\n")
 
 
-async def run_models():
-    models = [
-        "claude-3-haiku-20240307",
-        "claude-3-sonnet-20240229",
-        "claude-3-opus-20240229",
-        "gpt-4o-2024-05-13",
-        "gpt-4-turbo-2024-04-09",
-        "gemini/gemini-1.5-pro",
-    ]
-    cutoff_date = "2023-09-01"
-    max_size_bytes = 600_000
-    cost_limit = 500
-
-    cache = read_cache()
-
-    attempts_by_commit = get_attempts_by_commit()
-    total_cost = cost_of_past_attempts(attempts_by_commit)
-    logging.info(f"Total cost of past attempts: ${total_cost:.2f}")
-    revisions_after = [
-        revision for revision in get_revisions(after=cutoff_date) if revision.size < max_size_bytes
-    ]
-    revisions_after_by_repo: dict[str, list[EyeballvulRevision]] = {}
-    for revision in revisions_after:
-        revisions_after_by_repo.setdefault(revision.repo_url, []).append(revision)
-    revisions_after_by_repo = dict(sorted(revisions_after_by_repo.items()))
-
-    repo_url_len = len(revisions_after_by_repo)
-    for i, (repo_url, revisions) in enumerate(revisions_after_by_repo.items()):
+async def run_models_on_revisions(
+    revisions: list[EyeballvulRevision],
+    models: list[str],
+    max_size_bytes: int,
+    cost_limit: float,
+    attempts_by_commit: dict[str, list[Attempt]],
+    cache: dict[str, int],
+    current_total_cost: float,
+):
+    revisions_by_repo: dict[str, list[EyeballvulRevision]] = {}
+    for revision in revisions:
+        revisions_by_repo.setdefault(revision.repo_url, []).append(revision)
+    revisions_by_repo = dict(sorted(revisions_by_repo.items()))
+    total_cost = current_total_cost
+    repo_url_len = len(revisions_by_repo)
+    for i, (repo_url, revisions) in enumerate(revisions_by_repo.items()):
         logging.info(f"({i+1}/{repo_url_len}) Handling {repo_url}...")
         repo_cost, cache_update = await handle_repo(
             repo_url, revisions, models, max_size_bytes, attempts_by_commit, cache
@@ -369,6 +357,58 @@ async def run_models():
         if total_cost > cost_limit:
             logging.info(f"Cost limit reached: ${total_cost:.2f}")
             return
+
+
+async def run_models():
+    models = [
+        "claude-3-haiku-20240307",
+        "claude-3-sonnet-20240229",
+        "claude-3-opus-20240229",
+        "gpt-4o-2024-05-13",
+        "gpt-4-turbo-2024-04-09",
+        "gemini/gemini-1.5-pro",
+    ]
+    max_size_bytes = 600_000
+    cost_limit = 500
+
+    cache = read_cache()
+
+    attempts_by_commit = get_attempts_by_commit()
+    total_cost = cost_of_past_attempts(attempts_by_commit)
+    logging.info(f"Total cost of past attempts: ${total_cost:.2f}")
+
+    # First, process all revisions that have at least one vuln past the cutoff date.
+    cutoff_date = "2023-09-01"
+    revisions_after = [
+        revision for revision in get_revisions(after=cutoff_date) if revision.size < max_size_bytes
+    ]
+    await run_models_on_revisions(
+        revisions=revisions_after,
+        models=models,
+        max_size_bytes=max_size_bytes,
+        cost_limit=cost_limit,
+        attempts_by_commit=attempts_by_commit,
+        cache=cache,
+        current_total_cost=total_cost,
+    )
+
+    # Then process all other revisions in alphabetical order of commit hash.
+    other_revisions = [
+        revision
+        for revision in sorted(get_revisions(), key=lambda r: r.commit)
+        if revision.size < max_size_bytes and revision not in revisions_after
+    ]
+    limit = 500
+    other_revisions = other_revisions[:limit]
+    await run_models_on_revisions(
+        revisions=other_revisions,
+        models=models,
+        max_size_bytes=max_size_bytes,
+        cost_limit=cost_limit,
+        attempts_by_commit=get_attempts_by_commit(),
+        cache=cache,
+        current_total_cost=total_cost,
+    )
 
 
 async def re_score_attempt(
