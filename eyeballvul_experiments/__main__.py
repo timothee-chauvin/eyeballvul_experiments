@@ -14,7 +14,11 @@ from typeguard import typechecked
 from eyeballvul_experiments.attempt import Attempt, SimpleResponse
 from eyeballvul_experiments.chunk import Chunk, File
 from eyeballvul_experiments.config.config_loader import Config
-from eyeballvul_experiments.llm_gateway.gateway_interface import ContextWindowExceededError, Usage
+from eyeballvul_experiments.llm_gateway.gateway_interface import (
+    APIConnectionError,
+    ContextWindowExceededError,
+    Usage,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s-%(asctime)s - %(message)s")
 
@@ -217,6 +221,14 @@ async def do_attempt(
             f"Skipping revision {revision.commit} with {model} because it is too large (size {e.repo_size})."
         )
         return (0.0, {revision.commit: e.repo_size})
+    except APIConnectionError as e:
+        if "Encountered text corresponding to disallowed special token " in str(e):
+            logging.warning(
+                f"Skipping revision {revision.commit} with {model} because of a disallowed special token: {e}"
+            )
+            return (0.0, {})
+        else:
+            raise
 
 
 @typechecked

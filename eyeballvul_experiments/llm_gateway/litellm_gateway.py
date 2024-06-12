@@ -1,7 +1,9 @@
+from litellm import APIConnectionError as LiteLLMAPIConnectionError
 from litellm import ContextWindowExceededError as LiteLLMContextWindowExceededError
 from litellm import acompletion, cost_per_token
 
 from eyeballvul_experiments.llm_gateway.gateway_interface import (
+    APIConnectionError,
     Choice,
     ContextWindowExceededError,
     GatewayInterface,
@@ -27,6 +29,8 @@ class LiteLLMGateway(GatewayInterface):
             response = await acompletion(**kwargs)
         except LiteLLMContextWindowExceededError as e:
             raise ContextWindowExceededError(e)
+        except LiteLLMAPIConnectionError as e:
+            raise APIConnectionError(e)
         model_for_cost = model.removeprefix("gemini/")
         prompt_cost, completion_cost = cost_per_token(
             model=model_for_cost,

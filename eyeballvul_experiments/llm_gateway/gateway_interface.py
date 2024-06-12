@@ -8,6 +8,10 @@ class ContextWindowExceededError(Exception):
     pass
 
 
+class APIConnectionError(Exception):
+    pass
+
+
 @dataclass
 class Usage:
     prompt_tokens: int
