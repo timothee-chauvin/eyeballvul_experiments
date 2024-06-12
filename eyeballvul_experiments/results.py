@@ -2,8 +2,8 @@ import json
 
 import pandas as pd
 import plotly.graph_objects as go
+from confidenceinterval import f1_score, precision_score, recall_score
 from eyeballvul import EyeballvulScore
-from statsmodels.stats.proportion import proportion_confint
 
 from eyeballvul_experiments.attempt import Attempt
 from eyeballvul_experiments.config.config_loader import Config
@@ -17,37 +17,115 @@ def get_scores_with_hash(attempt: Attempt, instruction_template_hash: str) -> li
     ]
 
 
-def plot_true_positive_rates(instruction_template_hash: str, model_order: list[str]):
+def plot_overall_performance(instruction_template_hash: str, model_order: list[str]):
     results: dict[str, dict] = {}
+    reconstructed_classifications: dict[str, dict] = {}
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     for attempt_filename in attempt_filenames:
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
         results.setdefault(
-            attempt.model, {"tp": 0, "fp": 0, "rate": 0.0, "ci_low": 0.0, "ci_upp": 0.0}
+            attempt.model,
+            {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "precision_ci_low": 0.0,
+                "precision_ci_upp": 0.0,
+                "recall_ci_low": 0.0,
+                "recall_ci_upp": 0.0,
+                "f1_ci_low": 0.0,
+                "f1_ci_upp": 0.0,
+            },
         )
-        for score in get_scores_with_hash(attempt, instruction_template_hash):
-            results[attempt.model]["tp"] += score.stats.tp
-            results[attempt.model]["fp"] += score.stats.fp
-    for model in results:
-        total = results[model]["tp"] + results[model]["fp"]
-        rate = results[model]["tp"] / total
-        results[model]["rate"] = rate
-        ci_low, ci_upp = proportion_confint(
-            results[model]["tp"], total, alpha=0.05, method="wilson"
-        )
-        results[model]["ci_low"] = ci_low
-        results[model]["ci_upp"] = ci_upp
+        # Only keep the first score.
+        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        if not scores:
+            continue
+        score = scores[0]
+        results[attempt.model]["tp"] += score.stats.tp
+        results[attempt.model]["fp"] += score.stats.fp
+        results[attempt.model]["fn"] += score.stats.fn
 
-    with open(Config.paths.results / "true_positive_rates.json", "w") as f:
+    for model in results:
+        reconstructed_classifications.setdefault(model, {"y_true": [], "y_pred": []})
+
+        # tp
+        reconstructed_classifications[model]["y_true"].extend([1] * results[model]["tp"])
+        reconstructed_classifications[model]["y_pred"].extend([1] * results[model]["tp"])
+
+        # fp
+        reconstructed_classifications[model]["y_true"].extend([0] * results[model]["fp"])
+        reconstructed_classifications[model]["y_pred"].extend([1] * results[model]["fp"])
+
+        # fn
+        reconstructed_classifications[model]["y_true"].extend([1] * results[model]["fn"])
+        reconstructed_classifications[model]["y_pred"].extend([0] * results[model]["fn"])
+
+    for model in results:
+        precision, precision_ci = precision_score(
+            reconstructed_classifications[model]["y_true"],
+            reconstructed_classifications[model]["y_pred"],
+            confidence_level=0.95,
+            method="wilson",
+            average="binary",
+        )
+        recall, recall_ci = recall_score(
+            reconstructed_classifications[model]["y_true"],
+            reconstructed_classifications[model]["y_pred"],
+            confidence_level=0.95,
+            method="wilson",
+            average="binary",
+        )
+        f1, f1_ci = f1_score(
+            reconstructed_classifications[model]["y_true"],
+            reconstructed_classifications[model]["y_pred"],
+            confidence_level=0.95,
+            method="wilson",
+            average="binary",
+        )
+        # Sanity checks: verify that confidenceinterval computes the same values as we do
+        classified_positive = results[model]["tp"] + results[model]["fp"]
+        all_positive = results[model]["tp"] + results[model]["fn"]
+        our_precision = results[model]["tp"] / classified_positive
+        our_recall = results[model]["tp"] / (all_positive)
+        our_f1 = 2 * (our_precision * our_recall) / (our_precision + our_recall)
+
+        if abs(precision - our_precision) > 1e-6:
+            raise ValueError(f"Precision mismatch: {precision} != {results[model]['precision']}")
+        if abs(recall - our_recall) > 1e-6:
+            raise ValueError(f"Recall mismatch: {recall} != {results[model]['recall']}")
+        if abs(f1 - our_f1) > 1e-6:
+            raise ValueError(f"F1 mismatch: {f1} != {results[model]['f1']}")
+
+        results[model]["precision"] = precision
+        results[model]["precision_ci_low"] = precision_ci[0]
+        results[model]["precision_ci_upp"] = precision_ci[1]
+        results[model]["recall"] = recall
+        results[model]["recall_ci_low"] = recall_ci[0]
+        results[model]["recall_ci_upp"] = recall_ci[1]
+        results[model]["f1"] = f1
+        results[model]["f1_ci_low"] = f1_ci[0]
+        results[model]["f1_ci_upp"] = f1_ci[1]
+
+    with open(Config.paths.results / "overall_performance.json", "w") as f:
         json.dump(results, f, indent=2)
         f.write("\n")
     df = pd.DataFrame(
         {
             "model": list(results.keys()),
-            "true positive rate": [results[model]["rate"] for model in results],
-            "low": [results[model]["ci_low"] for model in results],
-            "high": [results[model]["ci_upp"] for model in results],
+            "precision": [results[model]["precision"] for model in results],
+            "recall": [results[model]["recall"] for model in results],
+            "f1": [results[model]["f1"] for model in results],
+            "precision_ci_low": [results[model]["precision_ci_low"] for model in results],
+            "precision_ci_upp": [results[model]["precision_ci_upp"] for model in results],
+            "recall_ci_low": [results[model]["recall_ci_low"] for model in results],
+            "recall_ci_upp": [results[model]["recall_ci_upp"] for model in results],
+            "f1_ci_low": [results[model]["f1_ci_low"] for model in results],
+            "f1_ci_upp": [results[model]["f1_ci_upp"] for model in results],
         }
     )
     df["model"] = pd.Categorical(df["model"], categories=model_order, ordered=True)
@@ -56,20 +134,52 @@ def plot_true_positive_rates(instruction_template_hash: str, model_order: list[s
     fig.add_trace(
         go.Bar(
             x=df["model"],
-            y=df["true positive rate"],
+            y=df["precision"],
+            name="Precision",
+            marker_color="blue",
             error_y={
                 "type": "data",
                 "symmetric": False,
-                "array": df["high"] - df["true positive rate"],
-                "arrayminus": df["true positive rate"] - df["low"],
+                "array": df["precision_ci_upp"] - df["precision"],
+                "arrayminus": df["precision"] - df["precision_ci_low"],
             },
         )
     )
+    fig.add_trace(
+        go.Bar(
+            x=df["model"],
+            y=df["recall"],
+            name="Recall",
+            marker_color="green",
+            error_y={
+                "type": "data",
+                "symmetric": False,
+                "array": df["recall_ci_upp"] - df["recall"],
+                "arrayminus": df["recall"] - df["recall_ci_low"],
+            },
+        )
+    )
+
+    fig.add_trace(
+        go.Bar(
+            x=df["model"],
+            y=df["f1"],
+            name="F1 Score",
+            marker_color="yellow",
+            error_y={
+                "type": "data",
+                "symmetric": False,
+                "array": df["f1_ci_upp"] - df["f1"],
+                "arrayminus": df["f1"] - df["f1_ci_low"],
+            },
+        )
+    )
+
     fig.update_layout(
         template="plotly_white",
-        yaxis={"title": "True Positive Rate"},
+        barmode="group",
     )
-    fig.write_image(Config.paths.plots / "true_positive_rates.png")
+    fig.write_image(Config.paths.plots / "overall_performance.png")
 
 
 if __name__ == "__main__":
@@ -82,4 +192,4 @@ if __name__ == "__main__":
         "gpt-4-turbo-2024-04-09",
         "gemini/gemini-1.5-pro",
     ]
-    print(plot_true_positive_rates(instruction_template_hash, model_order))
+    print(plot_overall_performance(instruction_template_hash, model_order))
