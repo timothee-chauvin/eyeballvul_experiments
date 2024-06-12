@@ -34,7 +34,13 @@ class Response:
 
 class GatewayInterface(ABC):
     @abstractmethod
-    async def acompletion(self, model: str, messages: list[dict], num_retries: int = 0) -> Response:
+    async def acompletion(
+        self,
+        model: str,
+        messages: list[dict],
+        num_retries: int = 0,
+        safety_settings: list | None = None,
+    ) -> Response:
         """
         Generate completions using the gateway.
 

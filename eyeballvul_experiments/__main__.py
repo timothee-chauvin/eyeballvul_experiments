@@ -92,6 +92,26 @@ async def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
     - the Usage object extracted from the response
     """
     logging.info(f"Querying model {model} on chunk {chunk.get_hash()}...")
+    safety_settings = None
+    if "gemini" in model:
+        safety_settings = [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE",
+            },
+        ]
     response = await Config.gateway.acompletion(
         model=model,
         messages=[
@@ -103,6 +123,7 @@ async def query_model_one_chunk(model: str, chunk: Chunk) -> tuple[str, Usage]:
             }
         ],
         num_retries=3,
+        safety_settings=safety_settings,
     )
     return (response.choices[0].message.content, response.usage)
 
@@ -302,6 +323,7 @@ async def run_models():
         "claude-3-opus-20240229",
         "gpt-4o-2024-05-13",
         "gpt-4-turbo-2024-04-09",
+        "gemini/gemini-1.5-pro",
     ]
     cutoff_date = "2023-09-01"
     max_size_bytes = 600_000
@@ -372,7 +394,7 @@ async def re_score_all(add_if_exists: bool = False):
 
 
 async def main():
-    await re_score_all(add_if_exists=False)
+    await run_models()
 
 
 if __name__ == "__main__":
