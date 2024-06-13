@@ -33,6 +33,10 @@ class RepositoryTooLargeError(Exception):
         self.repo_size = repo_size
 
 
+class RepositoryEmptyError(Exception):
+    pass
+
+
 @typechecked
 def keep_file_based_on_filename(filename: Path) -> bool:
     """
@@ -175,6 +179,8 @@ async def query_model(
     )
     files = get_files_in_repo(repo_dir)
     included_repo_size = sum(len(file.contents) for file in files)
+    if included_repo_size == 0:
+        raise RepositoryEmptyError("Repository is empty")
     if included_repo_size > max_size_bytes:
         raise RepositoryTooLargeError("Repository too large", included_repo_size)
     while files:
@@ -216,6 +222,9 @@ async def do_attempt(
         await attempt.add_score()
         attempt.log()
         return (attempt.cost(), {})
+    except RepositoryEmptyError:
+        logging.warning(f"Skipping revision {revision.commit} with {model} because it is empty.")
+        return (0.0, {revision.commit: 0})
     except RepositoryTooLargeError as e:
         logging.warning(
             f"Skipping revision {revision.commit} with {model} because it is too large (size {e.repo_size})."
@@ -254,8 +263,11 @@ async def handle_repo(
     if not models_by_revision:
         logging.info(f"No new attempts to make for {repo_url}.")
         return 0.0, {}
-    if all(cache.get(revision.commit, 0) > max_size_bytes for revision in revisions):
-        logging.info(f"Skipping {repo_url} because all revisions are known to be too large.")
+    sizes = [cache[revision.commit] for revision in revisions if revision.commit in cache]
+    if len(sizes) == len(revisions) and all(size == 0 or size > max_size_bytes for size in sizes):
+        logging.info(
+            f"Skipping {repo_url} because all revisions are known to be too large or empty."
+        )
         return 0.0, {}
     total_cost = 0.0
     cache_update = {}
@@ -263,11 +275,15 @@ async def handle_repo(
         repo_dir = Path(temp_dir)
         subprocess.check_call(["git", "clone", repo_url, str(repo_dir)])
         for revision in revisions:
-            if cache.get(revision.commit, 0) > max_size_bytes:
-                logging.info(
-                    f"Skipping revision {revision.commit} because it is too large (size {cache[revision.commit]})."
-                )
-                continue
+            if revision.commit in cache:
+                if cache[revision.commit] == 0:
+                    logging.info(f"Skipping revision {revision.commit} because it is empty.")
+                    continue
+                if cache[revision.commit] > max_size_bytes:
+                    logging.info(
+                        f"Skipping revision {revision.commit} because it is too large (size {cache[revision.commit]})."
+                    )
+                    continue
             subprocess.check_call(
                 ["git", "checkout", revision.commit],
                 cwd=repo_dir,
