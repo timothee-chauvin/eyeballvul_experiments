@@ -113,6 +113,7 @@ def plot_overall_performance(
         results[model]["f1_ci_low"] = f1_ci[0]
         results[model]["f1_ci_upp"] = f1_ci[1]
 
+    results = {k: results[k] for k in sorted(results)}
     with open(Config.paths.results / "overall_performance.json", "w") as f:
         json.dump(results, f, indent=2)
         f.write("\n")
@@ -182,6 +183,9 @@ def plot_overall_performance(
     fig.update_layout(
         template="plotly_white",
         barmode="group",
+        width=800,
+        height=600,
+        font=dict(size=12),
     )
     fig.write_image(Config.paths.plots / "overall_performance.png")
 
@@ -222,7 +226,6 @@ def plot_overall_performance(
         width=800,
         height=600,
         font=dict(size=12),
-        legend=dict(x=1.02, y=1, orientation="v"),
     )
 
     fig.update_xaxes(rangemode="tozero")
