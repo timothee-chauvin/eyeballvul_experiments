@@ -17,7 +17,9 @@ def get_scores_with_hash(attempt: Attempt, instruction_template_hash: str) -> li
     ]
 
 
-def plot_overall_performance(instruction_template_hash: str, model_order: list[str]):
+def plot_overall_performance(
+    instruction_template_hash: str, model_order: list[str], color_map: dict[str, str]
+):
     results: dict[str, dict] = {}
     reconstructed_classifications: dict[str, dict] = {}
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
@@ -130,6 +132,8 @@ def plot_overall_performance(instruction_template_hash: str, model_order: list[s
     )
     df["model"] = pd.Categorical(df["model"], categories=model_order, ordered=True)
     df = df.sort_values("model")
+
+    # First, plot a regular bar plot.
     fig = go.Figure()
     fig.add_trace(
         go.Bar(
@@ -180,6 +184,51 @@ def plot_overall_performance(instruction_template_hash: str, model_order: list[s
         barmode="group",
     )
     fig.write_image(Config.paths.plots / "overall_performance.png")
+
+    # Then plot a Pareto efficiency plot.
+    traces = []
+    for model in df["model"]:
+        trace = go.Scatter(
+            x=df.loc[df["model"] == model, "precision"],
+            y=df.loc[df["model"] == model, "recall"],
+            mode="markers",
+            name=model,
+            marker=dict(color=color_map[model]),
+            error_x=dict(
+                type="data",
+                symmetric=False,
+                array=df.loc[df["model"] == model, "precision_ci_upp"]
+                - df.loc[df["model"] == model, "precision"],
+                arrayminus=df.loc[df["model"] == model, "precision"]
+                - df.loc[df["model"] == model, "precision_ci_low"],
+            ),
+            error_y=dict(
+                type="data",
+                symmetric=False,
+                array=df.loc[df["model"] == model, "recall_ci_upp"]
+                - df.loc[df["model"] == model, "recall"],
+                arrayminus=df.loc[df["model"] == model, "recall"]
+                - df.loc[df["model"] == model, "recall_ci_low"],
+            ),
+        )
+        traces.append(trace)
+
+    fig = go.Figure(data=traces)
+
+    fig.update_layout(
+        template="plotly_white",
+        xaxis_title="Precision",
+        yaxis_title="Recall",
+        width=800,
+        height=600,
+        font=dict(size=12),
+        legend=dict(x=1.02, y=1, orientation="v"),
+    )
+
+    fig.update_xaxes(rangemode="tozero")
+    fig.update_yaxes(rangemode="tozero")
+
+    fig.write_image(Config.paths.plots / "pareto_efficiency.png")
 
 
 def plot_cwes_found(instruction_template_hash: str, top_n: int):
@@ -251,5 +300,14 @@ if __name__ == "__main__":
         "gpt-4-turbo-2024-04-09",
         "gemini/gemini-1.5-pro",
     ]
-    plot_overall_performance(instruction_template_hash, model_order)
+
+    color_map = {
+        "claude-3-haiku-20240307": "rgb(252, 244, 10)",
+        "claude-3-sonnet-20240229": "rgb(255, 139, 15)",
+        "claude-3-opus-20240229": "rgb(255, 0, 0)",
+        "gpt-4o-2024-05-13": "rgb(15, 212, 40)",
+        "gpt-4-turbo-2024-04-09": "rgb(7, 99, 19)",
+        "gemini/gemini-1.5-pro": "rgb(2, 14, 150)",
+    }
+    plot_overall_performance(instruction_template_hash, model_order, color_map)
     plot_cwes_found(instruction_template_hash, top_n=10)
