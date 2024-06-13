@@ -1,0 +1,124 @@
+{
+  "commit": "231d566ea3a76534a507dd68840524952c10d5d9",
+  "repo_url": "https://github.com/nyuccl/psiturk",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "966a6d24b8a81fd0494e",
+    "5969195ad5006f2e2056"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: SQL Injection in MTurkServicesWrapper\n    analysis: |\n      The `MTurkServicesWrapper` class handles various interactions with the MTurk API, but it does not properly sanitize inputs in several methods. Specifically, user-controlled input can be used directly to form SQL queries, leading to potential SQL injection vulnerabilities. For example, the `approve_assignment_by_assignment_id` method simply uses the provided assignment_id, which could be manipulated to execute arbitrary SQL code.\n    cwe: CWE-89\n    function_names:\n      - approve_assignment_by_assignment_id\n      - approve_mturk_assignment\n    filenames:\n      - psiturk/amt_services_wrapper.py\n    classification: very promising\n\n  - headline: Cross-Site Scripting (XSS) in Experiment Server\n    analysis: |\n      The `experiment.py` script handles requests and renders templates but does not correctly escape user input in some of the templates. This can lead to reflected XSS attacks where attackers can inject malicious scripts that execute in the context of other users accessing the server. For example, the `setup_example` route loads user-provided data into the template without adequate escaping.\n    cwe: CWE-79\n    function_names:\n    filenames:\n      - psiturk/experiment.py\n    classification: very promising\n\n  - headline: Open Redirect in Dashboard Authentication\n    analysis: |\n      The login system in `dashboard/__init__.py` does not validate the `next` parameter in the URL after successful login. An attacker can craft a URL that redirects users to a malicious site after they log in, which can be used in phishing attacks.\n    cwe: CWE-601\n    function_names:\n    filenames:\n      - psiturk/dashboard/__init__.py\n    classification: very promising\n\n  - headline: Command Injection in Experiment Server Controller\n    analysis: |\n      The `ExperimentServerController` class in `experiment_server_controller.py` includes methods that construct system commands using user input without properly sanitizing the input. This allows an attacker to inject arbitrary commands that will be executed by the server's operating system.\n    cwe: CWE-77\n    function_names:\n      - shutdown\n      - startup\n    filenames:\n      - psiturk/experiment_server_controller.py\n    classification: very promising\n\n  - headline: Insecure Direct Object References in File Handling\n    analysis: |\n      The codebase contains several file handling functions that directly reference and manipulate files based on user input without adequate validation or permission checks. This can allow unauthorized access or alteration of sensitive files.\n    cwe: CWE-552\n    function_names:\n    filenames:\n      - psiturk/experiment.py\n      - psiturk/amt_services_wrapper.py\n    classification: slightly promising\n\n  - headline: Hardcoded AWS Credentials in Code\n    analysis: |\n      The `amt_services_wrapper.py` file contains hardcoded AWS credentials, which can easily be extracted and used for unauthorized access to AWS resources. These credentials should be managed securely and not included directly in the source code.\n    cwe: CWE-798\n    function_names:\n    filenames:\n      - psiturk/amt_services_wrapper.py\n    classification: slightly promising\n\n```",
+      "date": "2024-06-13T10:37:54.163303",
+      "usage": {
+        "prompt_tokens": 123867,
+        "completion_tokens": 663,
+        "cost": 0.62928
+      }
+    },
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Vue Components Potential for Cross-Site Scripting (XSS)\"\n    analysis: |\n      The codebase makes extensive use of Vue.js for front-end components, and it does not appear to sanitize inputs properly in various places. For example, the `id` attribute for the `input` element is being assigned based on potentially unsafe user inputs (from `grouping_key` and `filter_value_label`). Given that user inputs can contain script tags or other malicious entries, this can lead to a Cross-Site Scripting (XSS) vulnerability where an attacker might execute arbitrary JavaScript in the context of users visiting the page.\n    cwe: CWE-79\n    function_names:\n      - \"distinct-value-checkbox\"\n    filenames:\n      - \"psiturk/dashboard/static/index.js\"\n    classification: very promising\n\n  - headline: \"Improper Validation of Input Leading to Broken Access Control\"\n    analysis: |\n      In the components involving campaign creation and updates, there appears to be insufficient validation of the input fields like `update_active_campaign_goal` and `create_goal`. The validation is performed on the client side using Vue.js. An attacker can easily manipulate and bypass this validation leading to unauthorized modifications of campaigns. This can be exploited to perform Denial of Service attacks by setting excessively large values.\n    cwe: CWE-20\n    function_names:\n      - \"create_new_campaign\"\n      - \"update_active_goal\"\n    filenames:\n      - \"psiturk/dashboard/static/campaigns/list.js\"\n    classification: very promising\n\n  - headline: \"Hardcoded Credentials Exposure\"\n    analysis: |\n      The initialization of services reveals that sensitive information, such as AWS credentials, might be hard coded or improperly managed. The `ServicesManager` class in `psiturk/api/__init__.py` discloses more details about the AWS access key, which should not be part of the codebase.\n    cwe: CWE-798\n    function_names:\n      - \"ServicesManager\"\n    filenames:\n      - \"psiturk/api/__init__.py\"\n    classification: very promising\n\n  - headline: \"Command Injection via Unvalidated Actions\"\n    analysis: |\n      The API handling in `AssignmentsAction` does not seem to sanitize or validate the `action` parameter properly allowing arbitrary shell command injection. The code uses `action` directly to invoke actions like `approve_all` without adequate sanitization or verification of whether the action falls within an allowed subset of commands.\n    cwe: CWE-77\n    function_names:\n      - \"post\"\n    filenames:\n      - \"psiturk/api/__init__.py\"\n    classification: slightly promising\n\n  - headline: \"Use of Weak Cryptographic Hash Function\"\n    analysis: |\n      The backend code for managing user data does not specify the hash functions used for storing sensitive information like passwords. If weaker hash algorithms such as MD5 are used, it might compromise password security through collision and pre-image attacks.\n    cwe: CWE-916\n    function_names:\n    filenames:\n    classification: not promising\n```",
+      "date": "2024-06-13T10:38:08.331827",
+      "usage": {
+        "prompt_tokens": 14642,
+        "completion_tokens": 635,
+        "cost": 0.082735
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "SQL Injection in MTurkServicesWrapper",
+      "analysis": "The MTurkServicesWrapper class handles various interactions with the MTurk API, but it does not properly sanitize inputs in several methods. Specifically, user-controlled input can be used directly to form SQL queries, leading to potential SQL injection vulnerabilities. For example, the approve_assignment_by_assignment_id method simply uses the provided assignment_id, which could be manipulated to execute arbitrary SQL code.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "approve_assignment_by_assignment_id",
+        "approve_mturk_assignment"
+      ],
+      "filenames": [
+        "psiturk/amt_services_wrapper.py"
+      ]
+    },
+    {
+      "headline": "Command Injection in Experiment Server Controller",
+      "analysis": "The ExperimentServerController class in experiment_server_controller.py includes methods that construct system commands using user input without properly sanitizing the input. This allows an attacker to inject arbitrary commands that will be executed by the server's operating system.\n",
+      "classification": "very promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "shutdown",
+        "startup"
+      ],
+      "filenames": [
+        "psiturk/experiment_server_controller.py"
+      ]
+    },
+    {
+      "headline": "Vue Components Potential for Cross-Site Scripting (XSS)",
+      "analysis": "The codebase makes extensive use of Vue.js for front-end components, and it does not appear to sanitize inputs properly in various places. For example, the id attribute for the input element is being assigned based on potentially unsafe user inputs (from grouping_key and filter_value_label). Given that user inputs can contain script tags or other malicious entries, this can lead to a Cross-Site Scripting (XSS) vulnerability where an attacker might execute arbitrary JavaScript in the context of users visiting the page.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "distinct-value-checkbox"
+      ],
+      "filenames": [
+        "psiturk/dashboard/static/index.js"
+      ]
+    },
+    {
+      "headline": "Improper Validation of Input Leading to Broken Access Control",
+      "analysis": "In the components involving campaign creation and updates, there appears to be insufficient validation of the input fields like update_active_campaign_goal and create_goal. The validation is performed on the client side using Vue.js. An attacker can easily manipulate and bypass this validation leading to unauthorized modifications of campaigns. This can be exploited to perform Denial of Service attacks by setting excessively large values.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "create_new_campaign",
+        "update_active_goal"
+      ],
+      "filenames": [
+        "psiturk/dashboard/static/campaigns/list.js"
+      ]
+    },
+    {
+      "headline": "Hardcoded Credentials Exposure",
+      "analysis": "The initialization of services reveals that sensitive information, such as AWS credentials, might be hard coded or improperly managed. The ServicesManager class in psiturk/api/__init__.py discloses more details about the AWS access key, which should not be part of the codebase.\n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "ServicesManager"
+      ],
+      "filenames": [
+        "psiturk/api/__init__.py"
+      ]
+    },
+    {
+      "headline": "Command Injection via Unvalidated Actions",
+      "analysis": "The API handling in AssignmentsAction does not seem to sanitize or validate the action parameter properly allowing arbitrary shell command injection. The code uses action directly to invoke actions like approve_all without adequate sanitization or verification of whether the action falls within an allowed subset of commands.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "post"
+      ],
+      "filenames": [
+        "psiturk/api/__init__.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 5
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-4315": "2023-01-28T23:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

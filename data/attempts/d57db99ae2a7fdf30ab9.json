@@ -1,0 +1,39 @@
+{
+  "commit": "119d660876546c6b496f8aa6490f1ab8111350f9",
+  "repo_url": "https://github.com/spipu/html2pdf",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "66d90c6bf4fd13f8e7d0"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential command injection via unsanitized locale input\n    analysis: |\n      The application appears to use unsanitized input from CSV files in the src/locale directory to populate PDF templates. Attackers could potentially include command injection payloads in these CSV files which would then get rendered in generated PDF files.\n\n      For example, the 'cn.csv' file contains unquoted values:\n      ```\n      pdf01,\u6587\u7a3f\u751f\u6210\u65e5\u671f [[date_y]]-[[date_m]]-[[date_d]]\n      ```\n\n      If an attacker modified this to include a command injection payload like:\n      ```\n      pdf01,`some malicious command` [[date_y]]-[[date_m]]-[[date_d]]\n      ```\n\n      This payload would likely get executed when the PDF is generated, allowing arbitrary command execution.\n\n      The PHP scripts rendering these templates do not appear to be included in the repository snippet, but they likely do not properly sanitize or validate the CSV input used in the PDF generation process. Thorough input validation and sanitization is needed.\n    cwe: CWE-78\n    function_names: []\n    filenames:\n      - src/locale/cn.csv\n    classification: very promising\n  \n  - headline: Locale CSV files allow setting arbitrary PDF metadata \n    analysis: |\n      The CSV files in src/locale allow setting various PDF metadata fields like the document generation timestamp, page numbers, etc. However, it does not appear that the allowed metadata keys are restricted in any way.\n\n      An attacker could potentially define arbitrary metadata keys in the CSV files, possibly allowing them to override sensitive PDF settings or even introduce malicious payloads into the document metadata.\n\n      For example, if an attacker added something like this to one of the CSVs:\n      ```\n      openaction,app.alert('xss')\n      ```\n\n      It may introduce an XSS payload that triggers when the PDF is opened, if the PDF rendering process allows arbitrary metadata keys and does not sanitize the values.\n\n      Again, the PDF rendering code is not included here, but the CSV format seems overly permissive in the metadata keys it allows to be defined. The rendering process should whitelist only the specific metadata keys that are allowed.\n    cwe: CWE-74\n    function_names: []\n    filenames:\n      - src/locale/cn.csv\n      - src/locale/ca.csv\n      - src/locale/cs.csv\n      - src/locale/de.csv\n    classification: very promising\n\n  - headline: Executing untrusted PHP scripts in test suite\n    analysis: |\n      The test/generate.sh script executes PHP scripts located in the examples/ directory:\n      ```sh\n      for PHP_SCRIPT in $(ls ./*.php);\n      do\n          PDF_FILE=`echo \"$PHP_SCRIPT\" | sed 's/\\.php/\\.pdf/g' | sed 's/\\.\\//\\.\\.\\/test\\//g'`\n          echo \"Example $PHP_SCRIPT => $PDF_FILE\"\n          php $PHP_SCRIPT > $PDF_FILE\n      done  \n      ```\n\n      However, it does this for every .php file in that directory, without any verification of the script contents. If an attacker is able to modify files in the examples/ directory, they could introduce malicious PHP scripts that will get automatically executed by the test suite.\n\n      When running tests, only explicitly whitelisted scripts should be executed. Running all scripts in a directory makes it too easy for malicious code to slip in. The example PHP scripts should also be treated as untrusted input and executed in a sandbox environment if possible.\n    cwe: CWE-434\n    function_names: []\n    filenames:\n      - test/generate.sh\n    classification: very promising\n```",
+      "date": "2024-06-13T11:57:19.086780",
+      "usage": {
+        "prompt_tokens": 6089,
+        "completion_tokens": 875,
+        "cost": 0.15696
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-39062": "2023-08-28T18:15:08",
+        "CVE-2021-45394": "2022-01-18T12:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,38 @@
+{
+  "commit": "1e4527ffe8688d4f5325283d7cf2cf2d61f14c6b",
+  "repo_url": "https://github.com/npm/fstream",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "509e39e20a295e782862"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Possible command injection in fstream examples\n    analysis: |\n      The fstream examples in examples/pipe.js and examples/filter-pipe.js use the path provided by the user to create file system paths without properly sanitizing the input. \n      \n      In pipe.js, the dirname of the parent directory is used directly:\n      ```js\n      var r = fstream.Reader({\n        path: path.dirname(__dirname), \n        filter: function () {\n          return !this.basename.match(/^\\./) && \n            !this.basename.match(/^node_modules$/) &&\n            !this.basename.match(/^deep-copy$/)\n        }\n      })\n      ```\n\n      Similarly in filter-pipe.js:  \n      ```js\n      var r = fstream.Reader({\n        path: path.dirname(__dirname),\n        filter: function () {\n          return !this.basename.match(/^\\./) &&\n            !this.basename.match(/^node_modules$/) && \n            !this.basename.match(/^deep-copy$/) &&\n            !this.basename.match(/^filter-copy$/)\n        }\n      })\n      ```\n\n      If an attacker can control the parent directory, they could potentially inject special characters like \"..\" to traverse the directory structure and access sensitive files. The subsequent operations using these tainted paths could result in command injection.\n\n    cwe: CWE-78\n    function_names:\n      - pipe.js\n      - filter-pipe.js\n    filenames:\n      - examples/pipe.js\n      - examples/filter-pipe.js \n    classification: slightly promising\n  - headline: Potential TOCTOU race condition in DirReader \n    analysis: |\n      In the DirReader class (lib/dir-reader.js), there is a potential TOCTOU (Time-of-check Time-of-use) race condition. The code first calls fs.readdir() to get a list of directory entries, and then later calls fs.stat()/fs.lstat() on each entry to get its details:\n\n      ```js\n      fs.readdir(self._path, function (er, entries) {\n        if (er) return self.error(er)\n        self.entries = entries\n        ...\n      })\n      \n      ...\n      \n      var p = path.resolve(self._path, self.entries[self._index])\n      fs[self.props.follow ? 'stat' : 'lstat'](p, function (er, stat) {\n        ...\n      })\n      ```\n\n      If the file system is modified by another process between the readdir() and stat()/lstat() calls, the entry being checked may have changed or no longer exist, leading to unexpected behavior.\n\n      Exploitation of this issue would require special timing and an attacker with permissions to modify the file system. Overall risk is limited but this pattern can lead to subtle bugs.\n\n    cwe: CWE-367\n    function_names:\n      - DirReader._read\n    filenames:\n      - lib/dir-reader.js\n    classification: slightly promising\n\n  - headline: Insecure permissions when extracting archives\n    analysis: |\n      When extracting directories from an archive using DirWriter, the directory permissions default to 0777 (world writable) before applying the umask:\n\n      ```js\n      Writer.dirmode = parseInt('0777', 8) & (~umask) \n      ```\n\n      The file permissions default to 0666 (world readable):\n      ```js \n      Writer.filemode = parseInt('0666', 8) & (~umask)\n      ```\n\n      While the current umask is applied, explicitly starting with such broad permissions is not best practice. If the umask is misconfigured to be overly permissive, this could lead to sensitive extracted files being accessible to other users on the system.\n\n      The impact is limited by the umask, but starting with secure default permissions and only relaxing them as needed would be safer.\n\n    cwe: CWE-732\n    function_names: []\n    filenames:\n      - lib/writer.js\n    classification: slightly promising\n\n  - headline: Prototype pollution via linkpath in LinkWriter \n    analysis: |\n      In the LinkWriter class (lib/link-writer.js), the linkpath property from user input is directly assigned to the LinkWriter instance:\n\n      ```js\n      function LinkWriter (props) {\n        ...\n        if (props.linkpath === '') props.linkpath = '.'\n        if (!props.linkpath) {\n          self.error('Need linkpath property to create ' + props.type) \n        }\n        ...\n        Writer.call(this, props)\n      }\n      ```\n      \n      If the linkpath is a special prototype-accessing property like \"__proto__\", it will be assigned to the LinkWriter. This could allow an attacker to inject properties into the prototype chain and potentially influence code that relies on those properties.\n\n      To exploit this, an attacker would need to control the linkpath when creating a LinkWriter. Further analysis is needed to determine if user input flows into LinkWriter creation in any exploitable ways.\n\n    cwe: CWE-1321\n    function_names:\n      - LinkWriter\n    filenames:\n      - lib/link-writer.js\n    classification: slightly promising\n\n  - headline: Incorrect handling of Windows junctions in DirWriter\n    analysis: |\n      The DirWriter (lib/dir-writer.js) attempts to delete a directory entry if its type differs from what is expected, before recreating it:\n\n      ```js\n      if (currentType !== self.type) {\n        return rimraf(self._path, function (er) {\n        if (er) return self.error(er)\n          self._old = null\n          create(self)\n        })\n      }  \n      ```\n      \n      On Windows, deleting a directory junction requires special handling since it is a reparse point. The rimraf module used here does not appear to handle junctions correctly.\n\n      If the directory contains a junction, the delete may fail, leaving the DirWriter in an inconsistent state. Or deleting the junction may have unintended consequences on another part of the filesystem.\n      \n      To exploit this, an attacker would need to be able to create a junction in a directory that DirWriter will process. Overall risk is limited but further investigation on Windows-specific handling is warranted.\n\n    cwe: CWE-59\n    function_names:\n      - DirWriter._create\n    filenames: \n      - lib/dir-writer.js  \n    classification: slightly promising\n```",
+      "date": "2024-06-13T10:36:10.225221",
+      "usage": {
+        "prompt_tokens": 23228,
+        "completion_tokens": 1543,
+        "cost": 0.464145
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-13173": "2019-07-02T20:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

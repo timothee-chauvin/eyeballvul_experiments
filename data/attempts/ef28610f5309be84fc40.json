@@ -1,0 +1,38 @@
+{
+  "commit": "20ce28ba0c25d8062323f82b4b9bcbbfbc5142d1",
+  "repo_url": "https://github.com/pandora-analysis/pandora",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "248429ec84c3819aa582"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential command injection in run_kvrocks.sh\n    analysis: |\n      The run_kvrocks.sh script directly executes the command stored in the kvrocks variable without any validation or sanitization. If the kvrocks.conf file can be modified by an attacker, they could inject arbitrary commands that would be executed with the privileges of the script.\n    cwe: CWE-78\n    function_names:\n      - run_kvrocks.sh\n    filenames:\n      - storage/run_kvrocks.sh\n    classification: very promising\n  \n  - headline: Potential command injection in run_redis.sh  \n    analysis: |\n      Similar to the run_kvrocks.sh script, the run_redis.sh script also directly executes a command using the redis-server executable and passing it the cache.conf file. If an attacker can modify the contents of cache.conf, they could potentially inject malicious commands.\n    cwe: CWE-78\n    function_names:\n      - run_redis.sh\n    filenames:\n      - cache/run_redis.sh\n    classification: very promising\n\n  - headline: Arbitrary file write via extract_msg library\n    analysis: |\n      The extract_msg library is used to process MSG email files. It allows writing extracted attachments to arbitrary files on disk. If an attacker can control the contents of a MSG file, they may be able to overwrite sensitive files or place malicious files in startup locations by manipulating attachment filenames.\n    cwe: CWE-22\n    function_names:\n      - extract_msg\n    filenames:\n      - pandora/file.py\n    classification: slightly promising\n\n  - headline: SSRF and local file inclusion via weasyprint library \n    analysis: |\n      The weasyprint library is used to convert HTML to PDF. By default, it will attempt to fetch any external resources like images, stylesheets, etc linked in the HTML. This could allow an SSRF attack if the HTML is untrusted. There is an option to disable this fetching, but it's not clear if that is always used.\nAdditionally, weasyprint can be passed either an HTML string, file path, or file-like object. Passing a file path could lead to local file inclusion if the path is untrusted.\n    cwe: CWE-918\n    function_names:\n      - html_to_pdf\n    filenames:\n      - pandora/file.py  \n    classification: slightly promising\n\n  - headline: Unsafe deserialization in _load_user_from_request\n    analysis: |\n      The _load_user_from_request function retrieves a user based on an API token passed in the request headers. To do this, it calls load_user_from_request which searches a mapping of API tokens to usernames. \n      \n      If the API tokens are stored insecurely and can be modified by an attacker, this could allow an attacker to log in as any user without knowing their password. The impact depends on how the API tokens are generated and stored.\n    cwe: CWE-502\n    function_names:\n      - _load_user_from_request\n    filenames:\n      - website/web/__init__.py\n    classification: slightly promising\n\n  - headline: Potential SSTI in error templates\n    analysis: |\n      The error handling displays custom templates when errors occur. If user input is ever included unsafely in these templates, it could allow an attacker to inject malicious template directives and achieve server-side template injection. However, a quick review doesn't show any obvious areas where this might occur - more thorough analysis of how data ends up in error templates would be needed.\n    cwe: CWE-94\n    function_names: []\n    filenames:\n      - website/web/templates/error.html\n    classification: not promising\n```",
+      "date": "2024-06-13T11:00:27.512915",
+      "usage": {
+        "prompt_tokens": 112468,
+        "completion_tokens": 897,
+        "cost": 1.754295
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-22898": "2023-01-10T02:15:09"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

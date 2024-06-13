@@ -1,0 +1,93 @@
+{
+  "commit": "2039876514e35c1fc2f0f53462a9006227dae1c8",
+  "repo_url": "https://github.com/pofider/node-script-manager",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "a2eafe94765fe5fbeb7c"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Command injection via 'execModulePath' in all execution modes.\n    analysis: |\n      The `scriptsManager.execute()` function, used in all tested execution modes, takes an `options` object which may contain an `execModulePath` property. This property is used to dynamically build the path to a JavaScript file which is then executed. \n      \n      This allows an attacker who controls the `execModulePath` property to execute arbitrary system commands, as Node.js will happily `require()` any file with a `.js` extension.\n    cwe: CWE-78\n    function_names:\n      - ScriptsManager.prototype.execute\n    filenames:\n      - lib/manager-servers.js\n      - lib/in-process.js\n      - lib/manager-processes.js\n    classification: very promising\n  - headline: Denial of service via worker overload in 'http-server' and 'dedicated-process' modes.\n    analysis: |\n      In both the `http-server` and `dedicated-process` execution modes, long-running or hung tasks will eventually exhaust the pool of available workers. \n      \n      An attacker could exploit this by submitting many long-running tasks, causing subsequent requests to be queued indefinitely. This leads to a denial of service for legitimate users. \n    cwe: CWE-400\n    function_names:\n      - ScriptsManager.prototype.execute\n    filenames:\n      - lib/manager-servers.js\n      - lib/manager-processes.js\n    classification: slightly promising\n  - headline: Possible command injection through 'forkOptions.execArgv' in 'http-server' and 'dedicated-process' modes.\n    analysis: |\n      Both `http-server` and `dedicated-process` modes use the `childProcess.fork()` method to create worker processes. The `forkOptions`, including `execArgv`, used for these child processes can be influenced by the user.\n\n      While the provided code sanitizes `process.execArgv` to remove debugging flags, it doesn't prevent an attacker from setting arbitrary arguments in `forkOptions.execArgv`. If an attacker can control these options during script execution, they might be able to inject arbitrary command-line arguments, potentially leading to command injection.\n    cwe: CWE-78\n    function_names:\n      - ScriptsManager.prototype.execute\n    filenames:\n      - lib/manager-servers.js\n      - lib/manager-processes.js\n    classification: slightly promising\n  - headline: Potential denial of service via large requests in 'http-server' mode.\n    analysis: |\n      In 'http-server' mode, the server reads the entire request body into memory before processing it. While there is a check for 'inputRequestLimit', exceeding this limit only terminates the current request.\n\n      An attacker could send a continuous stream of large requests exceeding the limit, causing repeated memory allocation and potential process crashes. If the server doesn't have adequate rate limiting or request size validation in place, this could lead to a denial of service.\n    cwe: CWE-400\n    function_names:\n      - processRequest\n    filenames:\n      - lib/worker-servers.js\n    classification: not promising\n```",
+      "date": "2024-06-13T11:06:04.206870",
+      "usage": {
+        "prompt_tokens": 10647,
+        "completion_tokens": 649,
+        "cost": 0.00787125
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Command injection via 'execModulePath' in all execution modes.",
+      "analysis": "The scriptsManager.execute() function, used in all tested execution modes, takes an options object which may contain an execModulePath property. This property is used to dynamically build the path to a JavaScript file which is then executed. \n\nThis allows an attacker who controls the execModulePath property to execute arbitrary system commands, as Node.js will happily require() any file with a .js extension.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "ScriptsManager.prototype.execute"
+      ],
+      "filenames": [
+        "lib/manager-servers.js",
+        "lib/in-process.js",
+        "lib/manager-processes.js"
+      ]
+    },
+    {
+      "headline": "Denial of service via worker overload in 'http-server' and 'dedicated-process' modes.",
+      "analysis": "In both the http-server and dedicated-process execution modes, long-running or hung tasks will eventually exhaust the pool of available workers. \n\nAn attacker could exploit this by submitting many long-running tasks, causing subsequent requests to be queued indefinitely. This leads to a denial of service for legitimate users. \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "ScriptsManager.prototype.execute"
+      ],
+      "filenames": [
+        "lib/manager-servers.js",
+        "lib/manager-processes.js"
+      ]
+    },
+    {
+      "headline": "Possible command injection through 'forkOptions.execArgv' in 'http-server' and 'dedicated-process' modes.",
+      "analysis": "Both http-server and dedicated-process modes use the childProcess.fork() method to create worker processes. The forkOptions, including execArgv, used for these child processes can be influenced by the user.\n\nWhile the provided code sanitizes process.execArgv to remove debugging flags, it doesn't prevent an attacker from setting arbitrary arguments in forkOptions.execArgv. If an attacker can control these options during script execution, they might be able to inject arbitrary command-line arguments, potentially leading to command injection.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "ScriptsManager.prototype.execute"
+      ],
+      "filenames": [
+        "lib/manager-servers.js",
+        "lib/manager-processes.js"
+      ]
+    },
+    {
+      "headline": "Potential denial of service via large requests in 'http-server' mode.",
+      "analysis": "In 'http-server' mode, the server reads the entire request body into memory before processing it. While there is a check for 'inputRequestLimit', exceeding this limit only terminates the current request.\n\nAn attacker could send a continuous stream of large requests exceeding the limit, causing repeated memory allocation and potential process crashes. If the server doesn't have adequate rate limiting or request size validation in place, this could lead to a denial of service.\n",
+      "classification": "not promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "processRequest"
+      ],
+      "filenames": [
+        "lib/worker-servers.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2020-8129"
+      },
+      "vuln_dates": {
+        "CVE-2020-8129": "2020-02-14T22:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

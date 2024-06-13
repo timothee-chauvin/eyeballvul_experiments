@@ -1,0 +1,78 @@
+{
+  "commit": "112fcdb9953c6b9a2744afee451d73029f7cd2f8",
+  "repo_url": "https://github.com/stuk/jszip",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "ee98b8f0871062606146"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: 'JSZip before 3.7.1 allows absolute path traversal when loading a\n      .zip file, because of a wrong folder detection in ZipEntry#processAttributes'\n    analysis: |\n      JSZip tries to detect if a file in a zip is a directory, based on the metadata of the file.\n\n      Before 3.7.1, if the directory detection logic fails, the file is considered as a regular file.\n      If a file has a name starting with \"/\" but isn't considered as a folder, JSZip will create the corresponding file outside of the extraction folder (e.g. `/evil.sh`).\n\n      By creating a zip archive where the directory detection logic fails but a file has a name starting with `/`, an attacker can write arbitrary content to the filesystem.\n\n      According to the documentation, there are several ways to make the detection fail, the easiest one being a versionMadeBy = 0 (which isn't used, according to the zip specification).\n    cwe: CWE-22\n    function_names:\n      - ZipEntry.prototype.processAttributes\n    filenames:\n      - lib/zipEntry.js\n    classification: very promising\n  - headline: JSZip before 3.5.0 is vulnerable to a ReDoS through regular expression\n      denial of service when calling `folder()` with a crafted input\n    analysis: |\n      An attacker can cause a regular expression denial of service (ReDoS) by calling the `folder()` method with a crafted input.\n      JSZip calls a user-provided function for each entry of the archive, giving the relative path and the corresponding ZipObject.\n\n      When the user calls `folder(regex)`, JSZip will then call `regex.test(relativePath)` for each entry. If the regular expression is vulnerable to ReDoS and the attacker controls the content of the zip archive, the attacker can block the main thread.\n\n      The `file()` method is vulnerable to the same kind of attack.\n    cwe: CWE-1333\n    function_names:\n      - JSZip.prototype.folder\n    filenames:\n      - lib/object.js\n    classification: slightly promising\n  - headline: JSZip before 3.5.0 allows directory creation outside the specified\n      output path when using the Node.js stream output\n    analysis: |\n      When streaming the result of JSZip, an attacker can trigger the creation of arbitrary folders, anywhere on the filesystem.\n\n      An attacker can create a file called \"../../../../tmp/evil.txt\" and ask for the Node.js stream output, which will create the folder hierarchy outside the output folder specified by the user.\n    cwe: CWE-22\n    function_names:\n      - JSZip.prototype.generateNodeStream\n    filenames:\n      - lib/object.js\n    classification: slightly promising\n```",
+      "date": "2024-06-13T12:07:43.360435",
+      "usage": {
+        "prompt_tokens": 124213,
+        "completion_tokens": 579,
+        "cost": 0.07871875000000002
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "JSZip before 3.7.1 allows absolute path traversal when loading a .zip file, because of a wrong folder detection in ZipEntry#processAttributes",
+      "analysis": "JSZip tries to detect if a file in a zip is a directory, based on the metadata of the file.\n\nBefore 3.7.1, if the directory detection logic fails, the file is considered as a regular file.\nIf a file has a name starting with \"/\" but isn't considered as a folder, JSZip will create the corresponding file outside of the extraction folder (e.g. /evil.sh).\n\nBy creating a zip archive where the directory detection logic fails but a file has a name starting with /, an attacker can write arbitrary content to the filesystem.\n\nAccording to the documentation, there are several ways to make the detection fail, the easiest one being a versionMadeBy = 0 (which isn't used, according to the zip specification).\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "ZipEntry.prototype.processAttributes"
+      ],
+      "filenames": [
+        "lib/zipEntry.js"
+      ]
+    },
+    {
+      "headline": "JSZip before 3.5.0 is vulnerable to a ReDoS through regular expression denial of service when calling folder() with a crafted input",
+      "analysis": "An attacker can cause a regular expression denial of service (ReDoS) by calling the folder() method with a crafted input.\nJSZip calls a user-provided function for each entry of the archive, giving the relative path and the corresponding ZipObject.\n\nWhen the user calls folder(regex), JSZip will then call regex.test(relativePath) for each entry. If the regular expression is vulnerable to ReDoS and the attacker controls the content of the zip archive, the attacker can block the main thread.\n\nThe file() method is vulnerable to the same kind of attack.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-1333",
+      "function_names": [
+        "JSZip.prototype.folder"
+      ],
+      "filenames": [
+        "lib/object.js"
+      ]
+    },
+    {
+      "headline": "JSZip before 3.5.0 allows directory creation outside the specified output path when using the Node.js stream output",
+      "analysis": "When streaming the result of JSZip, an attacker can trigger the creation of arbitrary folders, anywhere on the filesystem.\n\nAn attacker can create a file called \"../../../../tmp/evil.txt\" and ask for the Node.js stream output, which will create the folder hierarchy outside the output folder specified by the user.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "JSZip.prototype.generateNodeStream"
+      ],
+      "filenames": [
+        "lib/object.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2022-48285"
+      },
+      "vuln_dates": {
+        "CVE-2022-48285": "2023-01-29T05:15:10",
+        "CVE-2021-23413": "2021-07-25T13:15:07"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

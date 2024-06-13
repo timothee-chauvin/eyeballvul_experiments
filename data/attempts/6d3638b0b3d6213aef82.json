@@ -1,0 +1,79 @@
+{
+  "commit": "2f41f9d7e6fc5c43ee609bab868667f9768f0777",
+  "repo_url": "https://github.com/snoyberg/xml",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "0582b5d90ac3d54f22cb"
+  ],
+  "responses": [
+    {
+      "content": "Here are the security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: XML external entity (XXE) injection\n    analysis: |\n      The `Text.XML.Unresolved` module uses the `psDecodeEntities` setting in `ParseSettings` to control how XML entities are decoded. If set to `decodeXmlEntities`, entities will be decoded without restriction, allowing XXE attacks.\n      \n      An attacker could craft malicious XML containing external entities to access local files, make network requests, or cause denial of service, if the application accepts untrusted XML input and passes it to functions like `parseLBS`, `sinkDoc`, etc.\n    cwe: CWE-611  \n    function_names:\n      - parseLBS\n      - sinkDoc\n    filenames:\n      - xml-conduit/Text/XML/Unresolved.hs\n    classification: very promising\n\n  - headline: Exponential entity expansion vulnerability\n    analysis: |  \n      The `Text.XML.Unresolved` module is vulnerable to billion laughs attacks if `psDecodeEntities` is set to allow expanding external entities.\n      \n      An attacker could provide a malicious XML document with nested entity references that expand exponentially when processed. This leads to excessive memory and CPU consumption, resulting in denial of service.\n    cwe: CWE-776\n    function_names:\n      - parseLBS\n      - sinkDoc  \n    filenames:\n      - xml-conduit/Text/XML/Unresolved.hs\n    classification: very promising\n\n  - headline: Potential XSS in blaze-html rendering of HTML/XML \n    analysis: |\n      The `html-conduit` package relies on `blaze-html` for rendering parsed HTML/XML trees. Blaze automatically escapes content when converting to HTML.\n      \n      However, if the HTML/XML input contains malicious JavaScript in attributes or between tags, it may still be possible to inject scripts into the rendered HTML output.\n\n      The impact depends on how the rendered HTML is used. If included in web pages, it could allow cross-site scripting attacks.\n    cwe: CWE-79\n    function_names:\n      - renderBuilder\n    filenames:\n      - html-conduit/src/Text/HTML/DOM.hs\n    classification: slightly promising\n```\n\nThe codebase properly handles most untrusted HTML/XML input by escaping entities, using strict parsing settings by default, and auto-escaping rendered output. However, there are still potential XML vulnerabilities if an application uses unsafe entity decoding settings. The blaze-html rendering also warrants further investigation for potential XSS gaps. Overall though, the XML processing libraries seem to have been designed with security in mind.",
+      "date": "2024-06-13T11:52:59.949974",
+      "usage": {
+        "prompt_tokens": 68839,
+        "completion_tokens": 641,
+        "cost": 1.08066
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "XML external entity (XXE) injection",
+      "analysis": "The Text.XML.Unresolved module uses the psDecodeEntities setting in ParseSettings to control how XML entities are decoded. If set to decodeXmlEntities, entities will be decoded without restriction, allowing XXE attacks.\n\nAn attacker could craft malicious XML containing external entities to access local files, make network requests, or cause denial of service, if the application accepts untrusted XML input and passes it to functions like parseLBS, sinkDoc, etc.\n",
+      "classification": "very promising",
+      "cwe": "CWE-611",
+      "function_names": [
+        "parseLBS",
+        "sinkDoc"
+      ],
+      "filenames": [
+        "xml-conduit/Text/XML/Unresolved.hs"
+      ]
+    },
+    {
+      "headline": "Exponential entity expansion vulnerability",
+      "analysis": "The Text.XML.Unresolved module is vulnerable to billion laughs attacks if psDecodeEntities is set to allow expanding external entities.\n\nAn attacker could provide a malicious XML document with nested entity references that expand exponentially when processed. This leads to excessive memory and CPU consumption, resulting in denial of service.\n",
+      "classification": "very promising",
+      "cwe": "CWE-776",
+      "function_names": [
+        "parseLBS",
+        "sinkDoc"
+      ],
+      "filenames": [
+        "xml-conduit/Text/XML/Unresolved.hs"
+      ]
+    },
+    {
+      "headline": "Potential XSS in blaze-html rendering of HTML/XML",
+      "analysis": "The html-conduit package relies on blaze-html for rendering parsed HTML/XML trees. Blaze automatically escapes content when converting to HTML.\n\nHowever, if the HTML/XML input contains malicious JavaScript in attributes or between tags, it may still be possible to inject scripts into the rendered HTML output.\n\nThe impact depends on how the rendered HTML is used. If included in web pages, it could allow cross-site scripting attacks.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "renderBuilder"
+      ],
+      "filenames": [
+        "html-conduit/src/Text/HTML/DOM.hs"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2021-4249"
+      },
+      "vuln_dates": {
+        "CVE-2021-4249": "2022-12-18T15:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

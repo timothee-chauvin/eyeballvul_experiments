@@ -1,0 +1,38 @@
+{
+  "commit": "177ab3715b3c1070432258f91886373acb3ca2de",
+  "repo_url": "https://github.com/ssshooter/mind-elixir-core",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "8af17bf551d116405d76"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the codebase:\n\n```yaml\nleads:\n  - headline: Potential code injection vulnerability in setNodeTopic\n    analysis: |\n      The setNodeTopic function in src/nodeOperation.js directly sets the textContent of a node to a user-provided value without sanitization:\n      \n      ```\n      export let setNodeTopic = function (tpc, topic) {\n        tpc.childNodes[0].textContent = topic\n        tpc.nodeObj.topic = topic\n        this.linkDiv()\n      }\n      ```\n      \n      If the 'topic' parameter contains HTML or JavaScript code, it could lead to XSS attacks when rendering the mind map. The user input should be sanitized or escaped before setting it as node content.\n    cwe: CWE-79\n    function_names:\n      - setNodeTopic\n    filenames:\n      - src/nodeOperation.js\n    classification: very promising\n\n  - headline: Insecure HTML rendering when exporting mind map \n    analysis: |\n      The generateSvgDom function in painter/index.js constructs an SVG string using concatenation of user-provided node data without proper escaping:\n       \n      ```\n      let svg = `<g id=\"${nodeObj.id}\">\n        ${border}\n        ${backgroundColor}\n        <text x=\"${topicOffsetLeft}\" y=\"${topicOffsetTop}\" text-anchor=\"start\" align=\"top\" anchor=\"start\" font-family=\"\u5fae\u8f6f\u96c5\u9ed1\" font-size=\"${tpcStyle.fontSize}\" font-weight=\"${tpcStyle.fontWeight}\" fill=\"${tpcStyle.color}\">\n          ${nodeObj.topic}\n          ${icons}\n        </text>\n        ${tags}\n      </g>`\n      ```\n\n      This could allow injection of malicious SVG/XML content when a mind map containing untrusted data is exported to SVG format. The node topic, icons and tags should be sanitized.\n    cwe: CWE-79 \n    function_names:\n      - generateSvgDom\n    filenames:\n      - painter/index.js\n    classification: very promising\n\n  - headline: Potential XSS via image download filenames\n    analysis: |  \n      The exportSvg and exportPng functions in painter/index.js use the root node topic directly as the download filename:\n      \n      ```\n      function getFileName(){\n        return document.querySelector('root > tpc').innerText \n      }\n\n      export let exportSvg = function (fileName) {\n        ...\n        a.download = fileName || getFileName() + '.svg'\n        ...\n      }\n      ```\n\n      If an attacker can control the root topic, they may be able to inject special characters like double-quotes, spaces etc into the filename that could lead to XSS when the export link is clicked. The filename should be sanitized before use.\n    cwe: CWE-79\n    function_names: \n      - exportSvg\n      - exportPng\n    filenames:\n      - painter/index.js  \n    classification: slightly promising\n\n  - headline: Potential client-side template injection\n    analysis: |\n      Several utility functions like createInputDiv, createGroup etc in src/utils/dom.js construct DOM elements using string concatenation of unsanitized node data:\n      \n      ```  \n      function createTopic(nodeObj) {\n        let topic = $d.createElement('tpc')\n        topic.nodeObj = nodeObj\n        topic.innerHTML = nodeObj.topic\n        ...\n      }\n      ```\n\n      If a node's topic contains HTML markup or AngularJS template syntax, it could lead to client-side template injection and XSS. The node data should be sanitized before inserting into DOM.\n    cwe: CWE-1236\n    function_names:\n      - createInputDiv\n      - createGroup \n      - createTopic\n    filenames:\n      - src/utils/dom.js\n    classification: slightly promising\n```\n\nThe biggest risks are the potential for XSS and code injection when rendering untrusted node data both in the mind map UI and when exporting to SVG. I did not find any severe vulnerabilities that directly allow remote code execution. Let me know if you have any other questions!",
+      "date": "2024-06-13T12:01:46.170952",
+      "usage": {
+        "prompt_tokens": 101861,
+        "completion_tokens": 1006,
+        "cost": 1.603365
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-32851": "2023-02-20T22:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

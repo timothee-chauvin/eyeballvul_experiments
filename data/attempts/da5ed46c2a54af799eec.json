@@ -1,0 +1,38 @@
+{
+  "commit": "231d566ea3a76534a507dd68840524952c10d5d9",
+  "repo_url": "https://github.com/nyuccl/psiturk",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "472f191fc2b37e0bd71d"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the psiturk codebase:\n\n<vulnerability>\n<headline>Arbitrary Code Execution via custom.py</headline>\n<analysis>\nThe code allows executing a custom \"custom.py\" file if present alongside the psiturk files. This custom Python file appears to have full access to Flask app globals.\n\nAn attacker who can upload a malicious custom.py file to the server could potentially execute arbitrary Python code in the context of the psiturk web application. This could allow taking over the server, accessing sensitive data, modifying responses, etc.\n\nTo exploit, an attacker would need file system access to the psiturk directory to upload their custom.py file. But no further validation seems to be done on what code can be placed in custom.py before executing it.\n</analysis>\n<cwe>CWE-94</cwe>\n<function_names>\n- run_webserver\n</function_names>\n<filenames>\n- psiturk/experiment.py\n</filenames>\n<classification>very promising</classification>\n</vulnerability>\n\n<vulnerability>\n<headline>SQL Injection via sequel queries</headline>\n<analysis>\nMany of the functions that query the database concatenate unescaped user input directly into the SQL queries. For example, the `count_workers()` function in amt_services_wrapper.py builds a SQLAlchemy query by formatting user input strings like mode and codeversion directly into the query.\n\nThis could allow an attacker to perform SQL injection if they can control those input fields. By crafting a malicious string, they could potentially modify the query to return sensitive data, modify data, or even execute arbitrary SQL commands.\n\nTo exploit this, an attacker would need control over the inputs to these queries, like the `mode` and `codeversion` parameters. It's unclear from the current context whether those values come from user input.\n</analysis>\n<cwe>CWE-89</cwe>\n<function_names>\n- count_workers\n- count_completed \n</function_names>\n<filenames>\n- psiturk/amt_services_wrapper.py\n- psiturk/models.py\n</filenames>\n<classification>slightly promising</classification>\n</vulnerability>\n\n<vulnerability>\n<headline>Potential Server-Side Request Forgery (SSRF)</headline>\n<analysis>\nIn the `TaskUtils.amt_services_wrapper` property of the `psiturk_services_manager`, the `amt_services_wrapper` is instantiated with a `mode` parameter that comes from the `psiturk.mode` property.\n\nIt's not clear where this `mode` value originates. If an attacker can control the `mode` and set it to an arbitrary URL, they may be able to make the server issue requests to that URL when the `amt_services_wrapper` is used. This could potentially be used for SSRF attacks.\n\nHowever, more context would be needed to determine the full exploit potential, like understanding where `psiturk.mode` comes from and if it can be set to a URL.\n</analysis>\n<cwe>CWE-918</cwe>\n<function_names>\n- psiturk_services_manager\n</function_names>\n<filenames>\n- psiturk/services_manager.py\n</filenames>\n<classification>slightly promising</classification>\n</vulnerability>\n\n<vulnerability>\n<headline>Using eval() to execute code</headline>\n<analysis>\nIn the `x.fn.extend()` function in jQuery, the `makeArray` function passes a string to the `Function` constructor which is equivalent to calling `eval()` on that string.\n\nIf an attacker can control the string passed to `makeArray`, they could potentially get arbitrary JavaScript code execution in the context of the page. \n\nHowever, `makeArray` is only called in a few places internally in jQuery with non-user controlled data. The exploit potential depends on if this functionality can be invoked by untrusted input.\n</analysis>\n<cwe>CWE-94</cwe>\n<function_names>\n- makeArray\n</function_names>\n<filenames>\n- psiturk/example/static/lib/jquery-min.js\n</filenames>\n<classification>not promising</classification>\n</vulnerability>\n\nIn summary, the most concerning vulnerability is the ability to execute arbitrary Python via a malicious custom.py file. The SQL injection and potential SSRF vectors are also worth investigating further. The `eval()` usage in jQuery seems unlikely to be exploitable. I recommend focusing security efforts on restricting file system access, validating and sanitizing database query inputs, and auditing the source of the `mode` parameter used when initializing the AMT service wrapper.",
+      "date": "2024-06-13T10:39:24.270461",
+      "usage": {
+        "prompt_tokens": 179099,
+        "completion_tokens": 1096,
+        "cost": 2.768685
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-4315": "2023-01-28T23:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

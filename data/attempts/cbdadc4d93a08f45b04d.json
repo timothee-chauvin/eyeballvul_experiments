@@ -1,0 +1,146 @@
+{
+  "commit": "2df95ccff5bdce2e13040f17d323564f29d74f0c",
+  "repo_url": "https://github.com/lukasavicus/windmill",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "7c73d333ca9739286fbc"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Arbitrary file write via archive upload\n    analysis: |\n      The application allows users to upload arbitrary ZIP archives, which are then extracted inside `windmill/uploads`.\n      If a user names the archive something like `../../evil.py`, the application will happily write the extracted contents outside of the `uploads` folder.\n    cwe: CWE-22\n    function_names:\n      - upload_file\n    filenames:\n      - windmill/archives/routes.py\n    classification: very promising\n  - headline: Unrestricted file upload\n    analysis: |\n      The `upload_file` function does not restrict the type of files being uploaded.\n      This could allow an attacker to upload and execute arbitrary code on the server.\n    cwe: CWE-434\n    function_names:\n      - upload_file\n    filenames:\n      - windmill/archives/routes.py\n      - outros/routes_pieces.py\n    classification: very promising\n  - headline: Command injection via `os.system` in `dev_cmd`\n    analysis: |\n      The `dev_cmd` function allows GET requests to render a web terminal.\n      When a user POSTs to this endpoint, the value of `cmdTextArea` is executed directly via `os.system`.\n      If an attacker can control the value of `cmdTextArea`, they can execute arbitrary commands on the server.\n    cwe: CWE-78\n    function_names:\n      - dev_cmd\n    filenames:\n      - windmill/dev/routes.py\n    classification: very promising\n  - headline: Command injection via `subprocess.Popen` in `dev_cmd`\n    analysis: |\n      Similar to the previous lead, the `dev_cmd` function allows execution of arbitrary commands using `subprocess.Popen`, both with and without splitting the command string into arguments. \n    cwe: CWE-78\n    function_names:\n      - dev_cmd\n    filenames:\n      - windmill/dev/routes.py\n    classification: very promising\n  - headline: Time-of-check Time-of-use (TOCTOU) Race Condition in job deletion\n    analysis: |\n      There is a potential TOCTOU race condition in the `JobDAO.delete` method.\n      Between the check for `isAlive` and the actual deletion of the job, an attacker might be able to re-schedule the job, leading to unintended execution.\n    cwe: CWE-367\n    function_names:\n      - delete\n    filenames:\n      - windmill/models.py\n    classification: slightly promising\n  - headline: Information disclosure via `api_info_task`\n    analysis: |\n      The `api_info_task` function returns a JSON representation of a job object, including sensitive information such as the job's name and entry point.\n      An attacker could use this information to gain insights into the application's functionality and potentially identify further vulnerabilities.\n    cwe: CWE-200\n    function_names:\n      - api_info_task\n    filenames:\n      - windmill/tasks/routes.py\n    classification: slightly promising\n  - headline: Hardcoded MongoDB URI\n    analysis: |\n      The MongoDB URI is hardcoded in multiple files (e.g. `config.py`, `outros/routes_pieces.py`). This practice is not recommended, as it can lead to sensitive information being exposed if the codebase is compromised.\n    cwe: CWE-798\n    function_names: []\n    filenames:\n      - config.py\n      - outros/routes_pieces.py\n      - windmill/agents/logger.py\n    classification: not promising\n  - headline: Debug mode enabled\n    analysis: |\n      The `DEBUG` flag is set to `True` in `config.py`, which enables debugging features in Flask. While useful for development, this setting should be disabled in production environments, as it can expose sensitive information to attackers.\n    cwe: CWE-668\n    function_names: []\n    filenames:\n      - config.py\n    classification: not promising\n  - headline: Hardcoded secret key\n    analysis: |\n      The `SECRET_KEY` is hardcoded in `config.py`. This is a bad practice, as it makes it easy for attackers to forge session cookies and potentially hijack user sessions.\n    cwe: CWE-330\n    function_names: []\n    filenames:\n      - config.py\n    classification: not promising\n```",
+      "date": "2024-06-13T09:55:23.965239",
+      "usage": {
+        "prompt_tokens": 52552,
+        "completion_tokens": 880,
+        "cost": 0.034495000000000005
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Arbitrary file write via archive upload",
+      "analysis": "The application allows users to upload arbitrary ZIP archives, which are then extracted inside windmill/uploads.\nIf a user names the archive something like ../../evil.py, the application will happily write the extracted contents outside of the uploads folder.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "upload_file"
+      ],
+      "filenames": [
+        "windmill/archives/routes.py"
+      ]
+    },
+    {
+      "headline": "Unrestricted file upload",
+      "analysis": "The upload_file function does not restrict the type of files being uploaded.\nThis could allow an attacker to upload and execute arbitrary code on the server.\n",
+      "classification": "very promising",
+      "cwe": "CWE-434",
+      "function_names": [
+        "upload_file"
+      ],
+      "filenames": [
+        "windmill/archives/routes.py",
+        "outros/routes_pieces.py"
+      ]
+    },
+    {
+      "headline": "Command injection via os.system in dev_cmd",
+      "analysis": "The dev_cmd function allows GET requests to render a web terminal.\nWhen a user POSTs to this endpoint, the value of cmdTextArea is executed directly via os.system.\nIf an attacker can control the value of cmdTextArea, they can execute arbitrary commands on the server.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "dev_cmd"
+      ],
+      "filenames": [
+        "windmill/dev/routes.py"
+      ]
+    },
+    {
+      "headline": "Command injection via subprocess.Popen in dev_cmd",
+      "analysis": "Similar to the previous lead, the dev_cmd function allows execution of arbitrary commands using subprocess.Popen, both with and without splitting the command string into arguments. \n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "dev_cmd"
+      ],
+      "filenames": [
+        "windmill/dev/routes.py"
+      ]
+    },
+    {
+      "headline": "Time-of-check Time-of-use (TOCTOU) Race Condition in job deletion",
+      "analysis": "There is a potential TOCTOU race condition in the JobDAO.delete method.\nBetween the check for isAlive and the actual deletion of the job, an attacker might be able to re-schedule the job, leading to unintended execution.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-367",
+      "function_names": [
+        "delete"
+      ],
+      "filenames": [
+        "windmill/models.py"
+      ]
+    },
+    {
+      "headline": "Information disclosure via api_info_task",
+      "analysis": "The api_info_task function returns a JSON representation of a job object, including sensitive information such as the job's name and entry point.\nAn attacker could use this information to gain insights into the application's functionality and potentially identify further vulnerabilities.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "api_info_task"
+      ],
+      "filenames": [
+        "windmill/tasks/routes.py"
+      ]
+    },
+    {
+      "headline": "Hardcoded MongoDB URI",
+      "analysis": "The MongoDB URI is hardcoded in multiple files (e.g. config.py, outros/routes_pieces.py). This practice is not recommended, as it can lead to sensitive information being exposed if the codebase is compromised.\n",
+      "classification": "not promising",
+      "cwe": "CWE-798",
+      "function_names": [],
+      "filenames": [
+        "config.py",
+        "outros/routes_pieces.py",
+        "windmill/agents/logger.py"
+      ]
+    },
+    {
+      "headline": "Debug mode enabled",
+      "analysis": "The DEBUG flag is set to True in config.py, which enables debugging features in Flask. While useful for development, this setting should be disabled in production environments, as it can expose sensitive information to attackers.\n",
+      "classification": "not promising",
+      "cwe": "CWE-668",
+      "function_names": [],
+      "filenames": [
+        "config.py"
+      ]
+    },
+    {
+      "headline": "Hardcoded secret key",
+      "analysis": "The SECRET_KEY is hardcoded in config.py. This is a bad practice, as it makes it easy for attackers to forge session cookies and potentially hijack user sessions.\n",
+      "classification": "not promising",
+      "cwe": "CWE-330",
+      "function_names": [],
+      "filenames": [
+        "config.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 3
+      },
+      "mapping": {
+        "0": "CVE-2022-31519"
+      },
+      "vuln_dates": {
+        "CVE-2022-31519": "2022-07-11T01:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

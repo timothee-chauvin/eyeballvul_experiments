@@ -1,0 +1,123 @@
+{
+  "commit": "33dc0cb7341c01c877955e767cd8222291adb756",
+  "repo_url": "https://github.com/lensapp/bored-agent",
+  "model": "claude-3-sonnet-20240229",
+  "chunk_hashes": [
+    "dfd7b1a63be6ee6697db"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Cleartext storage of encryption keys\"\n    analysis: |\n      The application stores the private encryption key in cleartext within a Kubernetes Secret. While Kubernetes Secrets are base64 encoded, they are not encrypted at rest and can potentially be accessed by malicious actors with access to the cluster or through the Kubernetes API. Storing encryption keys in cleartext introduces a risk of key compromise, which could lead to the decryption of sensitive data.\n    cwe: CWE-312\n    function_names:\n      - KeyPairManager.storeKeys\n    filenames:\n      - src/keypair-manager.ts\n    classification: very promising\n\n  - headline: \"Use of an Insufficiently Random Key\"\n    analysis: |\n      The application generates encryption keys using the built-in `crypto.generateKeyPair` function without specifying a secure source of entropy. While the default entropy source may be adequate in some cases, it may not provide sufficient randomness in certain environments or scenarios, potentially leading to predictable keys that could be brute-forced or otherwise compromised by attackers.\n    cwe: CWE-335\n    function_names:\n      - KeyPairManager.generateKeys\n    filenames:\n      - src/keypair-manager.ts\n    classification: slightly promising\n\n  - headline: \"Uncontrolled Resource Consumption\"\n    analysis: |\n      The application establishes WebSocket connections with the BoreD server and creates new TLS sockets for each incoming request. There is no explicit limit on the number of concurrent connections or sockets, potentially leading to resource exhaustion attacks if an attacker floods the application with a large number of requests. This could result in a Denial of Service (DoS) condition or other unintended behavior.\n    cwe: CWE-770\n    function_names:\n      - AgentProxy.connect\n      - AgentProxy.handleTcpRequestStream\n      - AgentProxy.handleUnixRequestStream\n      - AgentProxy.handleDefaultRequestStream\n    filenames:\n      - src/agent-proxy.ts\n    classification: slightly promising\n\n  - headline: \"Improper Certificate Validation\"\n    analysis: |\n      The application does not perform proper certificate validation when establishing TLS connections to the Kubernetes API server. If the `CA_CERT` environment variable is not set, the application disables certificate validation entirely and accepts any server certificate, potentially allowing man-in-the-middle attacks or connections to rogue servers.\n    cwe: CWE-295\n    function_names:\n      - AgentProxy.handleDefaultRequestStream\n    filenames:\n      - src/agent-proxy.ts\n    classification: very promising\n\n  - headline: \"Failure to Release Resources\"\n    analysis: |\n      The application does not properly release TLS socket resources when they are no longer needed. When a TLS socket is closed or the connection is terminated, the application does not remove the socket from the `tlsSockets` array, potentially leading to memory leaks or other resource management issues over time.\n    cwe: CWE-772\n    function_names: []\n    filenames:\n      - src/agent-proxy.ts\n    classification: slightly promising\n\n  - headline: \"Lack of Input Validation\"\n    analysis: |\n      The application does not validate the contents of the `BoreD-Enc-Key` header when parsing incoming streams. If an attacker can control the contents of this header, they may be able to cause the application to crash or potentially execute arbitrary code by providing malformed or malicious input.\n    cwe: CWE-20\n    function_names:\n      - StreamParser.decryptHeader\n    filenames:\n      - src/stream-parser.ts\n    classification: very promising\n\n  - headline: \"Use of Hardcoded Credentials\"\n    analysis: |\n      The application uses a hardcoded service account token when impersonating users and groups. While this token is likely intended to be specific to the application's service account, hardcoding credentials in the codebase introduces a risk of credential exposure and makes it difficult to rotate or revoke the token if it becomes compromised.\n    cwe: CWE-798\n    function_names:\n      - StreamImpersonator.impersonateJwtToken\n    filenames:\n      - src/stream-impersonator.ts\n    classification: slightly promising\n```",
+      "date": "2024-06-13T09:36:16.075994",
+      "usage": {
+        "prompt_tokens": 17968,
+        "completion_tokens": 1007,
+        "cost": 0.069009
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cleartext storage of encryption keys",
+      "analysis": "The application stores the private encryption key in cleartext within a Kubernetes Secret. While Kubernetes Secrets are base64 encoded, they are not encrypted at rest and can potentially be accessed by malicious actors with access to the cluster or through the Kubernetes API. Storing encryption keys in cleartext introduces a risk of key compromise, which could lead to the decryption of sensitive data.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "KeyPairManager.storeKeys"
+      ],
+      "filenames": [
+        "src/keypair-manager.ts"
+      ]
+    },
+    {
+      "headline": "Use of an Insufficiently Random Key",
+      "analysis": "The application generates encryption keys using the built-in crypto.generateKeyPair function without specifying a secure source of entropy. While the default entropy source may be adequate in some cases, it may not provide sufficient randomness in certain environments or scenarios, potentially leading to predictable keys that could be brute-forced or otherwise compromised by attackers.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-335",
+      "function_names": [
+        "KeyPairManager.generateKeys"
+      ],
+      "filenames": [
+        "src/keypair-manager.ts"
+      ]
+    },
+    {
+      "headline": "Uncontrolled Resource Consumption",
+      "analysis": "The application establishes WebSocket connections with the BoreD server and creates new TLS sockets for each incoming request. There is no explicit limit on the number of concurrent connections or sockets, potentially leading to resource exhaustion attacks if an attacker floods the application with a large number of requests. This could result in a Denial of Service (DoS) condition or other unintended behavior.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-770",
+      "function_names": [
+        "AgentProxy.connect",
+        "AgentProxy.handleTcpRequestStream",
+        "AgentProxy.handleUnixRequestStream"
+      ],
+      "filenames": [
+        "src/agent-proxy.ts"
+      ]
+    },
+    {
+      "headline": "Improper Certificate Validation",
+      "analysis": "The application does not perform proper certificate validation when establishing TLS connections to the Kubernetes API server. If the CA_CERT environment variable is not set, the application disables certificate validation entirely and accepts any server certificate, potentially allowing man-in-the-middle attacks or connections to rogue servers.\n",
+      "classification": "very promising",
+      "cwe": "CWE-295",
+      "function_names": [
+        "AgentProxy.handleDefaultRequestStream"
+      ],
+      "filenames": [
+        "src/agent-proxy.ts"
+      ]
+    },
+    {
+      "headline": "Failure to Release Resources",
+      "analysis": "The application does not properly release TLS socket resources when they are no longer needed. When a TLS socket is closed or the connection is terminated, the application does not remove the socket from the tlsSockets array, potentially leading to memory leaks or other resource management issues over time.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-772",
+      "function_names": [],
+      "filenames": [
+        "src/agent-proxy.ts"
+      ]
+    },
+    {
+      "headline": "Lack of Input Validation",
+      "analysis": "The application does not validate the contents of the BoreD-Enc-Key header when parsing incoming streams. If an attacker can control the contents of this header, they may be able to cause the application to crash or potentially execute arbitrary code by providing malformed or malicious input.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "StreamParser.decryptHeader"
+      ],
+      "filenames": [
+        "src/stream-parser.ts"
+      ]
+    },
+    {
+      "headline": "Use of Hardcoded Credentials",
+      "analysis": "The application uses a hardcoded service account token when impersonating users and groups. While this token is likely intended to be specific to the application's service account, hardcoding credentials in the codebase introduces a risk of credential exposure and makes it difficult to rotate or revoke the token if it becomes compromised.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "StreamImpersonator.impersonateJwtToken"
+      ],
+      "filenames": [
+        "src/stream-impersonator.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-0270": "2022-01-25T20:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

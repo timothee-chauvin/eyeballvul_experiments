@@ -1,0 +1,108 @@
+{
+  "commit": "044b243f2f3ebe279dbcba535c3f0885d578eccf",
+  "repo_url": "https://github.com/styria-digital/django-rest-framework-jwt",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "a68f7cba4042f3e023e2"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Incorrect permission assignment for JWT impersonation\n    analysis: |\n      The ImpersonateJSONWebTokenView allows superusers to impersonate any other user by retrieving their JWT. However, this is a very sensitive action that should require explicit permission beyond just being a superuser. The current permission_classes = (IsSuperUser, ) allows any superuser to impersonate others without restriction. \n      \n      An attacker who compromises a superuser account could impersonate any user in the system, gaining their privileges and access. This could allow privilege escalation, unauthorized access to sensitive data, and other abuse.\n    cwe: CWE-269\n    function_names:\n      - ImpersonateJSONWebTokenView\n    filenames: \n      - src/rest_framework_jwt/views.py\n    classification: very promising\n    \n  - headline: Refresh token lifetime not validated\n    analysis: |\n      The RefreshJSONWebTokenView endpoint allows users to refresh an expired token to retrieve a new one. However, the view does not properly validate that the refresh token itself has not expired.\n\n      The 'orig_iat' claim is checked to make sure the original token is within the refresh expiration time. But the refresh request itself is not checked to make sure it happens within the JWT_REFRESH_EXPIRATION_DELTA window from when the original token expired.\n\n      This allows tokens to be refreshed indefinitely, as long as the refresh happens within JWT_REFRESH_EXPIRATION_DELTA of the orig_iat value. The new token returned will be valid for another full JWT_EXPIRATION_DELTA timeframe.  \n    cwe: CWE-672\n    function_names:\n      - RefreshJSONWebTokenView\n    filenames:\n      - src/rest_framework_jwt/views.py\n      - src/rest_framework_jwt/serializers.py\n    classification: very promising\n  \n  - headline: User authentication not checked before accessing sensitive user data\n    analysis: |\n      The jwt_create_response_payload function accesses sensitive user data like the username and user_id to include in the JWT response. However, it does this for the user object passed in without first verifying this user has authenticated.\n    \n      This could allow an attacker to pass in any user object to retrieve a JWT with that user's sensitive data. The higher level functions that call this do properly check authentication, but this still violates the principle of least privilege. jwt_create_response_payload should validate authentication and privileges before accessing any sensitive user fields. \n    cwe: CWE-285 \n    function_names:\n      - jwt_create_response_payload  \n    filenames:\n      - src/rest_framework_jwt/utils.py\n    classification: slightly promising\n\n  - headline: Potential improper access control on Blacklist admin\n    analysis: |  \n      The BlacklistedTokenAdmin allows viewing and modifying the blacklisted JWT tokens through the Django admin interface. However, the code does not explicitly restrict which users should have this admin access. \n    \n      By default, any staff user (user.is_staff=True) will be able to access the Django admin and view/edit blacklisted tokens. This may allow lower privileged admin users to remove blacklist entries and allow unauthorized access via revoked tokens.\n    \n      Blacklisting and revoking JWTs is a sensitive action that should be properly restricted to only trusted admin users. The lack of explicit access control here is worrying and should be addressed by only allowing superusers or a dedicated security group to the blacklist admin.\n    cwe: CWE-284  \n    filenames:\n      - src/rest_framework_jwt/blacklist/admin.py\n    classification: slightly promising\n\n  - headline: Tokens not invalidated on password change\n    analysis: |\n      When a user's password is changed, any existing JWT tokens issued to that user remain valid for their full duration. This allows continued access via the old tokens even after the user has changed their credentials. \n    \n      Best practice is to invalidate all existing sessions and tokens when a password changes. While not necessarily a vulnerability, this is a weakness that can allow unauthorized access if the tokens are compromised. This is mitigated if TOKEN_INVALIDATE_ON_PASSWORD_CHANGE is set, but since this setting is not shown in the provided code, it defaults to off.\n    cwe: CWE-613\n    classification: slightly promising\n    \n  - headline: JWT algorithm not validated\n    analysis: |\n      The JWT signing algorithm is not validated in the decode function. The `algorithms` parameter passed to jwt.decode specifies a list of allowed algorithms but defaults to the one in settings. An attacker could potentially craft JWTs with arbitrary algorithms that may be vulnerable to forgery.\n\n      A known exploit is the \"JWT None algorithm attack\" where a token is signed with the \"none\" algorithm and has the signature stripped. It will pass the decode check if \"none\" is in the allowed algorithms list.\n\n      The allowed algorithms list should be strictly validated and the \"none\" algorithm should never be allowed.\n    cwe: CWE-347\n    function_names:\n      - jwt_decode_token\n    filenames:\n      - src/rest_framework_jwt/utils.py  \n    classification: slightly promising\n```\n\nThe most promising vulnerabilities involve incorrect access control around sensitive actions like user impersonation and token blacklisting. Strengthening the permissions and authorization checks would help mitigate these risks.\n\nSeveral other less severe weaknesses were identified involving token expiration and revocation after password changes. These don't lead to direct exploits but can enable unauthorized access in certain scenarios.\n\nLet me know if you need any clarification or have additional questions!",
+      "date": "2024-06-13T12:10:03.927371",
+      "usage": {
+        "prompt_tokens": 24294,
+        "completion_tokens": 1326,
+        "cost": 0.46386
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Incorrect permission assignment for JWT impersonation",
+      "analysis": "The ImpersonateJSONWebTokenView allows superusers to impersonate any other user by retrieving their JWT. However, this is a very sensitive action that should require explicit permission beyond just being a superuser. The current permission_classes = (IsSuperUser, ) allows any superuser to impersonate others without restriction. \n\nAn attacker who compromises a superuser account could impersonate any user in the system, gaining their privileges and access. This could allow privilege escalation, unauthorized access to sensitive data, and other abuse.\n",
+      "classification": "very promising",
+      "cwe": "CWE-269",
+      "function_names": [
+        "ImpersonateJSONWebTokenView"
+      ],
+      "filenames": [
+        "src/rest_framework_jwt/views.py"
+      ]
+    },
+    {
+      "headline": "Refresh token lifetime not validated",
+      "analysis": "The RefreshJSONWebTokenView endpoint allows users to refresh an expired token to retrieve a new one. However, the view does not properly validate that the refresh token itself has not expired.\n\nThe 'orig_iat' claim is checked to make sure the original token is within the refresh expiration time. But the refresh request itself is not checked to make sure it happens within the JWT_REFRESH_EXPIRATION_DELTA window from when the original token expired.\n\nThis allows tokens to be refreshed indefinitely, as long as the refresh happens within JWT_REFRESH_EXPIRATION_DELTA of the orig_iat value. The new token returned will be valid for another full JWT_EXPIRATION_DELTA timeframe.  \n",
+      "classification": "very promising",
+      "cwe": "CWE-672",
+      "function_names": [
+        "RefreshJSONWebTokenView"
+      ],
+      "filenames": [
+        "src/rest_framework_jwt/views.py",
+        "src/rest_framework_jwt/serializers.py"
+      ]
+    },
+    {
+      "headline": "User authentication not checked before accessing sensitive user data",
+      "analysis": "The jwt_create_response_payload function accesses sensitive user data like the username and user_id to include in the JWT response. However, it does this for the user object passed in without first verifying this user has authenticated.\n\nThis could allow an attacker to pass in any user object to retrieve a JWT with that user's sensitive data. The higher level functions that call this do properly check authentication, but this still violates the principle of least privilege. jwt_create_response_payload should validate authentication and privileges before accessing any sensitive user fields. \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-285",
+      "function_names": [
+        "jwt_create_response_payload"
+      ],
+      "filenames": [
+        "src/rest_framework_jwt/utils.py"
+      ]
+    },
+    {
+      "headline": "Potential improper access control on Blacklist admin",
+      "analysis": "The BlacklistedTokenAdmin allows viewing and modifying the blacklisted JWT tokens through the Django admin interface. However, the code does not explicitly restrict which users should have this admin access. \n\nBy default, any staff user (user.is_staff=True) will be able to access the Django admin and view/edit blacklisted tokens. This may allow lower privileged admin users to remove blacklist entries and allow unauthorized access via revoked tokens.\n\nBlacklisting and revoking JWTs is a sensitive action that should be properly restricted to only trusted admin users. The lack of explicit access control here is worrying and should be addressed by only allowing superusers or a dedicated security group to the blacklist admin.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-284",
+      "function_names": [],
+      "filenames": [
+        "src/rest_framework_jwt/blacklist/admin.py"
+      ]
+    },
+    {
+      "headline": "Tokens not invalidated on password change",
+      "analysis": "When a user's password is changed, any existing JWT tokens issued to that user remain valid for their full duration. This allows continued access via the old tokens even after the user has changed their credentials. \n\nBest practice is to invalidate all existing sessions and tokens when a password changes. While not necessarily a vulnerability, this is a weakness that can allow unauthorized access if the tokens are compromised. This is mitigated if TOKEN_INVALIDATE_ON_PASSWORD_CHANGE is set, but since this setting is not shown in the provided code, it defaults to off.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-613",
+      "function_names": [],
+      "filenames": []
+    },
+    {
+      "headline": "JWT algorithm not validated",
+      "analysis": "The JWT signing algorithm is not validated in the decode function. The algorithms parameter passed to jwt.decode specifies a list of allowed algorithms but defaults to the one in settings. An attacker could potentially craft JWTs with arbitrary algorithms that may be vulnerable to forgery.\n\nA known exploit is the \"JWT None algorithm attack\" where a token is signed with the \"none\" algorithm and has the signature stripped. It will pass the decode check if \"none\" is in the allowed algorithms list.\n\nThe allowed algorithms list should be strictly validated and the \"none\" algorithm should never be allowed.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-347",
+      "function_names": [
+        "jwt_decode_token"
+      ],
+      "filenames": [
+        "src/rest_framework_jwt/utils.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2020-10594"
+      },
+      "vuln_dates": {
+        "CVE-2020-10594": "2020-03-15T22:15:14"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

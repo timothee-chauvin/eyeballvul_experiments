@@ -1,0 +1,66 @@
+{
+  "commit": "33dc0cb7341c01c877955e767cd8222291adb756",
+  "repo_url": "https://github.com/lensapp/bored-agent",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "dfd7b1a63be6ee6697db"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cleartext storage of sensitive information in /src/keypair-manager.ts\n    analysis: |\n      The KeyPairManager class stores private and public keys in a Kubernetes Secret without encrypting them first.\n      The private key is especially sensitive and should never be stored in plaintext, as it could allow an attacker\n      who gains access to the Secret to impersonate the bored-agent.\n      \n      The fetchExistingKeys() method retrieves the private and public keys from the Kubernetes Secret and returns \n      them decoded from base64 but still in plaintext.\n      \n      The storeKeys() method stores the private and public keys in plaintext into the Kubernetes Secret, only \n      base64 encoding them before storage which does not provide any security.\n      \n      An attacker who gains access to the Kubernetes Secret through another vulnerability or misconfiguration\n      would be able to extract the private key and use it to impersonate the bored-agent and intercept\n      sensitive communications.\n    cwe: CWE-312\n    function_names:\n      - KeyPairManager.fetchExistingKeys\n      - KeyPairManager.storeKeys  \n    filenames:\n      - src/keypair-manager.ts\n    classification: very promising\n\n  - headline: Agent impersonates user without verifying JWT signature \n    analysis: |  \n      The StreamImpersonator class retrieves the user and groups claims from a JWT token sent by the client.\n      It then adds Impersonate-User and Impersonate-Group headers with those values when forwarding the request.\n      \n      However, it does not verify the cryptographic signature of the JWT token anywhere in the impersonateJwtToken() \n      method. The values in the token are trusted without ensuring they were signed by the expected OAuth2 server.\n      \n      This allows the client to send a JWT token with arbitrary user and group claims, which the StreamImpersonator \n      will then pass on to the Kubernetes API, effectively allowing the client to impersonate any user. The only\n      validation done is checking the token's expiration and audience claims which are not sufficient.\n      \n      An attacker could exploit this to construct a JWT token claiming to be any user or member of any group, and send\n      API requests impersonating that user or group to perform privileged actions on the cluster.\n    cwe: CWE-345\n    function_names:\n      - StreamImpersonator.impersonateJwtToken\n    filenames:\n      - src/stream-impersonator.ts\n    classification: very promising\n\n  - headline: Improper neutralization allowing HTTP Request Smuggling\n    analysis: |\n      The StreamImpersonator class parses raw HTTP requests to find and impersonate based on a JWT token. \n      However, this parsing is done naively by searching for strings like \"Authorization: Bearer \" and \n      assuming what follows is the complete token.\n      \n      A malicious client could craft an HTTP request smuggling attack that bypasses this parsing. For example:\n      ```\n      POST /foo HTTP/1.1\\r\\n\n      Authorization: Bearer abc\\r\\n\n       xyz\\r\\n\n      \\r\\n\n      ```\n      The \"xyz\" on the second line would be interpreted as the JWT token, ignoring the actual \"abc\" token.\n      This  could be abused to bypass token validation. Alternatively, newlines could be injected into other\n      headers to confuse the agent and potentially have it interpret the injected values.\n      \n      Parsing raw HTTP requests is very prone to request smuggling and header injection vulnerabilities \n      because correctly handling all the edge cases is complex. A robust HTTP parser library should be used.\n    cwe: CWE-444\n    function_names:\n      - StreamImpersonator.impersonateJwtToken\n      - StreamImpersonator._transform\n    filenames: \n      - src/stream-impersonator.ts\n    classification: slightly promising\n\n  - headline: Uncontrolled recursion allowing DoS via deeply nested JSON\n    analysis: |\n      JSON.parse() is called on the 'data' parameter in the handleRequestStream() method to parse the\n      target header. However, this data comes directly from the WebSocket connection so it is untrusted.\n      \n      A malicious client could send a deeply nested JSON object as the 'data' payload. Since JSON.parse()\n      will recursively parse nested objects, this can lead to stack exhaustion and a crash of the Node.js \n      process if the nesting is deep enough.\n      \n      While this DoS requires a persistent WebSocket connection from an authenticated client, it could\n      still be used to disrupt the functioning of the agent from a single malicious client.\n    cwe: CWE-674\n    function_names:\n      - AgentProxy.handleRequestStream\n    filenames:\n      - src/agent-proxy.ts \n    classification: slightly promising\n\n  - headline: Use of a broken or risky cryptographic algorithm\n    analysis: |  \n      The 'aes-256-gcm' cipher is used for encrypting traffic between the StreamParser and StreamImpersonator.\n      While AES-GCM is a strong cipher, it is critical to use a unique nonce for each message. Reusing a nonce\n      with AES-GCM completely breaks its security.\n      \n      The current code uses a single pre-shared key and IV for all messages on a connection. The IV is reused \n      for every message. AES-GCM is not designed to be used this way and it totally breaks the confidentiality\n      and integrity guarantees of the encryption.\n      \n      This could allow an attacker who can observe the encrypted traffic to decrypt messages and break \n      authentication between the StreamParser and StreamImpersonator. The attacker could potentially recover\n      sensitive data or impersonate services.\n    cwe: CWE-327\n    function_names:\n      - StreamParser.bodyParser  \n    filenames:\n      - src/stream-parser.ts\n      - src/agent-proxy.ts\n    classification: very promising\n```",
+      "date": "2024-06-13T09:37:18.295451",
+      "usage": {
+        "prompt_tokens": 17968,
+        "completion_tokens": 1428,
+        "cost": 0.37662
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cleartext storage of sensitive information in /src/keypair-manager.ts",
+      "analysis": "The KeyPairManager class stores private and public keys in a Kubernetes Secret without encrypting them first.\nThe private key is especially sensitive and should never be stored in plaintext, as it could allow an attacker\nwho gains access to the Secret to impersonate the bored-agent.\n\nThe fetchExistingKeys() method retrieves the private and public keys from the Kubernetes Secret and returns \nthem decoded from base64 but still in plaintext.\n\nThe storeKeys() method stores the private and public keys in plaintext into the Kubernetes Secret, only \nbase64 encoding them before storage which does not provide any security.\n\nAn attacker who gains access to the Kubernetes Secret through another vulnerability or misconfiguration\nwould be able to extract the private key and use it to impersonate the bored-agent and intercept\nsensitive communications.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "KeyPairManager.fetchExistingKeys",
+        "KeyPairManager.storeKeys"
+      ],
+      "filenames": [
+        "src/keypair-manager.ts"
+      ]
+    },
+    {
+      "headline": "Agent impersonates user without verifying JWT signature",
+      "analysis": "The StreamImpersonator class retrieves the user and groups claims from a JWT token sent by the client.\nIt then adds Impersonate-User and Impersonate-Group headers with those values when forwarding the request.\n\nHowever, it does not verify the cryptographic signature of the JWT token anywhere in the impersonateJwtToken() \nmethod. The values in the token are trusted without ensuring they were signed by the expected OAuth2 server.\n\nThis allows the client to send a JWT token with arbitrary user and group claims, which the StreamImpersonator \nwill then pass on to the Kubernetes API, effectively allowing the client to impersonate any user. The only\nvalidation done is checking the token's expiration and audience claims which are not sufficient.\n\nAn attacker could exploit this to construct a JWT token claiming to be any user or member of any group, and send\nAPI requests impersonating that user or group to perform privileged actions on the cluster.\n",
+      "classification": "very promising",
+      "cwe": "CWE-345",
+      "function_names": [
+        "StreamImpersonator.impersonateJwtToken"
+      ],
+      "filenames": [
+        "src/stream-impersonator.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2022-0270"
+      },
+      "vuln_dates": {
+        "CVE-2022-0270": "2022-01-25T20:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

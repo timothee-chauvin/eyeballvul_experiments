@@ -1,0 +1,39 @@
+{
+  "commit": "08109dcdd686b48365912046e796bc993479808f",
+  "repo_url": "https://github.com/node-swig/swig-templates",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "ef3da246ab4c9b44796f"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Possible SQL injection in 'dateformatter.js' \n    analysis: |\n      In 'dateformatter.js', the 'export.date' function dynamically constructs an SQL query using user input from the 'format' argument without sanitizing it first. This could allow an attacker to inject malicious SQL if they control the 'format' string.\n\n      For example:\n      ```\n      var format = \"Y-m-d') UNION SELECT password FROM users; --\"; \n      exports.date(input, format, offset, abbr);\n      ```\n      This would result in the query:\n      ```\n      SELECT (Y-m-d') UNION SELECT password FROM users; --...\n      ```\n      Potentially exposing sensitive data from the users table.\n\n      The 'format' argument needs to be escaped or parameterized before using it to construct the query.\n    cwe: CWE-89\n    function_names:\n      - exports.date\n    filenames: \n      - lib/dateformatter.js\n    classification: very promising\n\n  - headline: Possible code injection in using 'eval()' in Swig template engine \n    analysis: |\n      The Swig templating engine uses 'eval()' and 'new Function()' to execute custom JavaScript code embedded in templates. For example:\n\n      ```javascript\n      _ctx.myFunction = function() { return '<p>output</p>'; };\n      ```\n      \n      This gets converted to:\n      ```javascript\n      __tpl = eval(...);\n      var __tpl = eval(argv['method-name']);\n      out(file, __tpl(swig, ctx, filters, utils, efn)); \n      ```\n\n      If user input is allowed in templates without sanitization, an attacker could inject malicious JavaScript that gets executed by the server when the template is rendered. This could allow stealing sensitive data, accessing filesystem, etc.\n\n      Swig should add output encoding of variables by default to prevent XSS, and consider sandboxing the JavaScript execution environment (e.g. VM module) to prevent access to sensitive APIs.\n    cwe: CWE-94\n    function_names:\n      - exports.compile\n      - execute\n    filenames:\n      - lib/swig.js \n      - bin/swig.js\n    classification: very promising\n    \n  - headline: Prototype pollution in 'setExtension' feature\n    analysis: |\n      The 'swig.setExtension' method allows setting a property on the '_ext' prototype object that is accessible within templates:\n\n      ```javascript\n      swig.setExtension('myProperty', 'myValue');\n      ```\n\n      In a template:\n      ```\n      {{ _ext.myProperty }}\n      ```\n      \n      If an attacker can control the 'name' argument passed to 'setExtension', they could potentially overwrite an existing property like 'toString' or 'constructor' on the '_ext' object. When this malicious property is accessed later, it could allow executing arbitrary code.\n\n      To prevent this, 'setExtension' should limit the allowed 'name' values and not allow overwriting existing properties on '_ext'.\n    cwe: CWE-1321\n    function_names:\n      - setExtension\n    filenames:\n      - lib/swig.js\n    classification: slightly promising\n\n  - headline: JavaScript injection in 'swig.renderFile' error handling\n    analysis: |  \n      In 'swig.renderFile', if an error occurs while rendering the template, the error message is passed directly to the callback without escaping:\n\n      ```javascript\n      swig.renderFile('myTemplate.html', {}, function (err, output) {\n        if (err) {  \n          cb(err);\n        }\n        ...\n      });\n      ```\n\n      If the 'message' property on the error object contains JavaScript code, this could lead to execution of arbitrary code if the error message is ever written to the page without encoding.\n\n      To fix, the error message should be escaped before passing it to the callback:\n      ```\n      cb(escapeHtml(err.message)); \n      ```\n    cwe: CWE-79\n    function_names:\n      - renderFile\n    filenames:\n      - lib/swig.js\n    classification: slightly promising\n\n  - headline: Sensitive data exposure via verbose error messages \n    analysis: |\n      Throughout the codebase, when an error occurs, the error message contains potentially sensitive information about the error location and application internals.\n\n      For example, in 'swig.compile':\n      ```\n      try {\n        tpl = new Function(...);\n      } catch (e) {   \n        utils.throwError(e, null, options.filename);\n      }\n      ```\n\n      This reveals the compiled template function source code and full file path.\n\n      Error messages returned by the application should avoid exposing internal implementation details and full file paths which could aid an attacker. Use generic error messages without sensitive details in production.\n    cwe: CWE-209 \n    function_names:\n    filenames:\n    classification: slightly promising\n\n```",
+      "date": "2024-06-13T10:34:46.083277",
+      "usage": {
+        "prompt_tokens": 86503,
+        "completion_tokens": 1207,
+        "cost": 1.38807
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-25345": "2023-03-15T20:15:10",
+        "CVE-2023-25344": "2023-03-15T20:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

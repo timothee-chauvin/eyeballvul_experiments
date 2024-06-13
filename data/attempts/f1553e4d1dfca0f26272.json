@@ -1,0 +1,131 @@
+{
+  "commit": "293124cd59d6abc69f508b7638e383cfc791b287",
+  "repo_url": "https://github.com/linux-application-whitelisting/fapolicyd",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "a4be2d637bca0ce238f3"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Fapolicyd CLI tool allows argument injection when adding files to the trust database.\n    analysis: |\n      The fapolicyd-cli tool, which is used to manage the fapolicyd trust database,\n      allows adding files to the trust database using the `--file add` command.\n      The user can optionally specify a trust file using the `--trust-file` option.\n      If the `--trust-file` option is given, the specified file is appended to the\n      `/etc/fapolicyd/trust.d/` directory, which is later processed by fapolicyd.\n      An attacker could craft a file name that includes special characters, such as\n      newlines or path traversal sequences, which would allow them to write to\n      arbitrary files on the system when fapolicyd processes the trust database.\n    cwe: CWE-77\n    function_names:\n      - do_file_add\n      - file_append\n    filenames:\n      - src/cli/fapolicyd-cli.c\n      - src/cli/file-cli.c\n    classification: very promising\n  - headline: Fapolicyd CLI tool allows argument injection when deleting files from the trust database.\n    analysis: |\n      The fapolicyd-cli tool, which is used to manage the fapolicyd trust database,\n      allows deleting files from the trust database using the `--file delete` command.\n      The user can optionally specify a trust file using the `--trust-file` option.\n      If the `--trust-file` option is given, the specified file is appended to the\n      `/etc/fapolicyd/trust.d/` directory, which is later processed by fapolicyd.\n      An attacker could craft a file name that includes special characters, such as\n      newlines or path traversal sequences, which would allow them to write to\n      arbitrary files on the system when fapolicyd processes the trust database.\n    cwe: CWE-77\n    function_names:\n      - do_file_delete\n      - file_delete\n    filenames:\n      - src/cli/fapolicyd-cli.c\n      - src/cli/file-cli.c\n    classification: very promising\n  - headline: Fapolicyd CLI tool allows argument injection when updating files in the trust database.\n    analysis: |\n      The fapolicyd-cli tool, which is used to manage the fapolicyd trust database,\n      allows updating files in the trust database using the `--file update` command.\n      The user can optionally specify a trust file using the `--trust-file` option.\n      If the `--trust-file` option is given, the specified file is appended to the\n      `/etc/fapolicyd/trust.d/` directory, which is later processed by fapolicyd.\n      An attacker could craft a file name that includes special characters, such as\n      newlines or path traversal sequences, which would allow them to write to\n      arbitrary files on the system when fapolicyd processes the trust database.\n    cwe: CWE-77\n    function_names:\n      - do_file_update\n      - file_update\n    filenames:\n      - src/cli/fapolicyd-cli.c\n      - src/cli/file-cli.c\n    classification: very promising\n  - headline: Fapolicyd daemon trusts files based on size and SHA256 hash which can lead to TOCTOU race condition.\n    analysis: |\n      When determining if a file is trusted, fapolicyd checks if the size and SHA256 hash of\n      the file matches the values stored in its trust database. However, the size and hash of\n      the file are read after fapolicyd receives the fanotify event. This could allow an\n      attacker to modify the file between the time fapolicyd receives the fanotify event and\n      the time it reads the file's size and hash. This would allow the attacker to execute\n      untrusted code even though fapolicyd believes the file is trusted.\n    cwe: CWE-367\n    function_names:\n      - read_trust_db\n      - check_trust_database\n    filenames:\n      - src/library/database.c\n    classification: very promising\n  - headline: Fapolicyd daemon doesn't validate ELF interpreter path.\n    analysis: |\n      When gathering ELF file information, fapolicyd checks for PT_INTERP segment to obtain\n      the ELF interpreter. However, fapolicyd only checks if the interpreter is one of a few\n      well-known interpreters in fixed locations. An attacker could create a malicious ELF\n      file with a valid interpreter in a non-standard location and execute it.\n    cwe: CWE-426\n    function_names:\n      - check_interpreter\n      - gather_elf\n    filenames:\n      - src/library/file.c\n    classification: slightly promising\n  - headline: Fapolicyd daemon potentially trusts files with dangerous ELF flags.\n    analysis: |\n      When gathering ELF file information, fapolicyd checks PT_LOAD and PT_GNU_STACK segments\n      for potentially dangerous flags. It detects RWE flags on PT_LOAD segments and Execute\n      flag on PT_GNU_STACK segment. However, fapolicyd doesn't do anything with this information.\n      An attacker could create a malicious ELF file with these dangerous flags and execute it.\n    cwe: CWE-732\n    function_names:\n      - gather_elf\n    filenames:\n      - src/library/file.c\n    classification: not promising\n  - headline: Fapolicyd daemon might be vulnerable to DoS attack by consuming all memory.\n    analysis: |\n      If a process has a lot of groups, the function get_gid_set_from_pid, which is called\n      to get a list of process groups, will allocate a lot of memory for the list.\n      An attacker could create a process with a huge number of groups, causing fapolicyd to\n      consume all available memory and potentially crash.\n    cwe: CWE-770\n    function_names:\n      - get_gid_set_from_pid\n    filenames:\n      - src/library/process.c\n    classification: not promising\n```",
+      "date": "2024-06-13T09:49:01.154594",
+      "usage": {
+        "prompt_tokens": 92960,
+        "completion_tokens": 1275,
+        "cost": 0.060490625000000006
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Fapolicyd CLI tool allows argument injection when adding files to the trust database.",
+      "analysis": "The fapolicyd-cli tool, which is used to manage the fapolicyd trust database,\nallows adding files to the trust database using the --file add command.\nThe user can optionally specify a trust file using the --trust-file option.\nIf the --trust-file option is given, the specified file is appended to the\n/etc/fapolicyd/trust.d/ directory, which is later processed by fapolicyd.\nAn attacker could craft a file name that includes special characters, such as\nnewlines or path traversal sequences, which would allow them to write to\narbitrary files on the system when fapolicyd processes the trust database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "do_file_add",
+        "file_append"
+      ],
+      "filenames": [
+        "src/cli/fapolicyd-cli.c",
+        "src/cli/file-cli.c"
+      ]
+    },
+    {
+      "headline": "Fapolicyd CLI tool allows argument injection when deleting files from the trust database.",
+      "analysis": "The fapolicyd-cli tool, which is used to manage the fapolicyd trust database,\nallows deleting files from the trust database using the --file delete command.\nThe user can optionally specify a trust file using the --trust-file option.\nIf the --trust-file option is given, the specified file is appended to the\n/etc/fapolicyd/trust.d/ directory, which is later processed by fapolicyd.\nAn attacker could craft a file name that includes special characters, such as\nnewlines or path traversal sequences, which would allow them to write to\narbitrary files on the system when fapolicyd processes the trust database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "do_file_delete",
+        "file_delete"
+      ],
+      "filenames": [
+        "src/cli/fapolicyd-cli.c",
+        "src/cli/file-cli.c"
+      ]
+    },
+    {
+      "headline": "Fapolicyd CLI tool allows argument injection when updating files in the trust database.",
+      "analysis": "The fapolicyd-cli tool, which is used to manage the fapolicyd trust database,\nallows updating files in the trust database using the --file update command.\nThe user can optionally specify a trust file using the --trust-file option.\nIf the --trust-file option is given, the specified file is appended to the\n/etc/fapolicyd/trust.d/ directory, which is later processed by fapolicyd.\nAn attacker could craft a file name that includes special characters, such as\nnewlines or path traversal sequences, which would allow them to write to\narbitrary files on the system when fapolicyd processes the trust database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "do_file_update",
+        "file_update"
+      ],
+      "filenames": [
+        "src/cli/fapolicyd-cli.c",
+        "src/cli/file-cli.c"
+      ]
+    },
+    {
+      "headline": "Fapolicyd daemon trusts files based on size and SHA256 hash which can lead to TOCTOU race condition.",
+      "analysis": "When determining if a file is trusted, fapolicyd checks if the size and SHA256 hash of\nthe file matches the values stored in its trust database. However, the size and hash of\nthe file are read after fapolicyd receives the fanotify event. This could allow an\nattacker to modify the file between the time fapolicyd receives the fanotify event and\nthe time it reads the file's size and hash. This would allow the attacker to execute\nuntrusted code even though fapolicyd believes the file is trusted.\n",
+      "classification": "very promising",
+      "cwe": "CWE-367",
+      "function_names": [
+        "read_trust_db",
+        "check_trust_database"
+      ],
+      "filenames": [
+        "src/library/database.c"
+      ]
+    },
+    {
+      "headline": "Fapolicyd daemon doesn't validate ELF interpreter path.",
+      "analysis": "When gathering ELF file information, fapolicyd checks for PT_INTERP segment to obtain\nthe ELF interpreter. However, fapolicyd only checks if the interpreter is one of a few\nwell-known interpreters in fixed locations. An attacker could create a malicious ELF\nfile with a valid interpreter in a non-standard location and execute it.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-426",
+      "function_names": [
+        "check_interpreter",
+        "gather_elf"
+      ],
+      "filenames": [
+        "src/library/file.c"
+      ]
+    },
+    {
+      "headline": "Fapolicyd daemon potentially trusts files with dangerous ELF flags.",
+      "analysis": "When gathering ELF file information, fapolicyd checks PT_LOAD and PT_GNU_STACK segments\nfor potentially dangerous flags. It detects RWE flags on PT_LOAD segments and Execute\nflag on PT_GNU_STACK segment. However, fapolicyd doesn't do anything with this information.\nAn attacker could create a malicious ELF file with these dangerous flags and execute it.\n",
+      "classification": "not promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "gather_elf"
+      ],
+      "filenames": [
+        "src/library/file.c"
+      ]
+    },
+    {
+      "headline": "Fapolicyd daemon might be vulnerable to DoS attack by consuming all memory.",
+      "analysis": "If a process has a lot of groups, the function get_gid_set_from_pid, which is called\nto get a list of process groups, will allocate a lot of memory for the list.\nAn attacker could create a process with a huge number of groups, causing fapolicyd to\nconsume all available memory and potentially crash.\n",
+      "classification": "not promising",
+      "cwe": "CWE-770",
+      "function_names": [
+        "get_gid_set_from_pid"
+      ],
+      "filenames": [
+        "src/library/process.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 4
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-1117": "2022-08-29T15:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,81 @@
+{
+  "commit": "085298304674e9b7c853ced243180d0afd73fa56",
+  "repo_url": "https://github.com/proski/stash-branch-parameters-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "4854198072b3e19f051d"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper validation of branch and tag name regex patterns\n    analysis: |\n      The StashBranchParameterDefinition class allows specifying regex patterns for validating branch names (branchNameRegex field) and tag names (tagNameRegex field). However, it does not properly validate these regex patterns to ensure they are safe and well-formed.\n\n      Allowing arbitrary regex patterns from user input can lead to RegexDoS (Regular Expression Denial of Service) attacks if the patterns are very complex or crafted maliciously. An attacker could provide a regex that takes a very long time to evaluate against many branch/tag names, tying up server resources and degrading service.\n\n      To remediate, the regex patterns should be validated before use to make sure they are not overly complex or malicious. This could involve limiting the allowed regex syntax, putting a reasonable bound on the regex size, and/or pre-evaluating the regex pattern itself for excessive runtime. \n    cwe: CWE-20\n    function_names:\n      - StashBranchParameterDefinition\n      - computeDefaultValueMap\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/StashBranchParameter/StashBranchParameterDefinition.java\n    classification: very promising\n\n  - headline: Improper authorization when accessing Stash API \n    analysis: |\n      The StashConnector class is responsible for interacting with the Stash REST API to retrieve branch and tag information. To access the API, it uses the provided username and password credentials.\n\n      However, it does not appear to do any authorization checks to ensure the provided user should be allowed to access the configured Stash projects and repositories. Any user able to access this Jenkins plugin would be able to query branch/tag information for any accessible Stash repository.\n\n      There is a doCheckUsername method that validates if the credentials are able to access the Stash API in general. But there are no authorization checks for the specific repositories being queried by getBranches and getTags.\n\n      To remediate, some form of authorization mapping is needed to validate that the Jenkins user is allowed to access the specific Stash projects and repositories being configured, in addition to the basic credential check. This mapping would need to be maintained as Stash permissions change over time.\n    cwe: CWE-862\n    function_names:\n      - StashConnector\n      - getBranches\n      - getTags\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/StashBranchParameter/StashConnector.java \n    classification: very promising\n\n  - headline: Storing Stash password in plain text\n    analysis: |\n      The StashBranchParameterDescriptor class stores the Stash API password in a Secret field. While the Secret class encrypts the password so it is not stored directly in plain text on disk, the password is still accessible as plain text in memory via the getPassword method.\n\n      Whenever possible, sensitive information like passwords should be encrypted or hashed in memory as well as on disk. Having the plain text password in memory increases the risk if an attacker is able to compromise the running Jenkins server.\n      \n      To remediate, consider encrypting or hashing the password in memory and only decrypting it when needed to make an API call. Also ensure the plain text password is zeroed out of memory immediately after use. However, this won't eliminate the risk completely as the password must be plain text at some point to authenticate to the Stash API.\n    cwe: CWE-256\n    function_names:  \n      - StashBranchParameterDescriptor\n      - setPassword\n      - getPassword\n    filenames:\n      - src/main/java/org/jenkinsci/plugins/StashBranchParameter/StashBranchParameterDescriptor.java\n    classification: slightly promising\n```",
+      "date": "2024-06-13T11:11:52.976321",
+      "usage": {
+        "prompt_tokens": 8876,
+        "completion_tokens": 894,
+        "cost": 0.20019
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper validation of branch and tag name regex patterns",
+      "analysis": "The StashBranchParameterDefinition class allows specifying regex patterns for validating branch names (branchNameRegex field) and tag names (tagNameRegex field). However, it does not properly validate these regex patterns to ensure they are safe and well-formed.\n\nAllowing arbitrary regex patterns from user input can lead to RegexDoS (Regular Expression Denial of Service) attacks if the patterns are very complex or crafted maliciously. An attacker could provide a regex that takes a very long time to evaluate against many branch/tag names, tying up server resources and degrading service.\n\nTo remediate, the regex patterns should be validated before use to make sure they are not overly complex or malicious. This could involve limiting the allowed regex syntax, putting a reasonable bound on the regex size, and/or pre-evaluating the regex pattern itself for excessive runtime. \n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "StashBranchParameterDefinition",
+        "computeDefaultValueMap"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/StashBranchParameter/StashBranchParameterDefinition.java"
+      ]
+    },
+    {
+      "headline": "Improper authorization when accessing Stash API",
+      "analysis": "The StashConnector class is responsible for interacting with the Stash REST API to retrieve branch and tag information. To access the API, it uses the provided username and password credentials.\n\nHowever, it does not appear to do any authorization checks to ensure the provided user should be allowed to access the configured Stash projects and repositories. Any user able to access this Jenkins plugin would be able to query branch/tag information for any accessible Stash repository.\n\nThere is a doCheckUsername method that validates if the credentials are able to access the Stash API in general. But there are no authorization checks for the specific repositories being queried by getBranches and getTags.\n\nTo remediate, some form of authorization mapping is needed to validate that the Jenkins user is allowed to access the specific Stash projects and repositories being configured, in addition to the basic credential check. This mapping would need to be maintained as Stash permissions change over time.\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "StashConnector",
+        "getBranches",
+        "getTags"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/StashBranchParameter/StashConnector.java"
+      ]
+    },
+    {
+      "headline": "Storing Stash password in plain text",
+      "analysis": "The StashBranchParameterDescriptor class stores the Stash API password in a Secret field. While the Secret class encrypts the password so it is not stored directly in plain text on disk, the password is still accessible as plain text in memory via the getPassword method.\n\nWhenever possible, sensitive information like passwords should be encrypted or hashed in memory as well as on disk. Having the plain text password in memory increases the risk if an attacker is able to compromise the running Jenkins server.\n\nTo remediate, consider encrypting or hashing the password in memory and only decrypting it when needed to make an API call. Also ensure the plain text password is zeroed out of memory immediately after use. However, this won't eliminate the risk completely as the password must be plain text at some point to authenticate to the Stash API.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-256",
+      "function_names": [
+        "StashBranchParameterDescriptor",
+        "setPassword",
+        "getPassword"
+      ],
+      "filenames": [
+        "src/main/java/org/jenkinsci/plugins/StashBranchParameter/StashBranchParameterDescriptor.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-2210": "2020-07-02T15:15:17",
+        "CVE-2022-34198": "2022-06-23T17:15:17"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

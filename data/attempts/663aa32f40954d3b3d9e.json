@@ -1,0 +1,77 @@
+{
+  "commit": "1368b4ce35ba2139328b9bd731fe2ea1ae5d9d27",
+  "repo_url": "https://github.com/pingidentity/ssam",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "9d242986302f3ba4247b"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: Incorrect Password Policy Response Control Handling\n    analysis: |\n      In the SSAMController class, the updatePassword method handles an LDAP password modify extended operation. \n      If the operation fails due to an INVALID_CREDENTIALS result code, it attempts to extract a message from the \n      PasswordPolicyResponseControl to provide more details about the failure. However, it does not properly validate\n      that the control is present before accessing it, potentially leading to a NullPointerException. This exception\n      could potentially leak sensitive information about the LDAP server configuration.\n    cwe: CWE-755\n    function_names:\n      - SSAMController.updatePassword\n      - SSAMController.getPasswordPolicyErrorTypeMessage  \n    filenames:\n      - src/main/java/com/unboundid/webapp/ssam/SSAMController.java\n    classification: slightly promising\n\n  - headline: Cleartext Storage of Sensitive Information\n    analysis: |\n      The SSAMInstaller class writes out an ssam.pin file that contains the clear-text password for the \n      SSAM application user account in LDAP. This file is written to both the SSAM configuration directory \n      and a resource directory. Storing passwords in cleartext on the filesystem is insecure as they could\n      be read by anyone with access to those directories.\n      \n      Similarly, the SSAMSettings class has configuration properties for an SMTP server password and the\n      reCAPTCHA secret key. If these are stored in the ssam-config/application.properties file in cleartext,\n      they would also be vulnerable.\n    cwe: CWE-312\n    function_names:\n      - SSAMInstaller.initialize\n    filenames:\n      - src/main/java/com/unboundid/webapp/ssam/SSAMInstaller.java  \n      - src/main/java/com/unboundid/webapp/ssam/SSAMSettings.java\n    classification: very promising\n\n  - headline: Insecure Permissions on Sensitive Files\n    analysis: |\n      When the SSAMInstaller writes out files like ssam.pin that contain sensitive information, it attempts\n      to set permissions on the file. However, it only does this on non-Windows systems, and the permissions\n      it sets (owner read+write) would still allow the sensitive file to be read by other processes running as\n      the same user.\n    cwe: CWE-732\n    function_names:  \n      - SSAMInstaller.writeToFile\n    filenames:\n      - src/main/java/com/unboundid/webapp/ssam/SSAMInstaller.java\n    classification: very promising\n```\n\nThe other code looks fairly secure - it uses prepared statements for LDAP operations, validates and sanitizes user input, uses HTTPS appropriately, and has reasonable access control and authentication configurations. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-13T11:03:58.757534",
+      "usage": {
+        "prompt_tokens": 71011,
+        "completion_tokens": 713,
+        "cost": 1.11864
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Incorrect Password Policy Response Control Handling",
+      "analysis": "In the SSAMController class, the updatePassword method handles an LDAP password modify extended operation. \nIf the operation fails due to an INVALID_CREDENTIALS result code, it attempts to extract a message from the \nPasswordPolicyResponseControl to provide more details about the failure. However, it does not properly validate\nthat the control is present before accessing it, potentially leading to a NullPointerException. This exception\ncould potentially leak sensitive information about the LDAP server configuration.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-755",
+      "function_names": [
+        "SSAMController.updatePassword",
+        "SSAMController.getPasswordPolicyErrorTypeMessage"
+      ],
+      "filenames": [
+        "src/main/java/com/unboundid/webapp/ssam/SSAMController.java"
+      ]
+    },
+    {
+      "headline": "Cleartext Storage of Sensitive Information",
+      "analysis": "The SSAMInstaller class writes out an ssam.pin file that contains the clear-text password for the \nSSAM application user account in LDAP. This file is written to both the SSAM configuration directory \nand a resource directory. Storing passwords in cleartext on the filesystem is insecure as they could\nbe read by anyone with access to those directories.\n\nSimilarly, the SSAMSettings class has configuration properties for an SMTP server password and the\nreCAPTCHA secret key. If these are stored in the ssam-config/application.properties file in cleartext,\nthey would also be vulnerable.\n",
+      "classification": "very promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "SSAMInstaller.initialize"
+      ],
+      "filenames": [
+        "src/main/java/com/unboundid/webapp/ssam/SSAMInstaller.java",
+        "src/main/java/com/unboundid/webapp/ssam/SSAMSettings.java"
+      ]
+    },
+    {
+      "headline": "Insecure Permissions on Sensitive Files",
+      "analysis": "When the SSAMInstaller writes out files like ssam.pin that contain sensitive information, it attempts\nto set permissions on the file. However, it only does this on non-Windows systems, and the permissions\nit sets (owner read+write) would still allow the sensitive file to be read by other processes running as\nthe same user.\n",
+      "classification": "very promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "SSAMInstaller.writeToFile"
+      ],
+      "filenames": [
+        "src/main/java/com/unboundid/webapp/ssam/SSAMInstaller.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-25084": "2023-04-10T18:15:07"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

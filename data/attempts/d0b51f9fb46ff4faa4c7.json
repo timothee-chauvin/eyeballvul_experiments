@@ -1,0 +1,113 @@
+{
+  "commit": "1559c2a94bc2655696817861af1c51f307e6d8dd",
+  "repo_url": "https://github.com/shutterstock/ntfserver",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "cffca0d287633afddf84"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output identifying security vulnerabilities in the provided codebase:\n\n```yaml\nleads:\n  - headline: SQL injection in getStatusSql\n    analysis: |\n      The getStatusSql function in lib/api.js constructs a SQL query by directly interpolating user input into the query string without proper sanitization or parameterization. The 'suite_name' and 'agent_name' parameters originate from the HTTP request and are not validated before being included in the SQL, allowing an attacker to inject malicious SQL and potentially read, modify or delete data in the database. This is a classic SQL injection vulnerability.\n    cwe: CWE-89\n    function_names:\n      - getStatusSql\n    filenames:\n      - lib/api.js\n    classification: very promising\n  \n  - headline: SQL injection in several model methods\n    analysis: |\n      Many of the model class methods in lib/models/*.js construct SQL queries by directly interpolating object properties into the query strings without sanitization. For example, the Agent.getOrInsert, Suite.getOrInsert, Test.getOrInsert methods all take in objects parsed from user input and use string concatenation to include object properties in SQL INSERT/UPDATE statements. This leaves them vulnerable to SQL injection if the input is not properly validated. Attackers could potentially exploit these to read or modify arbitrary data in the database tables.\n    cwe: CWE-89 \n    function_names:\n      - Agent.getOrInsert\n      - Suite.getOrInsert\n      - Test.getOrInsert\n    filenames:\n      - lib/models/agent.js\n      - lib/models/suite.js  \n      - lib/models/test.js\n    classification: very promising\n\n  - headline: Potential command injection via suite name\n    analysis: |\n      The handleSuite function in lib/store.js uses the suite name from the incoming test report to construct a redis key using string interpolation. While this is used for a redis key rather than a system command, if the redis instance allows lua scripting, a malicious suite name could potentially be used to inject arbitrary lua and gain code execution. More analysis is needed to determine exploitability.\n    cwe: CWE-78\n    function_names:\n      - handleSuite\n    filenames: \n      - lib/store.js\n    classification: slightly promising\n\n  - headline: Heap snapshot files created with predictable names\n    analysis: | \n      The index.js file sets up an interval to periodically take heap snapshots with names based on the current timestamp. These files may contain sensitive data from memory, and are written to the /tmp directory with predictable names. On a multi-user system, a low-privileged attacker could predict the file names and read these to access memory data they shouldn't have access to.\n    cwe: CWE-200\n    function_names: []\n    filenames:\n      - lib/index.js\n    classification: slightly promising\n\n  - headline: Missing error handling could crash server \n    analysis: |  \n      At several places in the codebase (e.g. routes.js), asynchronous functions are called without providing proper error handling callbacks. If these functions encounter an error and throw an exception, it will bubble up and crash the entire server process since it is not caught. This could result in easy denial-of-service if exploited by an attacker.\n    cwe: CWE-755\n    function_names: []\n    filenames:\n      - lib/routes.js\n    classification: slightly promising\n\n  - headline: SQL queries constructed from concatenated user input\n    analysis: |\n      Throughout the lib/api.js file, there are many instances of SQL query strings being constructed by directly concatenating user input. Even if the input is not used in the actual query part, this is still bad practice, as it could allow things like newline injection and makes the queries harder to understand and audit. Parameterized queries should be used instead.\n    cwe: CWE-943\n    function_names:\n      - getSuiteResultList\n      - getSuiteResultList\n      - getTestList\n    filenames:\n      - lib/api.js \n    classification: not promising\n```",
+      "date": "2024-06-13T11:42:37.349472",
+      "usage": {
+        "prompt_tokens": 31793,
+        "completion_tokens": 965,
+        "cost": 0.54927
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "SQL injection in getStatusSql",
+      "analysis": "The getStatusSql function in lib/api.js constructs a SQL query by directly interpolating user input into the query string without proper sanitization or parameterization. The 'suite_name' and 'agent_name' parameters originate from the HTTP request and are not validated before being included in the SQL, allowing an attacker to inject malicious SQL and potentially read, modify or delete data in the database. This is a classic SQL injection vulnerability.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "getStatusSql"
+      ],
+      "filenames": [
+        "lib/api.js"
+      ]
+    },
+    {
+      "headline": "SQL injection in several model methods",
+      "analysis": "Many of the model class methods in lib/models/*.js construct SQL queries by directly interpolating object properties into the query strings without sanitization. For example, the Agent.getOrInsert, Suite.getOrInsert, Test.getOrInsert methods all take in objects parsed from user input and use string concatenation to include object properties in SQL INSERT/UPDATE statements. This leaves them vulnerable to SQL injection if the input is not properly validated. Attackers could potentially exploit these to read or modify arbitrary data in the database tables.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "Agent.getOrInsert",
+        "Suite.getOrInsert",
+        "Test.getOrInsert"
+      ],
+      "filenames": [
+        "lib/models/agent.js",
+        "lib/models/suite.js",
+        "lib/models/test.js"
+      ]
+    },
+    {
+      "headline": "Potential command injection via suite name",
+      "analysis": "The handleSuite function in lib/store.js uses the suite name from the incoming test report to construct a redis key using string interpolation. While this is used for a redis key rather than a system command, if the redis instance allows lua scripting, a malicious suite name could potentially be used to inject arbitrary lua and gain code execution. More analysis is needed to determine exploitability.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "handleSuite"
+      ],
+      "filenames": [
+        "lib/store.js"
+      ]
+    },
+    {
+      "headline": "Heap snapshot files created with predictable names",
+      "analysis": "The index.js file sets up an interval to periodically take heap snapshots with names based on the current timestamp. These files may contain sensitive data from memory, and are written to the /tmp directory with predictable names. On a multi-user system, a low-privileged attacker could predict the file names and read these to access memory data they shouldn't have access to.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-200",
+      "function_names": [],
+      "filenames": [
+        "lib/index.js"
+      ]
+    },
+    {
+      "headline": "Missing error handling could crash server",
+      "analysis": "At several places in the codebase (e.g. routes.js), asynchronous functions are called without providing proper error handling callbacks. If these functions encounter an error and throw an exception, it will bubble up and crash the entire server process since it is not caught. This could result in easy denial-of-service if exploited by an attacker.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-755",
+      "function_names": [],
+      "filenames": [
+        "lib/routes.js"
+      ]
+    },
+    {
+      "headline": "SQL queries constructed from concatenated user input",
+      "analysis": "Throughout the lib/api.js file, there are many instances of SQL query strings being constructed by directly concatenating user input. Even if the input is not used in the actual query part, this is still bad practice, as it could allow things like newline injection and makes the queries harder to understand and audit. Parameterized queries should be used instead.\n",
+      "classification": "not promising",
+      "cwe": "CWE-943",
+      "function_names": [
+        "getSuiteResultList",
+        "getSuiteResultList",
+        "getTestList"
+      ],
+      "filenames": [
+        "lib/api.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2016-10650": "2018-05-29T20:29:01"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

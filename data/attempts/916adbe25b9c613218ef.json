@@ -1,0 +1,80 @@
+{
+  "commit": "1c3d2e058953ba91bf96d7ad96e8d4a5add9337e",
+  "repo_url": "https://github.com/mattkrick/sanitize-svg",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "c136ca138e58635829a0"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential XSS vulnerability in SVG sanitization \n    analysis: |\n      The `sanitizeSVG` function attempts to sanitize SVG files by checking for `<script>` tags and removing the SVG if any are found. However, this is not a comprehensive defense against XSS attacks in SVGs. \n      \n      SVGs can contain other potentially dangerous elements like `<foreignObject>`, `<use>`, `<iframe>`, `<video>`, `<audio>` etc. which could allow JavaScript execution. The current sanitization only checks for `<script>` tags.\n\n      Additionally, the SVG is parsed by setting it as `innerHTML` of a `div` element. This could potentially trigger JavaScript execution during parsing, before the `<script>` tag check occurs.\n\n      To more robustly protect against XSS, it would be better to use a whitelist-based approach, only allowing known-safe SVG elements and attributes. Alternatively, a specialized SVG sanitization library could be used.\n    cwe: CWE-79\n    function_names:\n      - sanitizeSVG\n    filenames:\n      - src/sanitizeSVG.ts\n      - dist/lib/sanitizeSVG.js  \n    classification: very promising\n\n  - headline: Potential memory leak if error is thrown  \n    analysis: |  \n      In the `sanitizeSVG` function, a new `div` element is created and the SVG markup is set as its `innerHTML`. However, this `div` is never removed from the DOM after use.\n\n      If an error is thrown after the `div` creation (e.g. if `svgText` is null and the 'Image corrupt' error is thrown), this `div` will remain in memory attached to the DOM. Over many invocations where an error occurs, this could lead to a memory leak.\n\n      To prevent this, the `div` should be explicitly removed from the DOM after it has served its purpose, in a `finally` block or using `try...catch...finally` to ensure cleanup even if an error occurs.\n    cwe: CWE-459\n    function_names:\n      - sanitizeSVG\n    filenames:\n      - src/sanitizeSVG.ts\n      - dist/lib/sanitizeSVG.js\n    classification: slightly promising\n    \n  - headline: Uncaught promise error in readAsText\n    analysis: |\n      The `readAsText` function returns a promise that resolves with the text content of the given `svg` argument. However, if an error occurs during the file read (e.g. a network issue if the file is being loaded remotely), this error will not be caught.\n      \n      Uncaught promise errors can cause issues like freezing the event loop in certain environments. Best practice is to always include a `.catch()` on promises to properly handle errors.\n      \n      In this case, the promise should be updated to reject with an error if the file read fails, and the calling `sanitizeSVG` function should catch and handle this error appropriately.\n    cwe: CWE-755 \n    function_names:\n      - readAsText\n    filenames:\n      - src/sanitizeSVG.ts\n      - dist/lib/sanitizeSVG.js\n    classification: slightly promising\n```",
+      "date": "2024-06-13T10:03:01.290838",
+      "usage": {
+        "prompt_tokens": 4071,
+        "completion_tokens": 777,
+        "cost": 0.11934
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential XSS vulnerability in SVG sanitization",
+      "analysis": "The sanitizeSVG function attempts to sanitize SVG files by checking for <script> tags and removing the SVG if any are found. However, this is not a comprehensive defense against XSS attacks in SVGs. \n\nSVGs can contain other potentially dangerous elements like <foreignObject>, <use>, <iframe>, <video>, <audio> etc. which could allow JavaScript execution. The current sanitization only checks for <script> tags.\n\nAdditionally, the SVG is parsed by setting it as innerHTML of a div element. This could potentially trigger JavaScript execution during parsing, before the <script> tag check occurs.\n\nTo more robustly protect against XSS, it would be better to use a whitelist-based approach, only allowing known-safe SVG elements and attributes. Alternatively, a specialized SVG sanitization library could be used.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "sanitizeSVG"
+      ],
+      "filenames": [
+        "src/sanitizeSVG.ts",
+        "dist/lib/sanitizeSVG.js"
+      ]
+    },
+    {
+      "headline": "Potential memory leak if error is thrown",
+      "analysis": "In the sanitizeSVG function, a new div element is created and the SVG markup is set as its innerHTML. However, this div is never removed from the DOM after use.\n\nIf an error is thrown after the div creation (e.g. if svgText is null and the 'Image corrupt' error is thrown), this div will remain in memory attached to the DOM. Over many invocations where an error occurs, this could lead to a memory leak.\n\nTo prevent this, the div should be explicitly removed from the DOM after it has served its purpose, in a finally block or using try...catch...finally to ensure cleanup even if an error occurs.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-459",
+      "function_names": [
+        "sanitizeSVG"
+      ],
+      "filenames": [
+        "src/sanitizeSVG.ts",
+        "dist/lib/sanitizeSVG.js"
+      ]
+    },
+    {
+      "headline": "Uncaught promise error in readAsText",
+      "analysis": "The readAsText function returns a promise that resolves with the text content of the given svg argument. However, if an error occurs during the file read (e.g. a network issue if the file is being loaded remotely), this error will not be caught.\n\nUncaught promise errors can cause issues like freezing the event loop in certain environments. Best practice is to always include a .catch() on promises to properly handle errors.\n\nIn this case, the promise should be updated to reject with an error if the file read fails, and the calling sanitizeSVG function should catch and handle this error appropriately.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-755",
+      "function_names": [
+        "readAsText"
+      ],
+      "filenames": [
+        "src/sanitizeSVG.ts",
+        "dist/lib/sanitizeSVG.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2023-22461"
+      },
+      "vuln_dates": {
+        "CVE-2023-22461": "2023-01-04T15:15:09"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

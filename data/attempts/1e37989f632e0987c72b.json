@@ -1,0 +1,146 @@
+{
+  "commit": "116171d7ce46f7b790ad6e382587fee21586b0e0",
+  "repo_url": "https://github.com/juniper/jsnapy",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "01e4321c015ffa0a7cf0"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Insecure default permissions in setup.py\n    analysis: |\n      The `OverrideInstall` class in `setup.py` sets overly permissive permissions on the `/etc/jsnapy`, `/var/log/jsnapy` and `~/.jsnapy` directories and their contents. In particular, the code calls `os.chmod` with `0o777`, which grants read, write, and execute permissions to all users.\n      An attacker with access to the machine could potentially exploit this vulnerability to modify JSNAPy configuration files, plant malicious test cases, or gain read access to sensitive information stored in snapshots.\n      Although the `OverrideInstall` class is only invoked when the `--install-data` argument is provided, this argument can be easily passed during installation, for example using `pip install --install-data /tmp .`.\n    cwe: CWE-732\n    function_names:\n      - OverrideInstall.run\n    filenames:\n      - setup.py\n    classification: very promising\n  - headline: Insecure default permissions in virtual environment\n    analysis: |\n      When JSNAPy is installed within a virtual environment, the `OverrideInstall.run` function in `setup.py` sets the installation data directory to a path within the virtual environment, such as `venv/etc/jsnapy`.  While the function attempts to set permissions on this directory to `0o777`, this is ineffective, as the permissions are inherited from the parent directory of the virtual environment, which is typically owned by the user who created it.\n      This means that any other user with access to the machine who also has access to the virtual environment will have read and write access to the JSNAPy configuration files, potentially allowing them to modify JSNAPy configuration files, plant malicious test cases, or gain read access to sensitive information stored in snapshots.\n    cwe: CWE-732\n    function_names:\n      - OverrideInstall.run\n    filenames:\n      - setup.py\n    classification: very promising\n  - headline: Possible command injection in `Parser.run_cmd`\n    analysis: |\n      The `run_cmd` function in `lib/jnpr/jsnapy/snap.py` takes a user-supplied command as input and executes it on a Junos device using `dev.rpc.cli`. The command is passed to `dev.rpc.cli` without any sanitization, which could allow an attacker to inject arbitrary commands. For example, if the command includes a semicolon, an attacker can inject a second command that will be executed after the intended command.\n      The vulnerability is exploitable if an attacker has the ability to modify the test file containing the command definition.\n      Exploitation requires that:\n      * the attacker controls the content of a test file,\n      * the victim uses that file as input to JSNAPy,\n      * the target Junos device allows unsanitized CLI commands over NETCONF (which is common but may be disabled by operators).\n    cwe: CWE-77\n    function_names:\n      - Parser.run_cmd\n    filenames:\n      - lib/jnpr/jsnapy/snap.py\n    classification: slightly promising\n  - headline: Potential arbitrary file write via `jsnapy.cfg`\n    analysis: |\n      The `get_path` function in `lib/jnpr/jsnapy/__init__.py` reads configuration parameters from a file called `jsnapy.cfg`.  This configuration file includes parameters such as `config_file_path`, `snapshot_path`, and `test_file_path`.  These parameters determine where JSNAPy will store snapshot files and look for configuration and test files.\n      If an attacker has the ability to modify the `jsnapy.cfg` file, they can potentially change these paths to point to arbitrary locations on the filesystem. This could allow them to overwrite existing files or create new files in arbitrary locations.\n      This vulnerability is more likely to be exploitable in Windows environments, where an attacker who has compromised a low-privileged user account may be able to modify `jsnapy.cfg` in the user's home directory.\n    cwe: CWE-22\n    function_names:\n      - get_path\n    filenames:\n      - lib/jnpr/jsnapy/__init__.py\n    classification: slightly promising\n  - headline: Potential arbitrary file write via JSNAPY_HOME environment variable\n    analysis: |\n      The `get_config_location` function in `lib/jnpr/jsnapy/__init__.py` uses the `JSNAPY_HOME` environment variable to determine the location of the `jsnapy.cfg` configuration file. If an attacker has control over the environment variables, they can set `JSNAPY_HOME` to an arbitrary directory and cause JSNAPy to read a configuration file from that location.\n      Since the configuration file includes parameters such as `snapshot_path`, this can be used to overwrite existing files or create new files in arbitrary locations on the system.\n      The exploitability of this vulnerability depends on the context in which JSNAPy is executed. If JSNAPy is executed by a process that inherits the attacker's environment variables, the attacker will be able to exploit this vulnerability. \n    cwe: CWE-22\n    function_names:\n      - get_config_location\n    filenames:\n      - lib/jnpr/jsnapy/__init__.py\n    classification: slightly promising\n  - headline: Usernames and passwords in cleartext in configuration files\n    analysis: |\n      The code stores usernames and passwords in cleartext in the `main.yml` configuration file. This could allow an attacker with access to the filesystem to obtain the credentials and use them to gain unauthorized access to the Junos devices.\n      This is common practice in configuration files, although it is strongly recommended to avoid it and use secrets management tools instead, where feasible.\n    cwe: CWE-312\n    function_names: []\n    filenames: []\n    classification: not promising\n  - headline: Email password in cleartext in configuration files\n    analysis: |\n      The `SnapAdmin.connect` function in `lib/jnpr/jsnapy/jsnapy.py` reads a password for sending email notifications from a YAML file. The password is stored in cleartext in the YAML file.\n      This is common practice in configuration files, although it is strongly recommended to avoid it and use secrets management tools instead, where feasible.\n    cwe: CWE-312\n    function_names:\n      - SnapAdmin.connect\n    filenames:\n      - lib/jnpr/jsnapy/jsnapy.py\n    classification: not promising\n  - headline: Use of hardcoded credentials in tests\n    analysis: |\n      The unit test suite appears to use hardcoded credentials for connecting to Junos devices. This could allow an attacker with access to the test code to obtain the credentials and use them to gain unauthorized access to the Junos devices.\n      This may be a security concern if the tested codebase is distributed or if the tests are run in an environment where security is a concern. Otherwise, it is common to use hardcoded credentials in test code.\n    cwe: CWE-798\n    function_names: []\n    filenames:\n      - tests/unit/test_jsnapy.py\n      - tests/unit/test_snap.py\n      - tests/unit/test_snap_new.py\n      - tests/unit/test_sqlite.py\n      - samples/module_check.py\n      - samples/module_device.py\n      - samples/module_data.py\n    classification: not promising\n  - headline: Potential denial of service in `JsnapSqlite.insert_data`\n    analysis: |\n      The `JsnapSqlite.insert_data` function in `lib/jnpr/jsnapy/sqlite_store.py` performs a series of SQL queries to update and delete rows in a SQLite database. The `UPDATE` query increments the `id` column for all rows where the `cli_command` column matches a given value. The `DELETE` query then deletes all rows where the `id` column is greater than 49 and the `cli_command` column matches the given value.\n      If an attacker is able to insert a large number of rows into the database with the same `cli_command` value, the `UPDATE` query could take a significant amount of time to execute. During that time, the application may become unresponsive. An attacker could potentially exploit this vulnerability to cause a denial-of-service condition.\n      Exploitability depends on an attacker's ability to control the content of the database.\n    cwe: CWE-400\n    function_names:\n      - JsnapSqlite.insert_data\n    filenames:\n      - lib/jnpr/jsnapy/sqlite_store.py\n    classification: not promising\n```",
+      "date": "2024-06-13T09:07:25.049002",
+      "usage": {
+        "prompt_tokens": 109405,
+        "completion_tokens": 1789,
+        "cost": 0.07173250000000002
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insecure default permissions in setup.py",
+      "analysis": "The OverrideInstall class in setup.py sets overly permissive permissions on the /etc/jsnapy, /var/log/jsnapy and ~/.jsnapy directories and their contents. In particular, the code calls os.chmod with 0o777, which grants read, write, and execute permissions to all users.\nAn attacker with access to the machine could potentially exploit this vulnerability to modify JSNAPy configuration files, plant malicious test cases, or gain read access to sensitive information stored in snapshots.\nAlthough the OverrideInstall class is only invoked when the --install-data argument is provided, this argument can be easily passed during installation, for example using pip install --install-data /tmp ..\n",
+      "classification": "very promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "OverrideInstall.run"
+      ],
+      "filenames": [
+        "setup.py"
+      ]
+    },
+    {
+      "headline": "Insecure default permissions in virtual environment",
+      "analysis": "When JSNAPy is installed within a virtual environment, the OverrideInstall.run function in setup.py sets the installation data directory to a path within the virtual environment, such as venv/etc/jsnapy.  While the function attempts to set permissions on this directory to 0o777, this is ineffective, as the permissions are inherited from the parent directory of the virtual environment, which is typically owned by the user who created it.\nThis means that any other user with access to the machine who also has access to the virtual environment will have read and write access to the JSNAPy configuration files, potentially allowing them to modify JSNAPy configuration files, plant malicious test cases, or gain read access to sensitive information stored in snapshots.\n",
+      "classification": "very promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "OverrideInstall.run"
+      ],
+      "filenames": [
+        "setup.py"
+      ]
+    },
+    {
+      "headline": "Possible command injection in Parser.run_cmd",
+      "analysis": "The run_cmd function in lib/jnpr/jsnapy/snap.py takes a user-supplied command as input and executes it on a Junos device using dev.rpc.cli. The command is passed to dev.rpc.cli without any sanitization, which could allow an attacker to inject arbitrary commands. For example, if the command includes a semicolon, an attacker can inject a second command that will be executed after the intended command.\nThe vulnerability is exploitable if an attacker has the ability to modify the test file containing the command definition.\nExploitation requires that:\n* the attacker controls the content of a test file,\n* the victim uses that file as input to JSNAPy,\n* the target Junos device allows unsanitized CLI commands over NETCONF (which is common but may be disabled by operators).\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "Parser.run_cmd"
+      ],
+      "filenames": [
+        "lib/jnpr/jsnapy/snap.py"
+      ]
+    },
+    {
+      "headline": "Potential arbitrary file write via jsnapy.cfg",
+      "analysis": "The get_path function in lib/jnpr/jsnapy/__init__.py reads configuration parameters from a file called jsnapy.cfg.  This configuration file includes parameters such as config_file_path, snapshot_path, and test_file_path.  These parameters determine where JSNAPy will store snapshot files and look for configuration and test files.\nIf an attacker has the ability to modify the jsnapy.cfg file, they can potentially change these paths to point to arbitrary locations on the filesystem. This could allow them to overwrite existing files or create new files in arbitrary locations.\nThis vulnerability is more likely to be exploitable in Windows environments, where an attacker who has compromised a low-privileged user account may be able to modify jsnapy.cfg in the user's home directory.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "get_path"
+      ],
+      "filenames": [
+        "lib/jnpr/jsnapy/__init__.py"
+      ]
+    },
+    {
+      "headline": "Potential arbitrary file write via JSNAPY_HOME environment variable",
+      "analysis": "The get_config_location function in lib/jnpr/jsnapy/__init__.py uses the JSNAPY_HOME environment variable to determine the location of the jsnapy.cfg configuration file. If an attacker has control over the environment variables, they can set JSNAPY_HOME to an arbitrary directory and cause JSNAPy to read a configuration file from that location.\nSince the configuration file includes parameters such as snapshot_path, this can be used to overwrite existing files or create new files in arbitrary locations on the system.\nThe exploitability of this vulnerability depends on the context in which JSNAPy is executed. If JSNAPy is executed by a process that inherits the attacker's environment variables, the attacker will be able to exploit this vulnerability. \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "get_config_location"
+      ],
+      "filenames": [
+        "lib/jnpr/jsnapy/__init__.py"
+      ]
+    },
+    {
+      "headline": "Usernames and passwords in cleartext in configuration files",
+      "analysis": "The code stores usernames and passwords in cleartext in the main.yml configuration file. This could allow an attacker with access to the filesystem to obtain the credentials and use them to gain unauthorized access to the Junos devices.\nThis is common practice in configuration files, although it is strongly recommended to avoid it and use secrets management tools instead, where feasible.\n",
+      "classification": "not promising",
+      "cwe": "CWE-312",
+      "function_names": [],
+      "filenames": []
+    },
+    {
+      "headline": "Email password in cleartext in configuration files",
+      "analysis": "The SnapAdmin.connect function in lib/jnpr/jsnapy/jsnapy.py reads a password for sending email notifications from a YAML file. The password is stored in cleartext in the YAML file.\nThis is common practice in configuration files, although it is strongly recommended to avoid it and use secrets management tools instead, where feasible.\n",
+      "classification": "not promising",
+      "cwe": "CWE-312",
+      "function_names": [
+        "SnapAdmin.connect"
+      ],
+      "filenames": [
+        "lib/jnpr/jsnapy/jsnapy.py"
+      ]
+    },
+    {
+      "headline": "Use of hardcoded credentials in tests",
+      "analysis": "The unit test suite appears to use hardcoded credentials for connecting to Junos devices. This could allow an attacker with access to the test code to obtain the credentials and use them to gain unauthorized access to the Junos devices.\nThis may be a security concern if the tested codebase is distributed or if the tests are run in an environment where security is a concern. Otherwise, it is common to use hardcoded credentials in test code.\n",
+      "classification": "not promising",
+      "cwe": "CWE-798",
+      "function_names": [],
+      "filenames": [
+        "tests/unit/test_jsnapy.py",
+        "tests/unit/test_snap.py",
+        "tests/unit/test_snap_new.py"
+      ]
+    },
+    {
+      "headline": "Potential denial of service in JsnapSqlite.insert_data",
+      "analysis": "The JsnapSqlite.insert_data function in lib/jnpr/jsnapy/sqlite_store.py performs a series of SQL queries to update and delete rows in a SQLite database. The UPDATE query increments the id column for all rows where the cli_command column matches a given value. The DELETE query then deletes all rows where the id column is greater than 49 and the cli_command column matches the given value.\nIf an attacker is able to insert a large number of rows into the database with the same cli_command value, the UPDATE query could take a significant amount of time to execute. During that time, the application may become unresponsive. An attacker could potentially exploit this vulnerability to cause a denial-of-service condition.\nExploitability depends on an attacker's ability to control the content of the database.\n",
+      "classification": "not promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "JsnapSqlite.insert_data"
+      ],
+      "filenames": [
+        "lib/jnpr/jsnapy/sqlite_store.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2018-0023",
+        "1": "CVE-2018-0023"
+      },
+      "vuln_dates": {
+        "CVE-2018-0023": "2018-04-11T19:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
