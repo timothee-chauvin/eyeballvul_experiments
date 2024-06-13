@@ -182,6 +182,65 @@ def plot_overall_performance(instruction_template_hash: str, model_order: list[s
     fig.write_image(Config.paths.plots / "overall_performance.png")
 
 
+def plot_cwes_found(instruction_template_hash: str, top_n: int):
+    cwe_occurrences: dict[str, float] = {}
+    cwe_descriptions: dict[str, str] = {
+        "CWE-79": "XSS",
+        "CWE-78": "OS Command Injection",
+        "CWE-22": "Path Traversal",
+        "CWE-20": "Improper Input Validation",
+        "CWE-94": "Code Injection",
+        "CWE-798": "Use of Hard-coded Credentials",
+        "CWE-77": "Command Injection",
+        "CWE-502": "Deserialization of Untrusted Data",
+        "CWE-611": "XXE (XML External Entity)",
+        "CWE-1321": "Prototype Pollution",
+    }
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    for attempt_filename in attempt_filenames:
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        if not scores:
+            continue
+        score = scores[0]
+        selected_leads = [lead for lead in attempt.leads if lead.classification == "very promising"]
+        for lead_index in score.mapping.keys():
+            cwe = selected_leads[lead_index].cwe
+            if cwe is None:
+                continue
+            cwe_occurrences[cwe] = cwe_occurrences.get(cwe, 0) + 1
+    total = sum(cwe_occurrences.values())
+    for cwe in cwe_occurrences:
+        cwe_occurrences[cwe] = cwe_occurrences[cwe] / total
+    fig = go.Figure()
+    df = pd.DataFrame(
+        {
+            "cwe": list(cwe_occurrences.keys()),
+            "occurrences": list(cwe_occurrences.values()),
+            "description": [cwe_descriptions.get(cwe, "") for cwe in cwe_occurrences.keys()],
+        }
+    )
+    df = df.sort_values("occurrences", ascending=False)
+    df = df.head(top_n)
+    df = df.sort_values("occurrences", ascending=True)
+    fig.add_trace(
+        go.Bar(
+            y=df["cwe"],
+            x=df["occurrences"],
+            text=df["description"],
+            textposition="outside",
+            orientation="h",
+            marker_color="rgb(138, 146, 251)",
+        )
+    )
+    fig.update_layout(
+        template="plotly_white",
+        xaxis={"title": "Frequency among true positives"},
+    )
+    fig.write_image(Config.paths.plots / "cwes_found.png")
+
+
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     model_order = [
@@ -192,4 +251,5 @@ if __name__ == "__main__":
         "gpt-4-turbo-2024-04-09",
         "gemini/gemini-1.5-pro",
     ]
-    print(plot_overall_performance(instruction_template_hash, model_order))
+    plot_overall_performance(instruction_template_hash, model_order)
+    plot_cwes_found(instruction_template_hash, top_n=10)
