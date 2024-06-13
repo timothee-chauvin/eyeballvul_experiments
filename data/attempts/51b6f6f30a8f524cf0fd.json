@@ -1,0 +1,101 @@
+{
+  "commit": "104506356bcd34932cc8c83935c7d9f71781c362",
+  "repo_url": "https://github.com/what3words/wordpress-autosuggest-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "2e589c56e1d980157dcc"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: API key exposed on client-side\n    analysis: |\n      The JavaScript code in w3w-autosuggest-public.js sets the what3words API key directly on the created autosuggest component using the attribute 'api_key', passing in the key value from W3W_AUTOSUGGEST_SETTINGS.api_key. This exposes the secret API key on the client-side where it can be viewed by any user in the browser developer tools.\n\n      API keys should never be included in client-side code like this, as it allows anyone to extract the key and make API requests on behalf of the application, potentially incurring costs or allowing abuse.\n    cwe: CWE-522\n    function_names:\n      - createAutosuggestComponent\n    filenames:\n      - w3w-autosuggest/public/js/w3w-autosuggest-public.js\n    classification: very promising\n\n  - headline: CSRF token not included in admin settings forms \n    analysis: |\n      The admin settings forms for configuring the w3w-autosuggest plugin do not include CSRF tokens to prevent cross-site request forgery attacks. The forms in w3w_autosuggest_settings_template.php are missing the wp_nonce_field() call that would add a CSRF token.\n\n      This allows an attacker to craft a malicious page that submits to these admin forms and makes configuration changes if an admin user visits while logged in. The attacker could change settings like the API key to point to their own what3words account.\n    cwe: CWE-352\n    function_names:\n      - w3w_autosuggest_settings_template\n    filenames:\n      - w3w-autosuggest/admin/partials/w3w-autosuggest-admin-settings.php\n    classification: very promising\n\n  - headline: Unauthenticated access to plugin configuration settings\n    analysis: |\n      The w3w_autosuggest_settings_template() function which renders the plugin configuration options does not appear to perform any capability checks to confirm the current user has permission to access this admin functionality.\n\n      WordPress provides functions like current_user_can() to check if the authenticated user has a certain capability like 'manage_options' before displaying admin pages and forms. Without this check, any logged-in user, like subscribers, could potentially access the plugin configuration page and make changes.\n    cwe: CWE-306\n    function_names:\n      - w3w_autosuggest_settings_template\n    filenames: \n      - w3w-autosuggest/admin/partials/w3w-autosuggest-admin-settings.php\n    classification: very promising\n\n  - headline: SQL injection in wp_ajax_save_what3words_api action\n    analysis: |\n      The wp_ajax_save_what3words_api action hook implementation retrieves a value from the $_POST['w3w_api_key'] parameter and insecurely interpolates it into a SQL query. The $_POST value is used directly in the query without any sanitization or escaping.\n\n      This introduces an SQL injection vulnerability that allows tampering with the query. The API key value should be sanitized using $wpdb->prepare() or wp_strip_all_tags() before being included in the SQL statement to prevent injection of malicious SQL syntax.\n    cwe: CWE-89\n    function_names:\n      - wp_ajax_save_what3words_api\n    filenames:\n      - w3w-autosuggest/admin/class-w3w-autosuggest-admin.php\n    classification: very promising\n\n  - headline: Arbitrary file write via local file inclusion in checkout process\n    analysis: |\n      On the checkout page, the what3words autosuggest component is initialized via JavaScript in w3w-autosuggest-public.js. This code takes the 3 word address submitted and saves it to a hidden form field.\n\n      However, there are no checks on the allowed format of this 3 word address. An attacker could manipulate this to include local file paths using dot-dot-slash characters (e.g. ../../../filename) to traverse out of the intended directory.\n\n      When the form is submitted, the value from the hidden field is likely saved by WordPress or an e-commerce plugin, enabling writing arbitrary files. This could allow a malicious customer to overwrite sensitive WordPress files like wp-config.php.\n    cwe: CWE-73  \n    function_names:\n      - createAutosuggestComponent\n    filenames:\n      - w3w-autosuggest/public/js/w3w-autosuggest-public.js\n    classification: slightly promising\n```",
+      "date": "2024-06-13T18:20:19.050187",
+      "usage": {
+        "prompt_tokens": 19704,
+        "completion_tokens": 1103,
+        "cost": 0.378285
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "API key exposed on client-side",
+      "analysis": "The JavaScript code in w3w-autosuggest-public.js sets the what3words API key directly on the created autosuggest component using the attribute 'api_key', passing in the key value from W3W_AUTOSUGGEST_SETTINGS.api_key. This exposes the secret API key on the client-side where it can be viewed by any user in the browser developer tools.\n\nAPI keys should never be included in client-side code like this, as it allows anyone to extract the key and make API requests on behalf of the application, potentially incurring costs or allowing abuse.\n",
+      "classification": "very promising",
+      "cwe": "CWE-522",
+      "function_names": [
+        "createAutosuggestComponent"
+      ],
+      "filenames": [
+        "w3w-autosuggest/public/js/w3w-autosuggest-public.js"
+      ]
+    },
+    {
+      "headline": "CSRF token not included in admin settings forms",
+      "analysis": "The admin settings forms for configuring the w3w-autosuggest plugin do not include CSRF tokens to prevent cross-site request forgery attacks. The forms in w3w_autosuggest_settings_template.php are missing the wp_nonce_field() call that would add a CSRF token.\n\nThis allows an attacker to craft a malicious page that submits to these admin forms and makes configuration changes if an admin user visits while logged in. The attacker could change settings like the API key to point to their own what3words account.\n",
+      "classification": "very promising",
+      "cwe": "CWE-352",
+      "function_names": [
+        "w3w_autosuggest_settings_template"
+      ],
+      "filenames": [
+        "w3w-autosuggest/admin/partials/w3w-autosuggest-admin-settings.php"
+      ]
+    },
+    {
+      "headline": "Unauthenticated access to plugin configuration settings",
+      "analysis": "The w3w_autosuggest_settings_template() function which renders the plugin configuration options does not appear to perform any capability checks to confirm the current user has permission to access this admin functionality.\n\nWordPress provides functions like current_user_can() to check if the authenticated user has a certain capability like 'manage_options' before displaying admin pages and forms. Without this check, any logged-in user, like subscribers, could potentially access the plugin configuration page and make changes.\n",
+      "classification": "very promising",
+      "cwe": "CWE-306",
+      "function_names": [
+        "w3w_autosuggest_settings_template"
+      ],
+      "filenames": [
+        "w3w-autosuggest/admin/partials/w3w-autosuggest-admin-settings.php"
+      ]
+    },
+    {
+      "headline": "SQL injection in wp_ajax_save_what3words_api action",
+      "analysis": "The wp_ajax_save_what3words_api action hook implementation retrieves a value from the $_POST['w3w_api_key'] parameter and insecurely interpolates it into a SQL query. The $_POST value is used directly in the query without any sanitization or escaping.\n\nThis introduces an SQL injection vulnerability that allows tampering with the query. The API key value should be sanitized using $wpdb->prepare() or wp_strip_all_tags() before being included in the SQL statement to prevent injection of malicious SQL syntax.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "wp_ajax_save_what3words_api"
+      ],
+      "filenames": [
+        "w3w-autosuggest/admin/class-w3w-autosuggest-admin.php"
+      ]
+    },
+    {
+      "headline": "Arbitrary file write via local file inclusion in checkout process",
+      "analysis": "On the checkout page, the what3words autosuggest component is initialized via JavaScript in w3w-autosuggest-public.js. This code takes the 3 word address submitted and saves it to a hidden form field.\n\nHowever, there are no checks on the allowed format of this 3 word address. An attacker could manipulate this to include local file paths using dot-dot-slash characters (e.g. ../../../filename) to traverse out of the intended directory.\n\nWhen the form is submitted, the value from the hidden field is likely saved by WordPress or an e-commerce plugin, enabling writing arbitrary files. This could allow a malicious customer to overwrite sensitive WordPress files like wp-config.php.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-73",
+      "function_names": [
+        "createAutosuggestComponent"
+      ],
+      "filenames": [
+        "w3w-autosuggest/public/js/w3w-autosuggest-public.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 3
+      },
+      "mapping": {
+        "0": "CVE-2021-4428"
+      },
+      "vuln_dates": {
+        "CVE-2021-4428": "2023-07-18T17:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
