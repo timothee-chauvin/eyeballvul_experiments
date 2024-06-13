@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -234,6 +235,258 @@ def plot_overall_performance(
     fig.write_image(Config.paths.plots / "pareto_efficiency.png")
 
 
+def plot_performance_before_after_training_cutoff(
+    instruction_template_hash: str,
+    model_order: list[str],
+    color_map: dict[str, str],
+    cutoff_dates: dict[str, str],
+):
+    results: dict[str, dict] = {}
+    reconstructed_classifications: dict[str, dict] = {}
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    for attempt_filename in attempt_filenames:
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        results.setdefault(attempt.model, {"fp": 0})
+        for key in "before", "after":
+            results[attempt.model].setdefault(
+                key,
+                {
+                    "tp": 0,
+                    "fn": 0,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0,
+                    "precision_ci_low": 0.0,
+                    "precision_ci_upp": 0.0,
+                    "recall_ci_low": 0.0,
+                    "recall_ci_upp": 0.0,
+                    "f1_ci_low": 0.0,
+                    "f1_ci_upp": 0.0,
+                },
+            )
+        # Only keep the first score.
+        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        if not scores:
+            continue
+        score = scores[0]
+        stats = score.stats_with_cutoff(
+            cutoff_date=datetime.fromisoformat(cutoff_dates[attempt.model])
+        )
+        results[attempt.model]["fp"] += stats.fp
+        results[attempt.model]["before"]["tp"] += stats.before.tp
+        results[attempt.model]["before"]["fn"] += stats.before.fn
+        results[attempt.model]["after"]["tp"] += stats.after.tp
+        results[attempt.model]["after"]["fn"] += stats.after.fn
+
+    for model in results:
+        reconstructed_classifications.setdefault(
+            model,
+            {
+                "before": {"y_true": [], "y_pred": []},
+                "after": {"y_true": [], "y_pred": []},
+            },
+        )
+
+        for key in ["before", "after"]:
+            # tp
+            reconstructed_classifications[model][key]["y_true"].extend(
+                [1] * results[model][key]["tp"]
+            )
+            reconstructed_classifications[model][key]["y_pred"].extend(
+                [1] * results[model][key]["tp"]
+            )
+
+            # fp
+            reconstructed_classifications[model][key]["y_true"].extend([0] * results[model]["fp"])
+            reconstructed_classifications[model][key]["y_pred"].extend([1] * results[model]["fp"])
+
+            # fn
+            reconstructed_classifications[model][key]["y_true"].extend(
+                [1] * results[model][key]["fn"]
+            )
+            reconstructed_classifications[model][key]["y_pred"].extend(
+                [0] * results[model][key]["fn"]
+            )
+
+    for model in results:
+        for key in ["before", "after"]:
+            precision, precision_ci = precision_score(
+                reconstructed_classifications[model][key]["y_true"],
+                reconstructed_classifications[model][key]["y_pred"],
+                confidence_level=0.95,
+                method="wilson",
+                average="binary",
+            )
+            recall, recall_ci = recall_score(
+                reconstructed_classifications[model][key]["y_true"],
+                reconstructed_classifications[model][key]["y_pred"],
+                confidence_level=0.95,
+                method="wilson",
+                average="binary",
+            )
+            f1, f1_ci = f1_score(
+                reconstructed_classifications[model][key]["y_true"],
+                reconstructed_classifications[model][key]["y_pred"],
+                confidence_level=0.95,
+                method="wilson",
+                average="binary",
+            )
+            # Sanity checks: verify that confidenceinterval computes the same values as we do
+            classified_positive = results[model][key]["tp"] + results[model]["fp"]
+            all_positive = results[model][key]["tp"] + results[model][key]["fn"]
+            our_precision = results[model][key]["tp"] / classified_positive
+            our_recall = results[model][key]["tp"] / (all_positive)
+            our_f1 = 2 * (our_precision * our_recall) / (our_precision + our_recall)
+
+            if abs(precision - our_precision) > 1e-6:
+                raise ValueError(
+                    f"Precision mismatch: {precision} != {results[model]['precision']}"
+                )
+            if abs(recall - our_recall) > 1e-6:
+                raise ValueError(f"Recall mismatch: {recall} != {results[model]['recall']}")
+            if abs(f1 - our_f1) > 1e-6:
+                raise ValueError(f"F1 mismatch: {f1} != {results[model]['f1']}")
+
+            results[model][key]["precision"] = precision
+            results[model][key]["precision_ci_low"] = precision_ci[0]
+            results[model][key]["precision_ci_upp"] = precision_ci[1]
+            results[model][key]["recall"] = recall
+            results[model][key]["recall_ci_low"] = recall_ci[0]
+            results[model][key]["recall_ci_upp"] = recall_ci[1]
+            results[model][key]["f1"] = f1
+            results[model][key]["f1_ci_low"] = f1_ci[0]
+            results[model][key]["f1_ci_upp"] = f1_ci[1]
+
+    results = {k: results[k] for k in sorted(results)}
+    with open(Config.paths.results / "performance_before_after_training_cutoff.json", "w") as f:
+        json.dump(results, f, indent=2)
+        f.write("\n")
+    df_before = pd.DataFrame(
+        {
+            "model": list(results.keys()),
+            "precision": [results[model]["before"]["precision"] for model in results],
+            "recall": [results[model]["before"]["recall"] for model in results],
+            "precision_ci_low": [results[model]["before"]["precision_ci_low"] for model in results],
+            "precision_ci_upp": [results[model]["before"]["precision_ci_upp"] for model in results],
+            "recall_ci_low": [results[model]["before"]["recall_ci_low"] for model in results],
+            "recall_ci_upp": [results[model]["before"]["recall_ci_upp"] for model in results],
+        }
+    )
+    df_before["model"] = pd.Categorical(df_before["model"], categories=model_order, ordered=True)
+    df_before = df_before.sort_values("model")
+
+    df_after = pd.DataFrame(
+        {
+            "model": list(results.keys()),
+            "precision": [results[model]["after"]["precision"] for model in results],
+            "recall": [results[model]["after"]["recall"] for model in results],
+            "precision_ci_low": [results[model]["after"]["precision_ci_low"] for model in results],
+            "precision_ci_upp": [results[model]["after"]["precision_ci_upp"] for model in results],
+            "recall_ci_low": [results[model]["after"]["recall_ci_low"] for model in results],
+            "recall_ci_upp": [results[model]["after"]["recall_ci_upp"] for model in results],
+        }
+    )
+    df_after["model"] = pd.Categorical(df_after["model"], categories=model_order, ordered=True)
+    df_after = df_after.sort_values("model")
+
+    traces = []
+    for model in df_before["model"]:
+        trace_before = go.Scatter(
+            x=df_before.loc[df_before["model"] == model, "precision"],
+            y=df_before.loc[df_before["model"] == model, "recall"],
+            mode="markers",
+            name=f"{model} (before)",
+            marker=dict(color=color_map[model], symbol="circle-open"),
+            error_x=dict(
+                type="data",
+                symmetric=False,
+                array=df_before.loc[df_before["model"] == model, "precision_ci_upp"]
+                - df_before.loc[df_before["model"] == model, "precision"],
+                arrayminus=df_before.loc[df_before["model"] == model, "precision"]
+                - df_before.loc[df_before["model"] == model, "precision_ci_low"],
+                width=0,
+                thickness=1,
+            ),
+            error_y=dict(
+                type="data",
+                symmetric=False,
+                array=df_before.loc[df_before["model"] == model, "recall_ci_upp"]
+                - df_before.loc[df_before["model"] == model, "recall"],
+                arrayminus=df_before.loc[df_before["model"] == model, "recall"]
+                - df_before.loc[df_before["model"] == model, "recall_ci_low"],
+                width=0,
+                thickness=1,
+            ),
+        )
+        trace_after = go.Scatter(
+            x=df_after.loc[df_after["model"] == model, "precision"],
+            y=df_after.loc[df_after["model"] == model, "recall"],
+            mode="markers",
+            name=f"{model} (after)",
+            marker=dict(color=color_map[model], symbol="circle"),
+            error_x=dict(
+                type="data",
+                symmetric=False,
+                array=df_after.loc[df_after["model"] == model, "precision_ci_upp"]
+                - df_after.loc[df_after["model"] == model, "precision"],
+                arrayminus=df_after.loc[df_after["model"] == model, "precision"]
+                - df_after.loc[df_after["model"] == model, "precision_ci_low"],
+                width=0,
+                thickness=1,
+            ),
+            error_y=dict(
+                type="data",
+                symmetric=False,
+                array=df_after.loc[df_after["model"] == model, "recall_ci_upp"]
+                - df_after.loc[df_after["model"] == model, "recall"],
+                arrayminus=df_after.loc[df_after["model"] == model, "recall"]
+                - df_after.loc[df_after["model"] == model, "recall_ci_low"],
+                width=0,
+                thickness=1,
+            ),
+        )
+        traces.extend([trace_before, trace_after])
+
+    fig = go.Figure(data=traces)
+    for model in df_before["model"]:
+        x0 = df_after.loc[df_after["model"] == model, "precision"].values[0]
+        y0 = df_after.loc[df_after["model"] == model, "recall"].values[0]
+        x1 = df_before.loc[df_before["model"] == model, "precision"].values[0]
+        y1 = df_before.loc[df_before["model"] == model, "recall"].values[0]
+
+        fig.add_annotation(
+            x=x0,
+            y=y0,
+            ax=x1,
+            ay=y1,
+            xref="x",
+            yref="y",
+            axref="x",
+            ayref="y",
+            text="",
+            showarrow=True,
+            arrowhead=2,
+            arrowsize=2,
+            arrowwidth=1,
+            arrowcolor=color_map[model],
+        )
+    fig.update_layout(
+        template="plotly_white",
+        xaxis_title="Precision",
+        yaxis_title="Recall",
+        width=800,
+        height=600,
+        font=dict(size=12),
+        legend=dict(title="Model (Period)"),
+    )
+
+    fig.update_xaxes(rangemode="tozero")
+    fig.update_yaxes(rangemode="tozero")
+
+    fig.write_image(Config.paths.plots / "pareto_efficiency_before_after_training_cutoff.png")
+
+
 def plot_cwes_found(instruction_template_hash: str, top_n: int):
     cwe_occurrences: dict[str, float] = {}
     cwe_descriptions: dict[str, str] = {
@@ -312,5 +565,17 @@ if __name__ == "__main__":
         "gpt-4-turbo-2024-04-09": "rgb(7, 99, 19)",
         "gemini/gemini-1.5-pro": "rgb(2, 14, 150)",
     }
+
+    training_data_cutoffs = {
+        "claude-3-haiku-20240307": "2023-09-01",
+        "claude-3-sonnet-20240229": "2023-09-01",
+        "claude-3-opus-20240229": "2023-09-01",
+        "gpt-4o-2024-05-13": "2023-11-01",
+        "gpt-4-turbo-2024-04-09": "2024-01-01",
+        "gemini/gemini-1.5-pro": "2023-12-01",
+    }
     plot_overall_performance(instruction_template_hash, model_order, color_map)
     plot_cwes_found(instruction_template_hash, top_n=10)
+    plot_performance_before_after_training_cutoff(
+        instruction_template_hash, model_order, color_map, training_data_cutoffs
+    )
