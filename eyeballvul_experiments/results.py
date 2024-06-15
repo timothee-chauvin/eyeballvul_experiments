@@ -206,6 +206,8 @@ def plot_overall_performance(
                 - df.loc[df["model"] == model, "precision"],
                 arrayminus=df.loc[df["model"] == model, "precision"]
                 - df.loc[df["model"] == model, "precision_ci_low"],
+                width=0,
+                thickness=1,
             ),
             error_y=dict(
                 type="data",
@@ -214,6 +216,8 @@ def plot_overall_performance(
                 - df.loc[df["model"] == model, "recall"],
                 arrayminus=df.loc[df["model"] == model, "recall"]
                 - df.loc[df["model"] == model, "recall_ci_low"],
+                width=0,
+                thickness=1,
             ),
         )
         traces.append(trace)
