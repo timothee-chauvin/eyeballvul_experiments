@@ -263,6 +263,33 @@ def fraction_of_benchmark_after_knowledge_cutoffs_by_context_window(info: list[t
         f.write("\n")
 
 
+def average_vulns_per_revision_and_revisions_per_vuln():
+    all_vulns = get_vulns()
+    all_revisions = get_revisions()
+    vulns_per_revision_mapping: dict[str, list[str]] = {}
+    revisions_per_vuln_mapping: dict[str, list[str]] = {}
+    for revision in all_revisions:
+        vulns_here = get_vulns(commit=revision.commit)
+        vulns_per_revision_mapping[revision.commit] = [vuln.id for vuln in vulns_here]
+        for vuln in vulns_here:
+            revisions_per_vuln_mapping.setdefault(vuln.id, [])
+            revisions_per_vuln_mapping[vuln.id].append(revision.commit)
+    vulns_per_revision = sum(len(vulns) for vulns in vulns_per_revision_mapping.values()) / len(
+        all_revisions
+    )
+    revisions_per_vuln = sum(
+        len(revisions) for revisions in revisions_per_vuln_mapping.values()
+    ) / len(all_vulns)
+
+    result = {
+        "vulns_per_revisions": vulns_per_revision,
+        "revisions_per_vuln": revisions_per_vuln,
+    }
+    with open(Config.paths.results / "vulns_and_revisions.json", "w") as f:
+        json.dump(result, f, indent=2)
+        f.write("\n")
+
+
 if __name__ == "__main__":
     plot_repo_size_histogram()
     fraction_of_benchmark_covered_by_context_window(
@@ -291,3 +318,4 @@ if __name__ == "__main__":
             ("2024-01-01", 128000),  # gpt-4-turbo-2024-04-09
         ]
     )
+    average_vulns_per_revision_and_revisions_per_vuln()
