@@ -515,6 +515,7 @@ def plot_cwes_found(instruction_template_hash: str, top_n: int):
         "CWE-502": "Deserialization of Untrusted Data",
         "CWE-611": "XXE (XML External Entity)",
         "CWE-1321": "Prototype Pollution",
+        "CWE-89": "SQL Injection",
     }
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     for attempt_filename in attempt_filenames:
