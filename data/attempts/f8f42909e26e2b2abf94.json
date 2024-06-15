@@ -1,0 +1,87 @@
+{
+  "commit": "4820ebf4c74a5d97f727ed995759902075571abc",
+  "repo_url": "https://github.com/jberger/galileo",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "1db2fbea9896c5872e1b"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output analyzing the Galileo codebase for security vulnerabilities:\n\n```yaml\nleads:\n  - headline: Unsanitized input passed to SQL query \n    analysis: |\n      In lib/Galileo/DB/Deploy.pm, the inject_sample_data function constructs\n      SQL queries using unsanitized input from the 'user', 'pass', and 'full' parameters.\n      Passing user controlled input directly into SQL queries can allow SQL injection attacks,\n      enabling attackers to access, modify, or delete data in the database.\n    cwe: CWE-89\n    function_names:\n      - inject_sample_data\n    filenames:\n      - lib/Galileo/DB/Deploy.pm\n    classification: very promising\n      \n  - headline: External entities enabled in XML parsing  \n    analysis: |  \n      In lib/Galileo/files/public/assets/pagedown/Markdown.Converter.js, the Markdown\n      converter parses XML input but does not disable external entity handling. This could\n      allow XML external entity (XXE) attacks where an attacker includes external entity \n      references in Markdown that, when parsed, access local files or network resources.\n    cwe: CWE-611\n    function_names:\n      - _HashHTMLBlocks\n    filenames:\n      - lib/Galileo/files/public/assets/pagedown/Markdown.Converter.js\n    classification: very promising\n\n  - headline: Incorrect access control for admin pages\n    analysis: |\n      The code in lib/Galileo.pm uses $if_admin checks to restrict access to admin\n      pages like /admin/users and /admin/pages. However, there are no checks to ensure \n      the authenticated user actually has admin privileges. Any logged-in user can access\n      these admin pages and functionality. Proper authorization checks are missing.\n    cwe: CWE-285\n    function_names: \n      - startup  \n    filenames:\n      - lib/Galileo.pm\n    classification: very promising\n    \n  - headline: Sensitive data stored in clear text\n    analysis: |  \n      Passwords are stored in clear text in the user database table based on the \n      schema defined in lib/Galileo/DB/Schema/Result/User.pm. Storing sensitive \n      data like passwords in clear text can expose them if the database is compromised.\n      Best practice is to one-way hash passwords before storing them.\n    cwe: CWE-312 \n    function_names:\n    filenames:\n      - lib/Galileo/DB/Schema/Result/User.pm\n    classification: slightly promising\n      \n  - headline: Improper password strength requirements\n    analysis: |\n      When new users are created in lib/Galileo/Admin.pm, there are no checks for \n      minimum password strength or complexity requirements. Accounts with weak\n      passwords are vulnerable to guessing and brute force attacks. Enforcing a \n      strong password policy is important.\n    cwe: CWE-521\n    function_names:\n      - store_user\n    filenames:  \n      - lib/Galileo/Admin.pm\n    classification: slightly promising\n\n```\n\nThe analysis identified several potential vulnerabilities related to SQL injection, XXE attacks, missing authorization checks, storing passwords in clear text, and lack of password strength requirements. The SQL injection and XXE issues look very promising to investigate further for developing proofs-of-concept. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-14T14:00:40.093533",
+      "usage": {
+        "prompt_tokens": 79085,
+        "completion_tokens": 827,
+        "cost": 1.2483
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unsanitized input passed to SQL query",
+      "analysis": "In lib/Galileo/DB/Deploy.pm, the inject_sample_data function constructs\nSQL queries using unsanitized input from the 'user', 'pass', and 'full' parameters.\nPassing user controlled input directly into SQL queries can allow SQL injection attacks,\nenabling attackers to access, modify, or delete data in the database.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "inject_sample_data"
+      ],
+      "filenames": [
+        "lib/Galileo/DB/Deploy.pm"
+      ]
+    },
+    {
+      "headline": "External entities enabled in XML parsing",
+      "analysis": "In lib/Galileo/files/public/assets/pagedown/Markdown.Converter.js, the Markdown\nconverter parses XML input but does not disable external entity handling. This could\nallow XML external entity (XXE) attacks where an attacker includes external entity \nreferences in Markdown that, when parsed, access local files or network resources.\n",
+      "classification": "very promising",
+      "cwe": "CWE-611",
+      "function_names": [
+        "_HashHTMLBlocks"
+      ],
+      "filenames": [
+        "lib/Galileo/files/public/assets/pagedown/Markdown.Converter.js"
+      ]
+    },
+    {
+      "headline": "Incorrect access control for admin pages",
+      "analysis": "The code in lib/Galileo.pm uses $if_admin checks to restrict access to admin\npages like /admin/users and /admin/pages. However, there are no checks to ensure \nthe authenticated user actually has admin privileges. Any logged-in user can access\nthese admin pages and functionality. Proper authorization checks are missing.\n",
+      "classification": "very promising",
+      "cwe": "CWE-285",
+      "function_names": [
+        "startup"
+      ],
+      "filenames": [
+        "lib/Galileo.pm"
+      ]
+    },
+    {
+      "headline": "Improper password strength requirements",
+      "analysis": "When new users are created in lib/Galileo/Admin.pm, there are no checks for \nminimum password strength or complexity requirements. Accounts with weak\npasswords are vulnerable to guessing and brute force attacks. Enforcing a \nstrong password policy is important.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-521",
+      "function_names": [
+        "store_user"
+      ],
+      "filenames": [
+        "lib/Galileo/Admin.pm"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-7410": "2020-08-14T14:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

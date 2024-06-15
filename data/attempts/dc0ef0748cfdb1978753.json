@@ -1,0 +1,38 @@
+{
+  "commit": "44e2ed17df95ea510340984a6efa9f11169e675f",
+  "repo_url": "https://github.com/jenkinsci/zap-pipeline-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "beb9182b6a7f950195a7"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Unsafe input handling in importUrls function\n    analysis: |\n      The importUrls function in ZapDriverImpl.java does not properly validate the user-supplied 'path' parameter before using it to construct a file path and read the contents of the file. This could allow an attacker to provide a path that traverses outside the intended directory and access sensitive files on the Jenkins server file system, leading to local file inclusion vulnerabilities.\n      \n      The vulnerable code is:\n      ```\n      public boolean importUrls(String path) {\n          System.out.println(\"zap: Importing URLs from \" + path);\n          Map<String, String> arguments = Collections.singletonMap(\"filePath\", path);\n\n          JSONObject result = zapApi(\"importurls/action/importurls\", arguments);\n          return result != null && result.has(\"Result\") && result.getString(\"Result\").equals(\"OK\");\n      }\n      ```\n      This takes the user-provided 'path' and passes it directly to the zapApi function as the \"filePath\" argument without sanitizing it first. A malicious user could exploit this by providing a 'path' like \"../../../../../../etc/passwd\" to read sensitive system files.\n    cwe: CWE-22\n    function_names:\n      - importUrls\n    filenames:\n      - src/main/java/com/vrondakis/zap/ZapDriverImpl.java\n    classification: very promising\n\n  - headline: Unsafe input handling in loadSession function  \n    analysis: |\n      Similar to the importUrls function, the loadSession function in ZapDriverImpl.java does not properly validate the 'sessionPath' parameter before using it to construct a file path and load a ZAP session. This could also allow an attacker to traverse the file system and access unintended files, potentially leading to local file inclusion vulnerabilities.\n      \n      The vulnerable code is:\n      ```\n      public boolean loadSession(String sessionPath) {\n          System.out.println(\"zap: Loading session from \" + sessionPath);\n          Map<String, String> arguments = Collections.singletonMap(\"name\", sessionPath);\n          JSONObject result = zapApi(\"core/action/loadSession\", arguments);\n\n          return result != null && result.has(\"Result\") && result.getString(\"Result\").equals(\"OK\");\n      }\n      ```\n      The 'sessionPath' is passed unsanitized as the \"name\" argument to the zapApi function to load the session. An attacker could provide a malicious path to access sensitive files.\n    cwe: CWE-22\n    function_names:\n      - loadSession  \n    filenames:\n      - src/main/java/com/vrondakis/zap/ZapDriverImpl.java\n    classification: very promising\n\n  - headline: Unsafe handling of user-supplied URLs when running ZAP scans\n    analysis: |  \n      The startZapCrawler and beginScan functions in ZapDriverImpl.java take user-supplied URLs ('host' parameter) and passes them to the zapApi function to initiate crawling and scanning actions in ZAP. However, there is insufficient validation on these URLs before using them. While there is a check against an allowedHosts list, it is bypassable.\n      \n      For example, the allowedHosts check only validates the domain of the supplied URL. So an attacker could potentially bypass it by using a URL like \"http://evil.com?http://intranet/some-path\". The evil.com domain would pass the check, but the intranet URL would still get scanned.\n      \n      This could allow attackers to initiate unauthorized scans on internal or unintended hosts, potentially impacting their availability or performance. It could also enable attackers to get the ZAP scanner to attack hosts and conduct malicious actions from the Jenkins server.\n    cwe: CWE-918\n    function_names:\n      - startZapCrawler\n      - beginScan\n    filenames:\n      - src/main/java/com/vrondakis/zap/ZapDriverImpl.java\n    classification: promising\n  \n  - headline: Sensitive information disclosure in archiveRawReport\n    analysis: |\n      The archiveRawReport function in ZapArchive.java saves the raw ZAP JSON report to a build archive that is accessible through the Jenkins UI. This raw report may contain sensitive information like URL paths, parameters, cookie names/values etc that were discovered during scanning.\n      \n      While having the report available can be useful, it should be considered whether all users who have access to Jenkins jobs should be able to view this raw security information. At the very least, the option to save the raw report should be configurable. Ideally, the report should be sanitized to remove sensitive information before archiving.\n\n      The concerning code is:\n      ```\n      private boolean saveZapReport(File path) {\n          try {\n              FilePath fp = new FilePath(new File(path.toString() + \"/\" + RAW_REPORT_FILENAME));\n              if (zapDriver.getZapHost() == null || zapDriver.getZapPort() == 0)\n                  return false;\n\n              String report = zapDriver.getZapReport();\n              fp.write(report, \"UTF-8\");  \n              ...\n      }\n      ```\n    cwe: CWE-200\n    function_names:\n      - archiveRawReport\n      - saveZapReport\n    filenames:\n      - src/main/java/com/vrondakis/zap/ZapArchive.java\n    classification: slightly promising\n\n```",
+      "date": "2024-06-14T14:29:49.451413",
+      "usage": {
+        "prompt_tokens": 42861,
+        "completion_tokens": 1306,
+        "cost": 0.740865
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-2214": "2020-07-02T15:15:18"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

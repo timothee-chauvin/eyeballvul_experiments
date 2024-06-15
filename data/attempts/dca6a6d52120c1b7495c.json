@@ -1,0 +1,83 @@
+{
+  "commit": "457bbfd786f02db852da07137bd54c139194e2d7",
+  "repo_url": "https://github.com/commenthol/safer-eval",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "441aa887bba98f5df5ca"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output for the security vulnerabilities I identified in the given codebase:\n\n```yaml\nleads:\n  - headline: Unsafe evaluation of untrusted code\n    analysis: |\n      The saferEval function in src/index.js and src/browser.js allows evaluating arbitrary JavaScript code\n      passed in as a string. While it tries to restrict access to certain global objects, the sandboxing is\n      incomplete. An attacker could potentially break out of the sandbox and execute arbitrary code with the \n      privileges of the Node.js process or web page. The harmful context tests demonstrate some examples of\n      how the sandboxing can be bypassed, such as by passing in a cloned copy of the global object.\n    cwe: CWE-94  \n    function_names:\n      - saferEval\n      - SaferEval.runInContext\n    filenames:\n      - src/index.js\n      - src/browser.js  \n    classification: very promising\n\n  - headline: Incomplete sandboxing of evaluated code\n    analysis: |\n      The createContext function in src/common.js attempts to construct a safe evaluation context by removing \n      access to Node.js globals like process and require. However, the sandboxing is incomplete. The evaluated\n      code can still access and modify non-whitelisted properties on the global object and alter the behavior\n      of built-in objects like Object, Array, String etc. The tests under \"should protect against overwriting\"\n      demonstrate some examples of breaking the sandbox by modifying builtin objects.\n    cwe: CWE-265\n    function_names:\n      - createContext\n      - allow\n    filenames:\n      - src/common.js\n    classification: very promising\n\n  - headline: Code injection through constructor constructor  \n    analysis: |\n      The constructor property can be used to access the Function constructor and dynamically generate code. While\n      the sandboxing tries to prevent accessing this.constructor.constructor and Object.constructor.constructor, \n      the protection is insufficient. Certain test cases show it is still possible to reach the Function constructor\n      and evaluate arbitrary code, breaking out of the sandbox.\n    cwe: CWE-502\n    function_names: \n      - saferEval\n    filenames:\n      - src/index.js\n      - src/browser.js\n    classification: slightly promising\n```\n\nThe key vulnerabilities are around incomplete sandboxing allowing unsafe evaluation of untrusted code. With some effort, an attacker could likely break out of the sandbox protections and achieve arbitrary code execution. I recommend avoiding the use of this library for evaluating untrusted code from external sources. If evaluation of dynamic code is required, use a proper sandbox that provides much stronger isolation, such as a separate process or container.",
+      "date": "2024-06-14T13:06:50.126008",
+      "usage": {
+        "prompt_tokens": 11149,
+        "completion_tokens": 632,
+        "cost": 0.214635
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unsafe evaluation of untrusted code",
+      "analysis": "The saferEval function in src/index.js and src/browser.js allows evaluating arbitrary JavaScript code\npassed in as a string. While it tries to restrict access to certain global objects, the sandboxing is\nincomplete. An attacker could potentially break out of the sandbox and execute arbitrary code with the \nprivileges of the Node.js process or web page. The harmful context tests demonstrate some examples of\nhow the sandboxing can be bypassed, such as by passing in a cloned copy of the global object.\n",
+      "classification": "very promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "saferEval",
+        "SaferEval.runInContext"
+      ],
+      "filenames": [
+        "src/index.js",
+        "src/browser.js"
+      ]
+    },
+    {
+      "headline": "Incomplete sandboxing of evaluated code",
+      "analysis": "The createContext function in src/common.js attempts to construct a safe evaluation context by removing \naccess to Node.js globals like process and require. However, the sandboxing is incomplete. The evaluated\ncode can still access and modify non-whitelisted properties on the global object and alter the behavior\nof built-in objects like Object, Array, String etc. The tests under \"should protect against overwriting\"\ndemonstrate some examples of breaking the sandbox by modifying builtin objects.\n",
+      "classification": "very promising",
+      "cwe": "CWE-265",
+      "function_names": [
+        "createContext",
+        "allow"
+      ],
+      "filenames": [
+        "src/common.js"
+      ]
+    },
+    {
+      "headline": "Code injection through constructor constructor",
+      "analysis": "The constructor property can be used to access the Function constructor and dynamically generate code. While\nthe sandboxing tries to prevent accessing this.constructor.constructor and Object.constructor.constructor, \nthe protection is insufficient. Certain test cases show it is still possible to reach the Function constructor\nand evaluate arbitrary code, breaking out of the sandbox.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "saferEval"
+      ],
+      "filenames": [
+        "src/index.js",
+        "src/browser.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2019-10759",
+        "1": "CVE-2019-10759"
+      },
+      "vuln_dates": {
+        "CVE-2019-10759": "2019-10-15T15:15:11",
+        "CVE-2019-10760": "2019-10-15T15:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,110 @@
+{
+  "commit": "387fd9fd5d60f083858ec8b22c55c9fac7329c39",
+  "repo_url": "https://github.com/jenkinsci/role-strategy-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "b01b53bf7c8795a6aa06"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output of security vulnerabilities I identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Dangerous permissions can be granted to roles\n    analysis: |\n      The RoleBasedAuthorizationStrategy class allows defining roles and assigning permissions to them. However, some dangerous permissions like Jenkins.RUN_SCRIPTS, PluginManager.CONFIGURE_UPDATECENTER, and PluginManager.UPLOAD_PLUGINS can be granted to non-admin roles. This could allow users with those roles to execute arbitrary code on the Jenkins controller, configure update sites, and upload plugins, posing a significant security risk.\n    cwe: CWE-269  \n    function_names: \n      - RoleBasedAuthorizationStrategy.DescriptorImpl.doRolesSubmit\n      - RoleBasedAuthorizationStrategy.DescriptorImpl.doAssignSubmit    \n    filenames:\n      - src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleBasedAuthorizationStrategy.java\n    classification: very promising\n\n  - headline: Incorrect authorization via user authorities\n    analysis: |\n      When the TREAT_USER_AUTHORITIES_AS_ROLES setting is enabled, the RoleMap.hasPermission method considers user authorities as roles for authorization decisions. This can lead to incorrect authorization if the user authorities do not match role names, allowing users to gain unintended permissions.\n    cwe: CWE-863\n    function_names:\n      - RoleMap.hasPermission\n    filenames: \n      - src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleMap.java\n    classification: very promising\n\n  - headline: Unauthorized access to sensitive endpoints\n    analysis: |\n      Some sensitive HTTP endpoints like /role-strategy/strategy/addRole, /role-strategy/strategy/removeRoles, /role-strategy/strategy/assignRole, /role-strategy/strategy/deleteSid are not sufficiently protected. They only check for Jenkins.ADMINISTER permission, which means any user with that permission can make unauthorized changes to role configurations and assignments.\n    cwe: CWE-285\n    function_names:\n      - RoleBasedAuthorizationStrategy.doAddRole\n      - RoleBasedAuthorizationStrategy.doRemoveRoles\n      - RoleBasedAuthorizationStrategy.doAssignRole\n      - RoleBasedAuthorizationStrategy.doDeleteSid\n    filenames:\n      - src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleBasedAuthorizationStrategy.java\n    classification: very promising\n\n  - headline: Unauthorized viewing of role information  \n    analysis: |\n      The /role-strategy/ pages and endpoints allow viewing role configurations like permissions, assignments, and macros to any authenticated user, even if they don't have permissions to configure roles. This could leak sensitive information about the role setup and user/group assignments.\n    cwe: CWE-200\n    function_names:\n      - RoleStrategyConfig.doRolesSubmit\n      - RoleStrategyConfig.doAssignSubmit  \n    filenames:\n      - src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleStrategyConfig.java  \n    classification: slightly promising\n\n  - headline: Unauthorized access via macro roles\n    analysis: |  \n      Macro roles allow defining custom logic to determine a user's roles. If implemented incorrectly in a macro extension, this could allow users to gain unauthorized access through the macro role, bypassing intended restrictions.\n    cwe: CWE-863\n    function_names:\n      - RoleMacroExtension.IsApplicable\n      - RoleMacroExtension.hasPermission  \n    filenames:\n      - src/main/java/com/synopsys/arc/jenkins/plugins/rolestrategy/RoleMacroExtension.java\n    classification: slightly promising\n\n```\n\nThe most concerning vulnerabilities are around allowing dangerous permissions to non-admin roles, incorrect authorization decisions when user authorities are treated as roles, and insufficient protection of sensitive configuration endpoints. The potential for unauthorized access via misconfigured macro roles is also worth investigating further. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-14T14:23:33.658240",
+      "usage": {
+        "prompt_tokens": 43541,
+        "completion_tokens": 1016,
+        "cost": 0.729315
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Dangerous permissions can be granted to roles",
+      "analysis": "The RoleBasedAuthorizationStrategy class allows defining roles and assigning permissions to them. However, some dangerous permissions like Jenkins.RUN_SCRIPTS, PluginManager.CONFIGURE_UPDATECENTER, and PluginManager.UPLOAD_PLUGINS can be granted to non-admin roles. This could allow users with those roles to execute arbitrary code on the Jenkins controller, configure update sites, and upload plugins, posing a significant security risk.\n",
+      "classification": "very promising",
+      "cwe": "CWE-269",
+      "function_names": [
+        "RoleBasedAuthorizationStrategy.DescriptorImpl.doRolesSubmit",
+        "RoleBasedAuthorizationStrategy.DescriptorImpl.doAssignSubmit"
+      ],
+      "filenames": [
+        "src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleBasedAuthorizationStrategy.java"
+      ]
+    },
+    {
+      "headline": "Incorrect authorization via user authorities",
+      "analysis": "When the TREAT_USER_AUTHORITIES_AS_ROLES setting is enabled, the RoleMap.hasPermission method considers user authorities as roles for authorization decisions. This can lead to incorrect authorization if the user authorities do not match role names, allowing users to gain unintended permissions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-863",
+      "function_names": [
+        "RoleMap.hasPermission"
+      ],
+      "filenames": [
+        "src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleMap.java"
+      ]
+    },
+    {
+      "headline": "Unauthorized access to sensitive endpoints",
+      "analysis": "Some sensitive HTTP endpoints like /role-strategy/strategy/addRole, /role-strategy/strategy/removeRoles, /role-strategy/strategy/assignRole, /role-strategy/strategy/deleteSid are not sufficiently protected. They only check for Jenkins.ADMINISTER permission, which means any user with that permission can make unauthorized changes to role configurations and assignments.\n",
+      "classification": "very promising",
+      "cwe": "CWE-285",
+      "function_names": [
+        "RoleBasedAuthorizationStrategy.doAddRole",
+        "RoleBasedAuthorizationStrategy.doRemoveRoles",
+        "RoleBasedAuthorizationStrategy.doAssignRole"
+      ],
+      "filenames": [
+        "src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleBasedAuthorizationStrategy.java"
+      ]
+    },
+    {
+      "headline": "Unauthorized viewing of role information",
+      "analysis": "The /role-strategy/ pages and endpoints allow viewing role configurations like permissions, assignments, and macros to any authenticated user, even if they don't have permissions to configure roles. This could leak sensitive information about the role setup and user/group assignments.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "RoleStrategyConfig.doRolesSubmit",
+        "RoleStrategyConfig.doAssignSubmit"
+      ],
+      "filenames": [
+        "src/main/java/com/michelin/cio/hudson/plugins/rolestrategy/RoleStrategyConfig.java"
+      ]
+    },
+    {
+      "headline": "Unauthorized access via macro roles",
+      "analysis": "Macro roles allow defining custom logic to determine a user's roles. If implemented incorrectly in a macro extension, this could allow users to gain unauthorized access through the macro role, bypassing intended restrictions.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-863",
+      "function_names": [
+        "RoleMacroExtension.IsApplicable",
+        "RoleMacroExtension.hasPermission"
+      ],
+      "filenames": [
+        "src/main/java/com/synopsys/arc/jenkins/plugins/rolestrategy/RoleMacroExtension.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 2,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2023-28668",
+        "2": "CVE-2017-1000090"
+      },
+      "vuln_dates": {
+        "CVE-2023-28668": "2023-04-02T21:15:08",
+        "CVE-2017-1000090": "2017-10-05T01:29:03",
+        "CVE-2020-2286": "2020-10-08T13:15:11",
+        "CVE-2021-21624": "2021-03-18T14:15:13"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

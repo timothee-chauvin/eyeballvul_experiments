@@ -1,0 +1,51 @@
+{
+  "commit": "42e2a59b208e6c6660d81de0c70103403249bb55",
+  "repo_url": "https://github.com/lota/phamm",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "68dabb7abca19016d795"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: Insecure LDAP authentication\n    analysis: |\n      The LDAP authentication uses a hardcoded password in plaintext in multiple scripts, including backup-basedn.sh, phamm-useradd.pl, and vacation.py. Storing passwords in plaintext is very insecure. If an attacker gains access to the codebase, they can easily obtain the LDAP admin password and compromise the LDAP directory. The password should be stored securely, such as in an encrypted configuration file or secrets manager.\n    cwe: CWE-798\n    function_names:\n    filenames:\n      - tools/backup-basedn.sh\n      - tools/phamm-useradd.pl\n      - tools/vacation.py  \n    classification: very promising\n\n  - headline: Insecure permissions of created files\n    analysis: |  \n      The cleaner.sh script creates an executable shell script containing LDAP commands using the administrator password. However, it sets insecure permissions (700) allowing any user on the system to read the script and obtain the admin password. File permissions should be more restrictive, like 600, to prevent other users from reading sensitive files. Similarly, the make-mail.sh script does not set any permissions on the created home directories, leaving them with default permissions which may be insecure.\n    cwe: CWE-732\n    function_names:\n    filenames:\n      - tools/cleaner.sh\n      - tools/make-mail.sh\n    classification: very promising\n  \n  - headline: Cross-site scripting (XSS) vulnerability\n    analysis: |\n      The checkAll() function in public/functions.js constructs HTML content using unsanitized values read from the DOM. If an attacker can control the \"post-checks\" form on the page, they could potentially inject malicious JavaScript that will get executed in the context of the web application. This could allow session hijacking, page defacement, etc. User input should be properly validated and encoded before including in HTML.\n    cwe: CWE-79\n    function_names:\n      - checkAll\n    filenames:\n      - public/functions.js\n    classification: very promising\n    \n  - headline: Operating system command injection\n    analysis: |\n      The tools/insert-ldap.sh and tools/mod-ldap.sh scripts construct ldapadd/ldapmodify commands using unsanitized parameters provided as arguments. If an attacker can control these argument values, they could inject their own commands that would get executed by the shell. This could allow arbitrary command execution on the server. The argument values should be properly validated and escaped before including them in the ldap command strings.\n    cwe: CWE-78\n    function_names:\n    filenames:  \n      - tools/insert-ldap.sh\n      - tools/mod-ldap.sh\n    classification: very promising\n\n  - headline: Use of weak cryptographic algorithm  \n    analysis: |  \n      The phamm-useradd.pl script uses the crypt() function with the default DES algorithm to hash passwords. DES is a very weak algorithm that is prone to brute-force attacks. A stronger password hashing algorithm like bcrypt, scrypt or PBKDF2 should be used instead.\n    cwe: CWE-327\n    function_names:\n    filenames:\n      - tools/phamm-useradd.pl\n    classification: slightly promising\n```\n\nThe classification is based on how likely the vulnerability could be exploited to cause significant damage, and how clearly the vulnerability can be identified in the provided code snippets. Additional context around how the code is used would help further validate the findings. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-14T14:45:08.308642",
+      "usage": {
+        "prompt_tokens": 42929,
+        "completion_tokens": 884,
+        "cost": 0.710235
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cross-site scripting (XSS) vulnerability",
+      "analysis": "The checkAll() function in public/functions.js constructs HTML content using unsanitized values read from the DOM. If an attacker can control the \"post-checks\" form on the page, they could potentially inject malicious JavaScript that will get executed in the context of the web application. This could allow session hijacking, page defacement, etc. User input should be properly validated and encoded before including in HTML.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "checkAll"
+      ],
+      "filenames": [
+        "public/functions.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-20806": "2019-03-17T23:32:51"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

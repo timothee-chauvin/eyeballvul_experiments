@@ -1,0 +1,106 @@
+{
+  "commit": "3ee97b696ea079e9b0d666ce2165d5a86035bbb2",
+  "repo_url": "https://github.com/gopro/gpmf-parser",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "b47a92a43640d3bfabe5"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I found in the provided GPMF parser codebase:\n\n```yaml\nleads:\n  - headline: Buffer overflow in GPMF_ScaledData \n    analysis: |\n      The GPMF_ScaledData function does not adequately validate the size of the input buffer before copying data into it. If the buffersize parameter passed in is smaller than the amount of data being copied based on sample_offset, read_samples, and the size of outputType, a buffer overflow could occur. An attacker could potentially exploit this to corrupt memory or execute arbitrary code by passing in a specially-crafted GPMF payload.\n    cwe: CWE-120\n    function_names:\n      - GPMF_ScaledData\n    filenames: \n      - GPMF_parser.c\n    classification: very promising\n\n  - headline: Out-of-bounds read in GPMF_Next\n    analysis: | \n      The GPMF_Next function uses the nest_size array to determine the remaining size at the current nest level. However, the nest_level index used to access nest_size is not validated to be within bounds. If nest_level exceeds the size of the nest_size array (GPMF_NEST_LIMIT), an out-of-bounds read would occur. Attackers could potentially trigger this with a malformed GPMF structure containing excessive nesting.\n    cwe: CWE-125\n    function_names:\n      - GPMF_Next  \n    filenames:\n      - GPMF_parser.c\n    classification: slightly promising\n  \n  - headline: Divide-by-zero in GetGPMFSampleRate\n    analysis: |\n      In the GetGPMFSampleRate function, the sample rate is calculated by dividing by several variables like meta_clockdemon. However, there are no checks to ensure these divisors are not zero before performing the division. If meta_clockdemon or another divisor is zero, it will cause a divide-by-zero error which may crash the program.\n    cwe: CWE-369\n    function_names:\n      - GetGPMFSampleRate\n    filenames:\n      - GPMF_mp4reader.c  \n    classification: slightly promising\n\n  - headline: Unbounded recursion in GPMF_Next\n    analysis: |\n      The GPMF_Next function is recursive and will call itself when a nested GPMF structure is encountered (type is GPMF_TYPE_NEST) and the recursion flag is set. However, there is no explicit limit on the depth of this recursion. Maliciously crafted input with deeply nested structures could potentially cause a stack overflow.\n    cwe: CWE-674\n    function_names:\n      - GPMF_Next\n    filenames:\n      - GPMF_parser.c\n    classification: not promising  \n```\n\nThe buffer overflow and out-of-bounds read issues seem the most concerning as they could potentially allow corruption of memory or arbitrary code execution in the right circumstances. The divide-by-zero and unbounded recursion are lower severity in comparison. Let me know if you need any clarification or have additional questions!",
+      "date": "2024-06-14T13:39:15.013296",
+      "usage": {
+        "prompt_tokens": 36794,
+        "completion_tokens": 754,
+        "cost": 0.60846
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Buffer overflow in GPMF_ScaledData",
+      "analysis": "The GPMF_ScaledData function does not adequately validate the size of the input buffer before copying data into it. If the buffersize parameter passed in is smaller than the amount of data being copied based on sample_offset, read_samples, and the size of outputType, a buffer overflow could occur. An attacker could potentially exploit this to corrupt memory or execute arbitrary code by passing in a specially-crafted GPMF payload.\n",
+      "classification": "very promising",
+      "cwe": "CWE-120",
+      "function_names": [
+        "GPMF_ScaledData"
+      ],
+      "filenames": [
+        "GPMF_parser.c"
+      ]
+    },
+    {
+      "headline": "Out-of-bounds read in GPMF_Next",
+      "analysis": "The GPMF_Next function uses the nest_size array to determine the remaining size at the current nest level. However, the nest_level index used to access nest_size is not validated to be within bounds. If nest_level exceeds the size of the nest_size array (GPMF_NEST_LIMIT), an out-of-bounds read would occur. Attackers could potentially trigger this with a malformed GPMF structure containing excessive nesting.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-125",
+      "function_names": [
+        "GPMF_Next"
+      ],
+      "filenames": [
+        "GPMF_parser.c"
+      ]
+    },
+    {
+      "headline": "Divide-by-zero in GetGPMFSampleRate",
+      "analysis": "In the GetGPMFSampleRate function, the sample rate is calculated by dividing by several variables like meta_clockdemon. However, there are no checks to ensure these divisors are not zero before performing the division. If meta_clockdemon or another divisor is zero, it will cause a divide-by-zero error which may crash the program.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-369",
+      "function_names": [
+        "GetGPMFSampleRate"
+      ],
+      "filenames": [
+        "GPMF_mp4reader.c"
+      ]
+    },
+    {
+      "headline": "Unbounded recursion in GPMF_Next",
+      "analysis": "The GPMF_Next function is recursive and will call itself when a nested GPMF structure is encountered (type is GPMF_TYPE_NEST) and the recursion flag is set. However, there is no explicit limit on the depth of this recursion. Maliciously crafted input with deeply nested structures could potentially cause a stack overflow.\n",
+      "classification": "not promising",
+      "cwe": "CWE-674",
+      "function_names": [
+        "GPMF_Next"
+      ],
+      "filenames": [
+        "GPMF_parser.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 17,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2020-16159"
+      },
+      "vuln_dates": {
+        "CVE-2020-16161": "2020-10-19T18:15:12",
+        "CVE-2020-16160": "2020-10-19T18:15:12",
+        "CVE-2020-16159": "2020-10-19T18:15:12",
+        "CVE-2020-16158": "2020-10-19T18:15:12",
+        "CVE-2019-20086": "2019-12-30T04:15:10",
+        "CVE-2019-20089": "2019-12-30T04:15:10",
+        "CVE-2019-20088": "2019-12-30T04:15:10",
+        "CVE-2019-20087": "2019-12-30T04:15:10",
+        "CVE-2019-15146": "2019-08-18T19:15:10",
+        "CVE-2019-15147": "2019-08-18T19:15:10",
+        "CVE-2019-15148": "2019-08-18T19:15:10",
+        "CVE-2018-18699": "2018-10-29T12:29:04",
+        "CVE-2018-18190": "2018-10-09T20:29:00",
+        "CVE-2018-13026": "2018-06-30T12:29:00",
+        "CVE-2018-13008": "2018-06-29T14:29:00",
+        "CVE-2018-13007": "2018-06-29T14:29:00",
+        "CVE-2018-13009": "2018-06-29T14:29:00",
+        "CVE-2018-13011": "2018-06-29T15:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,90 @@
+{
+  "commit": "4087c69b4517ba77df4e4bc119b29be6815c101c",
+  "repo_url": "https://github.com/jenkinsci/shelve-project-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "1df1db18e1aa95f5d4d7"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Unshelving a project without checking permissions\n    analysis: |\n      The `UnshelveProjectExecutable` class does not perform any permission checks before unzipping the shelved project archive and reloading the Jenkins configuration. This could allow an attacker with limited permissions to unshelve a project they should not have access to.\n\n      To exploit this, the attacker would need to be able to schedule an `UnshelveProjectTask` with a `shelvedProjectArchiveName` of their choosing. It's unclear from the provided code whether this is possible for an unprivileged user.\n\n      If exploitable, this would allow the attacker to unshelve and potentially modify or execute any job, including jobs they would not normally have access to configure or run.\n    cwe: CWE-862\n    function_names:\n      - UnshelveProjectExecutable.run\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java\n    classification: very promising\n\n  - headline: Deleting a project without checking permissions\n    analysis: |\n      Similar to the unshelving vulnerability, the `DeleteProjectExecutable` class does not perform any permission checks before deleting the shelved project archive. An attacker with limited permissions may be able to delete a shelved project they should not have access to.\n\n      Exploiting this would require the attacker to be able to schedule a `DeleteProjectTask` with an arbitrary `shelvedProjectArchiveName`. The impact would be the ability to delete any shelved project, even ones the attacker's user would not normally have permission to delete.\n    cwe: CWE-862\n    function_names:\n      - DeleteProjectExecutable.run\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java  \n    classification: very promising\n\n  - headline: Creation of shelved project archive in predictable location\n    analysis: |\n      When shelving a project, the generated archive ZIP file is placed in a predictable location based on the project name and timestamp (e.g. `PROJECT_NAME-TIMESTAMP.zip`). \n\n      While this does not pose an immediate risk, it could potentially allow an attacker to unshelve a project they have previously shelved, even if the UI does not list that project. An attacker familiar with the shelved project archive naming scheme could craft a request to unshelve one of their previously shelved projects.\n\n      This could be remediated by including a random, unpredictable component in the generated archive filename.\n    cwe: CWE-200\n    function_names:\n      - ShelveProjectExecutable.createOutputStream\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelveProjectExecutable.java\n    classification: slightly promising\n\n  - headline: Lack of access control for listing shelved projects  \n    analysis: | \n      The `ShelvedProjectsAction.getShelvedProjects` method only performs a general permissions check using `Hudson.getInstance().checkPermission(Permission.CREATE)`. This check verifies that the current user has permission to create new jobs in Jenkins.\n\n      However, it does not check that the user has specific permission to view the list of shelved projects. A lower-privileged user who has job creation permission would be able to see all shelved projects, even ones they would not have permission to view or configure normally.\n\n      A more granular permission check should be implemented, ensuring the user has permission to view each specific shelved project before including it in the list.\n    cwe: CWE-285 \n    function_names:\n      - ShelvedProjectsAction.getShelvedProjects\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelvedProjectsAction.java\n    classification: slightly promising\n```",
+      "date": "2024-06-14T14:25:26.572319",
+      "usage": {
+        "prompt_tokens": 15928,
+        "completion_tokens": 918,
+        "cost": 0.30777
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unshelving a project without checking permissions",
+      "analysis": "The UnshelveProjectExecutable class does not perform any permission checks before unzipping the shelved project archive and reloading the Jenkins configuration. This could allow an attacker with limited permissions to unshelve a project they should not have access to.\n\nTo exploit this, the attacker would need to be able to schedule an UnshelveProjectTask with a shelvedProjectArchiveName of their choosing. It's unclear from the provided code whether this is possible for an unprivileged user.\n\nIf exploitable, this would allow the attacker to unshelve and potentially modify or execute any job, including jobs they would not normally have access to configure or run.\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "UnshelveProjectExecutable.run"
+      ],
+      "filenames": [
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java"
+      ]
+    },
+    {
+      "headline": "Deleting a project without checking permissions",
+      "analysis": "Similar to the unshelving vulnerability, the DeleteProjectExecutable class does not perform any permission checks before deleting the shelved project archive. An attacker with limited permissions may be able to delete a shelved project they should not have access to.\n\nExploiting this would require the attacker to be able to schedule a DeleteProjectTask with an arbitrary shelvedProjectArchiveName. The impact would be the ability to delete any shelved project, even ones the attacker's user would not normally have permission to delete.\n",
+      "classification": "very promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "DeleteProjectExecutable.run"
+      ],
+      "filenames": [
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java"
+      ]
+    },
+    {
+      "headline": "Creation of shelved project archive in predictable location",
+      "analysis": "When shelving a project, the generated archive ZIP file is placed in a predictable location based on the project name and timestamp (e.g. PROJECT_NAME-TIMESTAMP.zip). \n\nWhile this does not pose an immediate risk, it could potentially allow an attacker to unshelve a project they have previously shelved, even if the UI does not list that project. An attacker familiar with the shelved project archive naming scheme could craft a request to unshelve one of their previously shelved projects.\n\nThis could be remediated by including a random, unpredictable component in the generated archive filename.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "ShelveProjectExecutable.createOutputStream"
+      ],
+      "filenames": [
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelveProjectExecutable.java"
+      ]
+    },
+    {
+      "headline": "Lack of access control for listing shelved projects",
+      "analysis": "The ShelvedProjectsAction.getShelvedProjects method only performs a general permissions check using Hudson.getInstance().checkPermission(Permission.CREATE). This check verifies that the current user has permission to create new jobs in Jenkins.\n\nHowever, it does not check that the user has specific permission to view the list of shelved projects. A lower-privileged user who has job creation permission would be able to see all shelved projects, even ones they would not have permission to view or configure normally.\n\nA more granular permission check should be implemented, ensuring the user has permission to view each specific shelved project before including it in the list.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-285",
+      "function_names": [
+        "ShelvedProjectsAction.getShelvedProjects"
+      ],
+      "filenames": [
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelvedProjectsAction.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2020-2321"
+      },
+      "vuln_dates": {
+        "CVE-2020-2321": "2020-12-03T16:15:12",
+        "CVE-2018-1999029": "2018-08-01T13:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

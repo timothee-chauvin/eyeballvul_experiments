@@ -1,0 +1,121 @@
+{
+  "commit": "4ba683efafd357463b76e654746a5836ab73bf7e",
+  "repo_url": "https://github.com/kotti/kotti",
+  "model": "gpt-4o-2024-05-13",
+  "chunk_hashes": [
+    "235ee10720186e55ecf5",
+    "7d21b372fab562b6a410"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Potential Command Injection Vulnerability in `i18n.sh` Script\"\n    analysis: |\n      The `i18n.sh` script constructs and executes shell commands using user-provided input without proper sanitization. This occurs specifically in the lines where the `LANG` variable is used to create directories and initialize message files:\n          ```\n          cd \"$LOCALES_PATH\"\n          mkdir -p $1/LC_MESSAGES\n          msginit -i $DOMAIN.pot -o $1/LC_MESSAGES/$DOMAIN.po -l $1\n          ```\n      Here, the value of `$1` (the language identifier) can be controlled by an attacker, potentially allowing command injection.\n    cwe: CWE-78\n    function_names: []\n    filenames:\n      - i18n.sh\n    classification: very promising\n    \n  - headline: \"Weak Credential Storage in setup.py\"\n    analysis: |\n      The `setup.py` script statically defines the `author_email` variable with a plain text email. While not necessarily a security risk by itself, such practice can lead to unintentional exposure if the script is included in public repositories. This can be leveraged by attackers for social engineering or spear-phishing attacks.\n    cwe: CWE-312\n    function_names: []\n    filenames:\n      - setup.py\n    classification: slightly promising\n\n  - headline: \"Potential Buffer Overflow in File Upload Handling\"\n    analysis: |\n      In `filedepot.py`, the `_save_data` method does not appear to enforce size restrictions on uploaded files beyond what's required by the FieldStorage object. This less stringent check could open the way for attackers to attempt buffer overflow attacks by uploading overly large file sizes.\n    cwe: CWE-120\n    function_names:\n      - _save_data\n    filenames:\n      - kotti/filedepot.py\n      - kotti/resources.py\n    classification: very promising\n\n  - headline: \"Insecure Field Storage in `FileUploadTempStore`\"\n    analysis: |\n      The class `FileUploadTempStore` in `form.py` stores file uploads in the session without encryption. The use of Binary/BLOB content in the session risks exposure and tampering if the session data is intercepted by unauthorized entities.\n    cwe: CWE-311\n    function_names:\n      - __getitem__\n      - __setitem__\n    filenames:\n      - kotti/views/form.py\n    classification: very promising\n\n  - headline: \"Cross-Site Scripting (XSS) in `send_email` Function\"\n    analysis: |\n      The `send_email` function uses template rendering to send emails with user-controllable input without proper sanitization, which can lead to stored XSS attacks. This is a risk particularly in emails rendered with the `email_set_password` function since injecting malicious HTML content can exploit email clients that process the contents unsafely.\n    cwe: CWE-79\n    function_names:\n      - send_email\n      - email_set_password\n      - make_token\n    filenames:\n      - kotti/message.py\n    classification: very promising\n\n  - headline: \"Potential SQL Injection in Principal Search\"\n    analysis: |\n      The `search` method in `security.py` constructs queries using user-controlled input without sufficient sanitization, potentially leading to SQL injection. The use of raw SQL wildcard patterns with user input (`*`) can be particularly risky.\n    cwe: CWE-89\n    function_names:\n      - search\n    filenames:\n      - kotti/security.py\n    classification: very promising\n\n  - headline: \"Exposure of Sensitive Information in Error Messages of `initialize_sql`\"\n    analysis: |\n      The `initialize_sql` function in `resources.py` and the `_setup_listeners` in `sanitizers.py` contains debug output that can expose sensitive information when configuration errors arise. These exposure points can be exploited to gain insight into the system configuration and sensitive setup parameters.\n    cwe: CWE-209\n    function_names:\n      - initialize_sql\n      - _setup_listeners\n    filenames:\n      - kotti/resources.py\n      - kotti/sanitizers.py\n    classification: slightly promising\n\n  - headline: \"Command Injection via `kotti-migrate-storage`\"\n    analysis: |\n      The `kotti-migrate-storage` command in `migrate.py` utilizes user input to perform storage migration. The lack of sanitization exposes this functionality to injection attacks where an attacker can inject malicious commands.\n    cwe: CWE-78\n    function_names:\n      - migrate_storage\n    filenames:\n      - kotti/filedepot.py\n      - kotti/migrate.py\n    classification: very promising\n```",
+      "date": "2024-06-14T14:34:57.313353",
+      "usage": {
+        "prompt_tokens": 125807,
+        "completion_tokens": 970,
+        "cost": 0.643585
+      }
+    },
+    {
+      "content": "```yaml\nleads:\n  - headline: \"Use of insecure session storage\"\n    analysis: |\n      The `kotti` library uses session storage for various actions, including maintaining state for selected children and paste operations. This presents a security vulnerability if sensitive data is stored in these sessions. Additionally, using sessions without proper validation and expiration control can lead to session fixation attacks where an attacker could access another user's session.\n    cwe: CWE-384\n    function_names:\n      - \"_selected_children\"\n      - \"paste_nodes\"\n    filenames:\n      - \"kotti/views/edit/actions.py\"\n      - \"kotti/static/upload.js\"\n    classification: very promising\n\n  - headline: \"SQL Injection in query composition\"\n    analysis: |\n      The code uses raw SQL queries (e.g. `DBSession.query(Node).get(id)`). If the `id` parameter is controlled by the user, it could lead to SQL Injection attacks, where an attacker could execute arbitrary SQL commands.\n    cwe: CWE-89\n    function_names:\n      - \"_do_copy_or_cut\"\n      - \"paste_nodes\"\n      - \"delete_nodes\"\n    filenames:\n      - \"kotti/views/edit/actions.py\"\n    classification: very promising\n\n  - headline: \"Improper redirect handling in views\"\n    analysis: |\n      The `back` function and other view functions return a redirect response based on the request's referrer without proper validation. This can be exploited for unauthorized redirections or open redirect attacks.\n    cwe: CWE-601\n    function_names:\n      - \"back\"\n      - \"workflow_change\"\n      - \"copy_node\"\n    filenames:\n      - \"kotti/views/edit/actions.py\"\n    classification: slightly promising\n   \n  - headline: \"Cross-Site Request Forgery (CSRF)\"\n    analysis: |\n      The code lacks CSRF protection mechanisms for sensitive state-changing requests, such as copy, cut, paste, rename, and delete operations. This allows an attacker to perform actions on behalf of authenticated users without their consent.\n    cwe: CWE-352\n    function_names:\n      - \"paste_nodes\"\n      - \"rename_node\"\n      - \"delete_node\"\n    filenames:\n      - \"kotti/views/edit/actions.py\"\n    classification: very promising\n  \n  - headline: \"Improper input validation\"\n    analysis: |\n      The input from users (especially in rename and node deletion operations) isn't properly validated or sanitized. This can lead to issues like injection attacks and improper resource handling. Specifically, the `name` and `title` fields should be validated to ensure they don\u2019t contain any harmful input.\n    cwe: CWE-20\n    function_names:\n      - \"rename_node\"\n      - \"rename_nodes\"\n      - \"delete_node\"\n    filenames:\n      - \"kotti/views/edit/actions.py\"\n    classification: very promising\n```",
+      "date": "2024-06-14T14:35:11.571194",
+      "usage": {
+        "prompt_tokens": 14825,
+        "completion_tokens": 587,
+        "cost": 0.08293
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of insecure session storage",
+      "analysis": "The kotti library uses session storage for various actions, including maintaining state for selected children and paste operations. This presents a security vulnerability if sensitive data is stored in these sessions. Additionally, using sessions without proper validation and expiration control can lead to session fixation attacks where an attacker could access another user's session.\n",
+      "classification": "very promising",
+      "cwe": "CWE-384",
+      "function_names": [
+        "_selected_children",
+        "paste_nodes"
+      ],
+      "filenames": [
+        "kotti/views/edit/actions.py",
+        "kotti/static/upload.js"
+      ]
+    },
+    {
+      "headline": "SQL Injection in query composition",
+      "analysis": "The code uses raw SQL queries (e.g. DBSession.query(Node).get(id)). If the id parameter is controlled by the user, it could lead to SQL Injection attacks, where an attacker could execute arbitrary SQL commands.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "_do_copy_or_cut",
+        "paste_nodes",
+        "delete_nodes"
+      ],
+      "filenames": [
+        "kotti/views/edit/actions.py"
+      ]
+    },
+    {
+      "headline": "Improper redirect handling in views",
+      "analysis": "The back function and other view functions return a redirect response based on the request's referrer without proper validation. This can be exploited for unauthorized redirections or open redirect attacks.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-601",
+      "function_names": [
+        "back",
+        "workflow_change",
+        "copy_node"
+      ],
+      "filenames": [
+        "kotti/views/edit/actions.py"
+      ]
+    },
+    {
+      "headline": "Cross-Site Request Forgery (CSRF)",
+      "analysis": "The code lacks CSRF protection mechanisms for sensitive state-changing requests, such as copy, cut, paste, rename, and delete operations. This allows an attacker to perform actions on behalf of authenticated users without their consent.\n",
+      "classification": "very promising",
+      "cwe": "CWE-352",
+      "function_names": [
+        "paste_nodes",
+        "rename_node",
+        "delete_node"
+      ],
+      "filenames": [
+        "kotti/views/edit/actions.py"
+      ]
+    },
+    {
+      "headline": "Improper input validation",
+      "analysis": "The input from users (especially in rename and node deletion operations) isn't properly validated or sanitized. This can lead to issues like injection attacks and improper resource handling. Specifically, the name and title fields should be validated to ensure they don\u2019t contain any harmful input.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "rename_node",
+        "rename_nodes",
+        "delete_node"
+      ],
+      "filenames": [
+        "kotti/views/edit/actions.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 3
+      },
+      "mapping": {
+        "2": "CVE-2018-9856"
+      },
+      "vuln_dates": {
+        "CVE-2018-9856": "2018-04-09T07:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

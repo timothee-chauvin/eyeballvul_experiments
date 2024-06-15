@@ -1,0 +1,84 @@
+{
+  "commit": "37c475384ade8e1be4d8acdba126ac0359dd0561",
+  "repo_url": "https://github.com/sfackler/rust-openssl",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "6b22c1d25ebc2f6de23d"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cleartext Storage of Sensitive Information in build_docs.sh\n    analysis: |\n      The build_docs.sh script passes sensitive information like feature names as command line arguments to the cargo command. Command line arguments are often logged or can be viewed by other processes running on the same system, so this is insecure storage of potentially sensitive information. The script should be refactored to pass sensitive data via environment variables or config files instead of command line arguments.\n    cwe: CWE-312\n    function_names: []\n    filenames:\n      - build_docs.sh\n    classification: slightly promising\n\n  - headline: Use of Weak Digest Algorithm SHA-1 in openssl/test/build.sh \n    analysis: |\n      The build.sh script compares the SHA-1 hash of a downloaded file to a hardcoded expected hash value. However, SHA-1 is a weak hashing algorithm that is vulnerable to collision attacks. The script should be updated to use a stronger hashing function like SHA-256 or SHA-3 instead of SHA-1.\n    cwe: CWE-327\n    function_names: []\n    filenames:\n      - openssl/test/build.sh\n    classification: slightly promising\n    \n  - headline: Potential Path Traversal and Uncontrolled Search Path in openssl/test/build.sh\n    analysis: |\n      The build.sh script unsafely extracts a tar archive using \"tar --strip-components=1 -xzf $OUT\". If an attacker can control the contents of the $OUT archive, they could potentially include filenames containing \"..\" to overwrite files outside the extraction directory via a path traversal attack. \n      \n      Additionally, $OUT itself comes from unsanitized user input via the $OPENSSL environment variable concatenated to \"/tmp/$OPENSSL\". This is an uncontrolled search path issue, as an attacker controlling $OPENSSL could potentially cause the script to download and execute an arbitrary file.\n\n      To mitigate these issues, $OPENSSL should be validated to ensure it only contains expected characters (no \"/\" or \"..\" etc). The extracted files from the tar archive should also be carefully validated.\n    cwe: CWE-22\n    function_names: []\n    filenames:\n      - openssl/test/build.sh \n    classification: very promising\n\n  - headline: Improper Handling of Missing Certificate Revocation Lists in openssl/src/c_helpers.c\n    analysis: |\n      The c_helpers.c file contains various utility functions for working with OpenSSL certificates and extensions. However, it does not appear to have any handling for certificate revocation lists (CRLs) or online certificate status protocol (OCSP).\n\n      X.509 certificates alone do not provide a complete solution for determining if a certificate is still valid and hasn't been revoked. CRLs and OCSP provide a way to check if a certificate has been revoked by the issuing certificate authority. \n\n      Without checking CRLs or OCSP responses, an attacker could potentially use a revoked certificate to impersonate a server or client in a mutually authenticated TLS session. The OpenSSL wrapper code should be expanded to expose OpenSSL's CRL and OCSP APIs.\n    cwe: CWE-299 \n    function_names:\n      - rust_0_8_X509_get_extensions\n      - rust_0_8_X509_get_notAfter\n      - rust_0_8_X509_get_notBefore  \n    filenames:\n      - openssl/src/c_helpers.c\n    classification: slightly promising\n```",
+      "date": "2024-06-14T15:33:40.153787",
+      "usage": {
+        "prompt_tokens": 4942,
+        "completion_tokens": 850,
+        "cost": 0.13788
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cleartext Storage of Sensitive Information in build_docs.sh",
+      "analysis": "The build_docs.sh script passes sensitive information like feature names as command line arguments to the cargo command. Command line arguments are often logged or can be viewed by other processes running on the same system, so this is insecure storage of potentially sensitive information. The script should be refactored to pass sensitive data via environment variables or config files instead of command line arguments.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-312",
+      "function_names": [],
+      "filenames": [
+        "build_docs.sh"
+      ]
+    },
+    {
+      "headline": "Use of Weak Digest Algorithm SHA-1 in openssl/test/build.sh",
+      "analysis": "The build.sh script compares the SHA-1 hash of a downloaded file to a hardcoded expected hash value. However, SHA-1 is a weak hashing algorithm that is vulnerable to collision attacks. The script should be updated to use a stronger hashing function like SHA-256 or SHA-3 instead of SHA-1.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-327",
+      "function_names": [],
+      "filenames": [
+        "openssl/test/build.sh"
+      ]
+    },
+    {
+      "headline": "Potential Path Traversal and Uncontrolled Search Path in openssl/test/build.sh",
+      "analysis": "The build.sh script unsafely extracts a tar archive using \"tar --strip-components=1 -xzf $OUT\". If an attacker can control the contents of the $OUT archive, they could potentially include filenames containing \"..\" to overwrite files outside the extraction directory via a path traversal attack. \n\nAdditionally, $OUT itself comes from unsanitized user input via the $OPENSSL environment variable concatenated to \"/tmp/$OPENSSL\". This is an uncontrolled search path issue, as an attacker controlling $OPENSSL could potentially cause the script to download and execute an arbitrary file.\n\nTo mitigate these issues, $OPENSSL should be validated to ensure it only contains expected characters (no \"/\" or \"..\" etc). The extracted files from the tar archive should also be carefully validated.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [],
+      "filenames": [
+        "openssl/test/build.sh"
+      ]
+    },
+    {
+      "headline": "Improper Handling of Missing Certificate Revocation Lists in openssl/src/c_helpers.c",
+      "analysis": "The c_helpers.c file contains various utility functions for working with OpenSSL certificates and extensions. However, it does not appear to have any handling for certificate revocation lists (CRLs) or online certificate status protocol (OCSP).\n\nX.509 certificates alone do not provide a complete solution for determining if a certificate is still valid and hasn't been revoked. CRLs and OCSP provide a way to check if a certificate has been revoked by the issuing certificate authority. \n\nWithout checking CRLs or OCSP responses, an attacker could potentially use a revoked certificate to impersonate a server or client in a mutually authenticated TLS session. The OpenSSL wrapper code should be expanded to expose OpenSSL's CRL and OCSP APIs.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-299",
+      "function_names": [
+        "rust_0_8_X509_get_extensions",
+        "rust_0_8_X509_get_notAfter",
+        "rust_0_8_X509_get_notBefore"
+      ],
+      "filenames": [
+        "openssl/src/c_helpers.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2016-10931": "2019-08-26T12:15:11",
+        "CVE-2018-20997": "2019-08-26T18:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,80 @@
+{
+  "commit": "3016df0730fb7daa85d73e29ec9d02851db831ae",
+  "repo_url": "https://github.com/ziparchive/ziparchive",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "e82f9ac4082d31e649d4"
+  ],
+  "responses": [
+    {
+      "content": "Here are the potential security vulnerabilities I could identify in the provided codebase:\n\n```yaml\nleads:\n  - headline: Potential Zip Slip vulnerability via unsanitized paths\n    analysis: |\n      The mz_zip_reader_entry_open() and mz_zip_reader_entry_save*() functions take unsanitized \n      paths from the zip entries. If the zip contains files with maliciously crafted paths \n      containing \"..\" sequences, it could allow writing or reading of files outside the \n      intended directory when extracting the zip. There doesn't appear to be any path \n      sanitization to prevent this zip slip issue.\n    cwe: CWE-22\n    function_names:\n      - mz_zip_reader_entry_open\n      - mz_zip_reader_entry_save_file\n    filenames:\n      - SSZipArchive/minizip/mz_zip.c\n    classification: very promising\n\n  - headline: Symlink following when extracting zip archives\n    analysis: |  \n      The mz_zip_reader_add_path() function appears to allow following symlinks when \n      adding files/directories recursively from a zip archive, if the follow_links option\n      is enabled. This could allow an attacker to craft a malicious zip that uses symlinks \n      to access unintended files outside the target directory when extracting.\n    cwe: CWE-61 \n    function_names:\n      - mz_zip_reader_add_path\n    filenames:  \n      - SSZipArchive/minizip/mz_zip_rw.c\n    classification: slightly promising\n\n  - headline: No file path validation when writing to zip  \n    analysis: |\n      The mz_zip_writer_add_file() and mz_zip_writer_add_path() functions allow writing   \n      arbitrary file paths to the created zip archive without any validation. An attacker \n      could potentially craft malicious paths containing \"..\" characters to create a zip\n      that exports files outside the intended directory when extracted.\n    cwe: CWE-22\n    function_names:\n      - mz_zip_writer_add_file\n      - mz_zip_writer_add_path  \n    filenames:\n      - SSZipArchive/minizip/mz_zip_rw.c\n    classification: slightly promising\n```\n\nThe most concerning issue is the potential zip slip vulnerability when extracting files from untrusted zip archives, due to lack of path sanitization. The other issues involve following symlinks or allowing unsafe paths when creating zips, which are lower risk.\n\nI would recommend:\n1) Sanitizing and validating all paths read from zip archives before opening or writing any files based on them\n2) Optionally, disabling symlink following when extracting zips \n3) Validating and sanitizing paths provided by users when creating new zip archives\n\nLet me know if you have any other questions!",
+      "date": "2024-06-14T11:08:15.703135",
+      "usage": {
+        "prompt_tokens": 158188,
+        "completion_tokens": 687,
+        "cost": 2.424345
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential Zip Slip vulnerability via unsanitized paths",
+      "analysis": "The mz_zip_reader_entry_open() and mz_zip_reader_entry_save*() functions take unsanitized \npaths from the zip entries. If the zip contains files with maliciously crafted paths \ncontaining \"..\" sequences, it could allow writing or reading of files outside the \nintended directory when extracting the zip. There doesn't appear to be any path \nsanitization to prevent this zip slip issue.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "mz_zip_reader_entry_open",
+        "mz_zip_reader_entry_save_file"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_zip.c"
+      ]
+    },
+    {
+      "headline": "Symlink following when extracting zip archives",
+      "analysis": "The mz_zip_reader_add_path() function appears to allow following symlinks when \nadding files/directories recursively from a zip archive, if the follow_links option\nis enabled. This could allow an attacker to craft a malicious zip that uses symlinks \nto access unintended files outside the target directory when extracting.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-61",
+      "function_names": [
+        "mz_zip_reader_add_path"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_zip_rw.c"
+      ]
+    },
+    {
+      "headline": "No file path validation when writing to zip",
+      "analysis": "The mz_zip_writer_add_file() and mz_zip_writer_add_path() functions allow writing   \narbitrary file paths to the created zip archive without any validation. An attacker \ncould potentially craft malicious paths containing \"..\" characters to create a zip\nthat exports files outside the intended directory when extracted.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "mz_zip_writer_add_file",
+        "mz_zip_writer_add_path"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_zip_rw.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2022-36943"
+      },
+      "vuln_dates": {
+        "CVE-2023-39136": "2023-08-30T22:15:08",
+        "CVE-2022-36943": "2023-01-03T21:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,75 @@
+{
+  "commit": "37407f03703976f97e0a1235a157885344f70377",
+  "repo_url": "https://github.com/auth0/angular-jwt",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "ce47a58d8016f14391e8"
+  ],
+  "responses": [
+    {
+      "content": "Here is the YAML output with security vulnerabilities identified in the provided codebase:\n\n```yaml\nleads:\n  - headline: Insecure token storage\n    analysis: |\n      The angularJwt library stores JWT tokens insecurely by default. The tokenGetter config\n      option allows specifying a custom function to retrieve the token, but the default is to\n      return null which provides no security. Tokens should be stored securely on the client side,\n      such as in secure cookies with the httpOnly and secure flags set.\n    cwe: CWE-922\n    function_names:\n      - jwtOptions.JwtOptions\n    filenames:\n      - src/angularJwt/services/jwtOptions.js\n    classification: very promising\n\n  - headline: Missing token expiration checks\n    analysis: |  \n      The authManager service has an isAuthenticated() method that checks if the current\n      token is unexpired. However, this is not checked in most other places in the code that\n      use the token, such as the jwtInterceptor which attaches the token to outgoing HTTP \n      requests. This could allow tokens to still be sent and accepted by the server even when\n      expired on the client. All code that uses the token should consistently check the \n      exp claim and treat the token as invalid if expired.\n    cwe: CWE-613\n    function_names:\n      - jwtInterceptor.request\n    filenames:\n      - src/angularJwt/services/interceptor.js\n    classification: very promising\n\n  - headline: Open redirect in unauthenticated flow\n    analysis: |\n      The default config for angularJwt has an unauthenticatedRedirector function that \n      redirects the user to the unauthenticatedRedirectPath using $location.path(). However,\n      this path is not validated and could allow an open redirect if an attacker can control \n      the unauthenticatedRedirectPath value. The target redirect path should be validated to \n      ensure it is a relative path or whitelist of allowed URLs.\n    cwe: CWE-601\n    function_names:\n      - JwtOptions.unauthenticatedRedirector\n    filenames:\n      - src/angularJwt/services/jwtOptions.js\n    classification: slightly promising\n\n```",
+      "date": "2024-06-14T12:52:55.891664",
+      "usage": {
+        "prompt_tokens": 16337,
+        "completion_tokens": 547,
+        "cost": 0.28608
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insecure token storage",
+      "analysis": "The angularJwt library stores JWT tokens insecurely by default. The tokenGetter config\noption allows specifying a custom function to retrieve the token, but the default is to\nreturn null which provides no security. Tokens should be stored securely on the client side,\nsuch as in secure cookies with the httpOnly and secure flags set.\n",
+      "classification": "very promising",
+      "cwe": "CWE-922",
+      "function_names": [
+        "jwtOptions.JwtOptions"
+      ],
+      "filenames": [
+        "src/angularJwt/services/jwtOptions.js"
+      ]
+    },
+    {
+      "headline": "Missing token expiration checks",
+      "analysis": "The authManager service has an isAuthenticated() method that checks if the current\ntoken is unexpired. However, this is not checked in most other places in the code that\nuse the token, such as the jwtInterceptor which attaches the token to outgoing HTTP \nrequests. This could allow tokens to still be sent and accepted by the server even when\nexpired on the client. All code that uses the token should consistently check the \nexp claim and treat the token as invalid if expired.\n",
+      "classification": "very promising",
+      "cwe": "CWE-613",
+      "function_names": [
+        "jwtInterceptor.request"
+      ],
+      "filenames": [
+        "src/angularJwt/services/interceptor.js"
+      ]
+    },
+    {
+      "headline": "Open redirect in unauthenticated flow",
+      "analysis": "The default config for angularJwt has an unauthenticatedRedirector function that \nredirects the user to the unauthenticatedRedirectPath using $location.path(). However,\nthis path is not validated and could allow an open redirect if an attacker can control \nthe unauthenticatedRedirectPath value. The target redirect path should be validated to \nensure it is a relative path or whitelist of allowed URLs.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-601",
+      "function_names": [
+        "JwtOptions.unauthenticatedRedirector"
+      ],
+      "filenames": [
+        "src/angularJwt/services/jwtOptions.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-11537": "2018-06-19T19:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

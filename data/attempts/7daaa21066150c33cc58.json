@@ -1,0 +1,68 @@
+{
+  "commit": "4087c69b4517ba77df4e4bc119b29be6815c101c",
+  "repo_url": "https://github.com/jenkinsci/shelve-project-plugin",
+  "model": "claude-3-sonnet-20240229",
+  "chunk_hashes": [
+    "1df1db18e1aa95f5d4d7"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper sanitization of user-supplied data\n    analysis: |\n      The plugin allows shelving and unshelving of Jenkins projects based on user input (file names). However, it does not properly sanitize or validate this input, leading to potential path traversal vulnerabilities.\n\n      In the `UnshelveProjectExecutable.getArchiveFile` and `DeleteProjectExecutable.getArchiveFile` methods, the user-supplied file name is used to retrieve a file object without proper validation or sanitization. An attacker could potentially supply a crafted file name with directory traversal sequences (e.g., \"../\") to access or delete arbitrary files on the Jenkins server file system.\n\n      This issue could potentially lead to unauthorized access, data manipulation, or data loss, depending on the files that the attacker can reach through the path traversal vulnerability.\n    cwe: CWE-22\n    function_names:\n      - UnshelveProjectExecutable.getArchiveFile\n      - DeleteProjectExecutable.getArchiveFile\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java\n    classification: very promising\n\n  - headline: Use of untrusted data for code execution\n    analysis: |\n      The `ShelveProjectExecutable` class uses the project name from the user-supplied `AbstractProject` object to construct the path for the shelved project archive. While the project name itself may not be directly controlled by an attacker, it is still considered untrusted data.\n\n      If the project name contains any directory traversal sequences or other malicious data, it could potentially lead to code execution or other security vulnerabilities when constructing the path and creating the output stream for the shelved project archive.\n\n      Additionally, the `FileFilter` used in the `zip()` method accepts all files, which could potentially lead to the inclusion of sensitive data or other files that should not be part of the shelved project archive.\n    cwe: CWE-829\n    function_names:\n      - ShelveProjectExecutable.createOutputStream\n      - ShelveProjectExecutable.archiveProject\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelveProjectExecutable.java\n    classification: very promising\n\n  - headline: Missing authentication and authorization checks\n    analysis: |\n      The plugin does not perform proper authentication and authorization checks before allowing users to shelve, unshelve, or delete projects.\n\n      In the `ShelvedProjectsAction.doManageShelvedProject` method, the plugin relies solely on the permission checks performed by Jenkins core (`Hudson.getInstance().checkPermission(Permission.CREATE)` and `Hudson.getInstance().checkPermission(Permission.DELETE)`). However, these permission checks may not be sufficient or granular enough to ensure proper access control for the shelve, unshelve, and delete operations.\n\n      Additionally, the `ShelveProjectAction.doShelveProject` method only checks for the `Permission.DELETE` permission before allowing a user to shelve a project, which may not be the appropriate permission level for this operation.\n\n      Lack of proper authentication and authorization checks could lead to unauthorized users gaining the ability to shelve, unshelve, or delete projects, potentially leading to data loss or other security issues.\n    cwe: CWE-862\n    function_names:\n      - ShelvedProjectsAction.doManageShelvedProject\n      - ShelveProjectAction.doShelveProject\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelvedProjectsAction.java\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelveProjectAction.java\n    classification: very promising\n\nleads:\n  - headline: Lack of input validation\n    analysis: |\n      The plugin does not perform proper input validation for user-supplied data, such as project names and file names. This could potentially lead to various security vulnerabilities, including path traversal, code injection, and other types of injection attacks.\n\n      For example, in the `ShelveProjectExecutable.createOutputStream` method, the project name is used directly to construct the path for the shelved project archive without any validation or sanitization. An attacker could potentially supply a crafted project name with directory traversal sequences or other malicious data, leading to path traversal or other security issues.\n\n      Additionally, in the `UnshelveProjectExecutable.getArchiveFile` and `DeleteProjectExecutable.getArchiveFile` methods, the file name is used to retrieve a file object without proper validation or sanitization, potentially leading to path traversal vulnerabilities.\n\n      Lack of input validation could also lead to other security issues, such as denial of service attacks or unexpected behavior in the application.\n    cwe: CWE-20\n    function_names:\n      - ShelveProjectExecutable.createOutputStream\n      - UnshelveProjectExecutable.getArchiveFile\n      - DeleteProjectExecutable.getArchiveFile\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelveProjectExecutable.java\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java\n    classification: very promising\n\n  - headline: Potential race condition\n    analysis: |\n      The plugin uses a shared directory (`shelvedProjects`) to store and manage shelved project archives. Multiple concurrent requests or operations could potentially access or modify the same files in this directory, leading to race conditions or other concurrency issues.\n\n      For example, if multiple users attempt to unshelve or delete the same project archive concurrently, there could be race conditions leading to data corruption or other unexpected behavior.\n\n      Additionally, the plugin does not appear to implement any locking or synchronization mechanisms to prevent concurrent access or modifications to the shared `shelvedProjects` directory and its contents.\n\n      Race conditions and concurrency issues could potentially lead to data corruption, data loss, or other security vulnerabilities.\n    cwe: CWE-362\n    function_names: []\n    filenames:\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelvedProjectsAction.java\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java\n      - src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java\n    classification: slightly promising\n```",
+      "date": "2024-06-14T14:25:05.469233",
+      "usage": {
+        "prompt_tokens": 15928,
+        "completion_tokens": 1585,
+        "cost": 0.071559
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Lack of input validation",
+      "analysis": "The plugin does not perform proper input validation for user-supplied data, such as project names and file names. This could potentially lead to various security vulnerabilities, including path traversal, code injection, and other types of injection attacks.\n\nFor example, in the ShelveProjectExecutable.createOutputStream method, the project name is used directly to construct the path for the shelved project archive without any validation or sanitization. An attacker could potentially supply a crafted project name with directory traversal sequences or other malicious data, leading to path traversal or other security issues.\n\nAdditionally, in the UnshelveProjectExecutable.getArchiveFile and DeleteProjectExecutable.getArchiveFile methods, the file name is used to retrieve a file object without proper validation or sanitization, potentially leading to path traversal vulnerabilities.\n\nLack of input validation could also lead to other security issues, such as denial of service attacks or unexpected behavior in the application.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "ShelveProjectExecutable.createOutputStream",
+        "UnshelveProjectExecutable.getArchiveFile",
+        "DeleteProjectExecutable.getArchiveFile"
+      ],
+      "filenames": [
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelveProjectExecutable.java",
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java",
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java"
+      ]
+    },
+    {
+      "headline": "Potential race condition",
+      "analysis": "The plugin uses a shared directory (shelvedProjects) to store and manage shelved project archives. Multiple concurrent requests or operations could potentially access or modify the same files in this directory, leading to race conditions or other concurrency issues.\n\nFor example, if multiple users attempt to unshelve or delete the same project archive concurrently, there could be race conditions leading to data corruption or other unexpected behavior.\n\nAdditionally, the plugin does not appear to implement any locking or synchronization mechanisms to prevent concurrent access or modifications to the shared shelvedProjects directory and its contents.\n\nRace conditions and concurrency issues could potentially lead to data corruption, data loss, or other security vulnerabilities.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-362",
+      "function_names": [],
+      "filenames": [
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/ShelvedProjectsAction.java",
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/UnshelveProjectExecutable.java",
+        "src/main/java/org/jvnet/hudson/plugins/shelveproject/DeleteProjectExecutable.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-2321": "2020-12-03T16:15:12",
+        "CVE-2018-1999029": "2018-08-01T13:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

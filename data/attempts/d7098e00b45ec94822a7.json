@@ -1,0 +1,78 @@
+{
+  "commit": "3f49324c1feac191a7643e58c590745ae68a8ec7",
+  "repo_url": "https://github.com/dotnet/vscode-dotnet-runtime",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "808b4f28ce66766fe591"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper Input Validation in version input for acquire and acquireStatus commands\n    analysis: |\n      The extension registers 'dotnet-sdk.acquire' and 'dotnet-sdk.acquireStatus' commands that take a version input, but does not properly validate that the provided version is a valid semantic version string before passing it to the VersionResolver. Passing an invalid version string to VersionResolver's getFullSDKVersion method can cause an unhandled error.\n\n      To exploit this, an attacker could trigger the VS Code commands with a malformed version string, potentially causing a denial of service in the extension. A security researcher should attempt providing various malformed version strings to the commands and monitor for any crashes or unexpected behavior in the extension host process.\n    cwe: CWE-20   \n    function_names:\n      - activate\n    filenames:\n      - vscode-dotnet-sdk-extension/src/extension.ts\n    classification: slightly promising\n\n  - headline: Arbitrary File Write via malicious PATH environment variable\n    analysis: |\n      The extension appends the bin directory of installed .NET SDKs to the PATH environment variable of VS Code terminal processes. However, on Windows it does this by directly executing a reg.exe command to update the machine's PATH in the registry.\n\n      If an attacker is able to control the PATH environment variable when the extension runs, they may be able to cause the extension to write an arbitrary value to the registry PATH, which will be inherited by VS Code terminal processes. This could allow hijacking the PATH to execute malicious binaries.\n      \n      To develop a POC, a security researcher should investigate whether it's possible to pollute the extension's PATH environment variable on Windows, perhaps through VS Code settings, such that the extension will write an attacker-controlled value to the registry PATH when installing an SDK.\n    cwe: CWE-427\n    function_names:\n      - getWindowsPathCommand \n      - setPathEnvVar\n    filenames:\n      - vscode-dotnet-sdk-extension/src/extension.ts\n    classification: slightly promising\n\n  - headline: Command Injection via malicious executable path\n    analysis: |  \n      The extension allows configuring a custom install location for the .NET SDK via the 'dotnetSDKAcquisitionExtension.existingDotnetPath' settings. The value from this setting is directly passed to the child_process.execSync() function without any validation or sanitization.\n\n      If an attacker can control the value of this setting, they could potentially inject arbitrary commands that would be executed with the privileges of the VS Code process. For example, setting the path to 'c:\\dotnet.exe & calc.exe' would execute calc.exe.\n\n      To develop a POC, a security researcher should attempt setting the 'existingDotnetPath' to various command injection payloads and see if they can achieve arbitrary command execution when the extension tries to use the configured path.\n    cwe: CWE-78\n    function_names:\n      - runPathCommand\n    filenames:\n      - vscode-dotnet-sdk-extension/src/extension.ts  \n    classification: very promising\n```",
+      "date": "2024-06-14T13:21:00.630339",
+      "usage": {
+        "prompt_tokens": 59251,
+        "completion_tokens": 726,
+        "cost": 0.943215
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper Input Validation in version input for acquire and acquireStatus commands",
+      "analysis": "The extension registers 'dotnet-sdk.acquire' and 'dotnet-sdk.acquireStatus' commands that take a version input, but does not properly validate that the provided version is a valid semantic version string before passing it to the VersionResolver. Passing an invalid version string to VersionResolver's getFullSDKVersion method can cause an unhandled error.\n\nTo exploit this, an attacker could trigger the VS Code commands with a malformed version string, potentially causing a denial of service in the extension. A security researcher should attempt providing various malformed version strings to the commands and monitor for any crashes or unexpected behavior in the extension host process.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "activate"
+      ],
+      "filenames": [
+        "vscode-dotnet-sdk-extension/src/extension.ts"
+      ]
+    },
+    {
+      "headline": "Arbitrary File Write via malicious PATH environment variable",
+      "analysis": "The extension appends the bin directory of installed .NET SDKs to the PATH environment variable of VS Code terminal processes. However, on Windows it does this by directly executing a reg.exe command to update the machine's PATH in the registry.\n\nIf an attacker is able to control the PATH environment variable when the extension runs, they may be able to cause the extension to write an arbitrary value to the registry PATH, which will be inherited by VS Code terminal processes. This could allow hijacking the PATH to execute malicious binaries.\n\nTo develop a POC, a security researcher should investigate whether it's possible to pollute the extension's PATH environment variable on Windows, perhaps through VS Code settings, such that the extension will write an attacker-controlled value to the registry PATH when installing an SDK.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-427",
+      "function_names": [
+        "getWindowsPathCommand",
+        "setPathEnvVar"
+      ],
+      "filenames": [
+        "vscode-dotnet-sdk-extension/src/extension.ts"
+      ]
+    },
+    {
+      "headline": "Command Injection via malicious executable path",
+      "analysis": "The extension allows configuring a custom install location for the .NET SDK via the 'dotnetSDKAcquisitionExtension.existingDotnetPath' settings. The value from this setting is directly passed to the child_process.execSync() function without any validation or sanitization.\n\nIf an attacker can control the value of this setting, they could potentially inject arbitrary commands that would be executed with the privileges of the VS Code process. For example, setting the path to 'c:\\dotnet.exe & calc.exe' would execute calc.exe.\n\nTo develop a POC, a security researcher should attempt setting the 'existingDotnetPath' to various command injection payloads and see if they can achieve arbitrary command execution when the extension tries to use the configured path.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "runPathCommand"
+      ],
+      "filenames": [
+        "vscode-dotnet-sdk-extension/src/extension.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2021-34477"
+      },
+      "vuln_dates": {
+        "CVE-2021-34477": "2021-07-14T18:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

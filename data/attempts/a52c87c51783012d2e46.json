@@ -1,0 +1,100 @@
+{
+  "commit": "2ca9f7ccdf700644e13af3776bbee79a4fcf9335",
+  "repo_url": "https://github.com/yak1ex/axpdfium",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "ac7677890ffc8c872b1a"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Use of externally-controlled format string in fprintf\n    analysis: |\n      The code uses the filename parameter directly in a fprintf format string on line 31:\n\n      fprintf(stderr, \"Failed to open: %s\\n\", filename);\n\n      If the filename string contains format specifiers like %s, it could allow an attacker to perform a format string attack and potentially execute arbitrary code or crash the program. The filename comes from external user input and should not be trusted in a format string.\n\n      To fix this, the filename should be passed as a separate parameter to fprintf rather than in the format string itself:\n\n      fprintf(stderr, \"Failed to open: %s\\n\", filename);\n    cwe: CWE-134\n    function_names:\n      - GetFileContents\n    filenames:\n      - pdfium_test.cc\n    classification: very promising\n\n  - headline: Buffer overflow in GetFileContents when reading file\n    analysis: |\n      The GetFileContents function allocates a buffer based on the file length, but then reads the entire file into that buffer without checking if the amount read matches the file length.\n\n      char* buffer = (char*) malloc(file_length);\n      size_t bytes_read = fread(buffer, 1, file_length, file);\n\n      If the file changes size between the initial file length check and the read, more data could be read than the buffer can hold, overflowing the buffer.\n\n      To fix this, the code should check that bytes_read matches the expected file_length, or alternatively use a loop to read the file in chunks and dynamically resize the buffer as needed.\n    cwe: CWE-120\n    function_names:\n      - GetFileContents\n    filenames:\n      - pdfium_test.cc\n    classification: very promising\n\n  - headline: Out-of-bounds read when rendering bitmaps\n    analysis: |\n      The WriteBmp function writes bitmap data to a vector, using the supplied stride and height:\n\n      int out_len = stride * height;\n      WriteToVec(v, buffer, out_len);\n\n      However, the buffer parameter comes directly from the PDF bitmap rendering code. If the rendered bitmap metadata does not match the actual pixel buffer size, this could result in reading past the end of the pixel buffer, potentially disclosing sensitive memory contents.\n\n      To fix this, the bounds of the buffer should be validated before writing it to the output, ensuring the specified height and stride match the actual buffer size.  \n    cwe: CWE-125\n    function_names:\n      - WriteBmp\n    filenames:\n      - pdfium_test.cc  \n    classification: slightly promising\n\n  - headline: Use of untrusted input as a filename when opening files\n    analysis: |\n      The ProcessPDF function takes a user-supplied filename and passes it to GetFileContents to read:\n\n      char* file_contents = GetFileContents(filename.c_str(), &file_length);\n\n      A malicious filename could potentially be used to access sensitive files outside the intended directory. For example, a filename like \"../../secrets.txt\" could cause the program to open files in parent directories.\n\n      To fix this, user-supplied filenames should be validated before use to ensure they do not contain constructs like \"..\" that can alter the directory. The filename should be restricted to a safe, application-specific directory.\n    cwe: CWE-22\n    function_names:\n      - ProcessPDF\n      - GetFileContents\n    filenames:\n      - pdfium_test.cc\n    classification: slightly promising\n\n  - headline: Missing checks for integer overflow\n    analysis: |\n      Several places perform arithmetic on integers without checking for potential overflow. For example:\n\n      if (height > 0 && width > INT_MAX / height)\n        return false;\n      int out_len = stride * height;\n\n      If the user can control the width, height and stride values, they may be able to trigger an integer overflow, leading to an incorrect out_len value and subsequent out-of-bounds write.\n\n      All integer arithmetic on user-controlled values should be checked for overflow. For example:\n\n      if (height > 0 && width > INT_MAX / height)\n        return false;\n      if (stride > INT_MAX / height) \n        return false;\n      int out_len = stride * height;\n    cwe: CWE-190\n    function_names:\n      - WriteBmp\n    filenames:\n      - pdfium_test.cc\n    classification: not promising\n```",
+      "date": "2024-06-14T10:58:00.353120",
+      "usage": {
+        "prompt_tokens": 8406,
+        "completion_tokens": 1051,
+        "cost": 0.204915
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Use of externally-controlled format string in fprintf",
+      "analysis": "The code uses the filename parameter directly in a fprintf format string on line 31:\n\nfprintf(stderr, \"Failed to open: %s\\n\", filename);\n\nIf the filename string contains format specifiers like %s, it could allow an attacker to perform a format string attack and potentially execute arbitrary code or crash the program. The filename comes from external user input and should not be trusted in a format string.\n\nTo fix this, the filename should be passed as a separate parameter to fprintf rather than in the format string itself:\n\nfprintf(stderr, \"Failed to open: %s\\n\", filename);\n",
+      "classification": "very promising",
+      "cwe": "CWE-134",
+      "function_names": [
+        "GetFileContents"
+      ],
+      "filenames": [
+        "pdfium_test.cc"
+      ]
+    },
+    {
+      "headline": "Buffer overflow in GetFileContents when reading file",
+      "analysis": "The GetFileContents function allocates a buffer based on the file length, but then reads the entire file into that buffer without checking if the amount read matches the file length.\n\nchar* buffer = (char*) malloc(file_length);\nsize_t bytes_read = fread(buffer, 1, file_length, file);\n\nIf the file changes size between the initial file length check and the read, more data could be read than the buffer can hold, overflowing the buffer.\n\nTo fix this, the code should check that bytes_read matches the expected file_length, or alternatively use a loop to read the file in chunks and dynamically resize the buffer as needed.\n",
+      "classification": "very promising",
+      "cwe": "CWE-120",
+      "function_names": [
+        "GetFileContents"
+      ],
+      "filenames": [
+        "pdfium_test.cc"
+      ]
+    },
+    {
+      "headline": "Out-of-bounds read when rendering bitmaps",
+      "analysis": "The WriteBmp function writes bitmap data to a vector, using the supplied stride and height:\n\nint out_len = stride * height;\nWriteToVec(v, buffer, out_len);\n\nHowever, the buffer parameter comes directly from the PDF bitmap rendering code. If the rendered bitmap metadata does not match the actual pixel buffer size, this could result in reading past the end of the pixel buffer, potentially disclosing sensitive memory contents.\n\nTo fix this, the bounds of the buffer should be validated before writing it to the output, ensuring the specified height and stride match the actual buffer size.  \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-125",
+      "function_names": [
+        "WriteBmp"
+      ],
+      "filenames": [
+        "pdfium_test.cc"
+      ]
+    },
+    {
+      "headline": "Use of untrusted input as a filename when opening files",
+      "analysis": "The ProcessPDF function takes a user-supplied filename and passes it to GetFileContents to read:\n\nchar* file_contents = GetFileContents(filename.c_str(), &file_length);\n\nA malicious filename could potentially be used to access sensitive files outside the intended directory. For example, a filename like \"../../secrets.txt\" could cause the program to open files in parent directories.\n\nTo fix this, user-supplied filenames should be validated before use to ensure they do not contain constructs like \"..\" that can alter the directory. The filename should be restricted to a safe, application-specific directory.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "ProcessPDF",
+        "GetFileContents"
+      ],
+      "filenames": [
+        "pdfium_test.cc"
+      ]
+    },
+    {
+      "headline": "Missing checks for integer overflow",
+      "analysis": "Several places perform arithmetic on integers without checking for potential overflow. For example:\n\nif (height > 0 && width > INT_MAX / height)\n  return false;\nint out_len = stride * height;\n\nIf the user can control the width, height and stride values, they may be able to trigger an integer overflow, leading to an incorrect out_len value and subsequent out-of-bounds write.\n\nAll integer arithmetic on user-controlled values should be checked for overflow. For example:\n\nif (height > 0 && width > INT_MAX / height)\n  return false;\nif (stride > INT_MAX / height) \n  return false;\nint out_len = stride * height;\n",
+      "classification": "not promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "WriteBmp"
+      ],
+      "filenames": [
+        "pdfium_test.cc"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-0601": "2018-06-26T14:29:01"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

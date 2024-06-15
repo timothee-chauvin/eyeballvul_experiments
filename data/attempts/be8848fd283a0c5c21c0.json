@@ -1,0 +1,38 @@
+{
+  "commit": "3f9527977cc5dee860fab221e23e2290063c3045",
+  "repo_url": "https://github.com/goreleaser/nfpm",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "7a73f173df39b9f1db3a"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Unquoted dangerous characters in shell scripts\n    analysis: |\n      Several of the shell scripts in the testdata directories use `echo` or `printf` commands without properly quoting or escaping the output. This could allow injection of shell metacharacters if the output contains untrusted data.\n\n      For example, testdata/acceptance/scripts/postremove.sh contains:\n      ```\n      printf \"\\033[32m Post Remove of a normal remove\\033[0m\\n\" \n      ```\n      If the ANSI color codes came from an untrusted source, an attacker could include shell metacharacters to execute arbitrary commands.\n\n      Similarly, several scripts echo untrusted command line arguments directly, like:\n      ```\n      echo \"$@\"\n      ```\n      This allows shell injection if the arguments contain shell metacharacters.\n\n      To fix this, any untrusted or potentially dangerous output should be quoted, preferably with single quotes to disable all parsing of special characters. \n    cwe: CWE-1236\n    function_names: []\n    filenames:\n      - testdata/acceptance/scripts/postremove.sh\n      - testdata/acceptance/scripts/preremove.sh\n      - testdata/scripts/preupgrade.sh\n      - testdata/scripts/postupgrade.sh\n    classification: slightly promising\n  \n  - headline: Insufficient sanitization of mkdocs config\n    analysis: |  \n      scripts/pages/build.sh modifies www/docs/install.md by replacing the string __VERSION__ with the contents of www/docs/static/latest:\n\n      ```\n      version=\"$(cat ./www/docs/static/latest)\" \n      sed -s'' -i \"s/__VERSION__/$version/g\" www/docs/install.md\n      ```\n\n      The contents of www/docs/static/latest come from a GitHub API response in scripts/pages/releases.sh. Importantly, there is no validation or sanitization of this version string before injecting it into the Markdown file.\n\n      If an attacker could control the response from the GitHub API, they could potentially inject Markdown or HTML tags into install.md which could be rendered by mkdocs. Depending on the mkdocs configuration, this might even allow injection of scripts that would execute in the context of the documentation site.\n\n      To fix this, the version string should be sanitized to ensure it only contains safe characters before using it to modify Markdown files.\n    cwe: CWE-94\n    function_names: []\n    filenames:\n      - scripts/pages/build.sh\n      - scripts/pages/releases.sh\n    classification: slightly promising\n\n  - headline: Unrestricted network access in release scripts\n    analysis: |\n      scripts/pages/releases.sh makes an unrestricted outbound network request to the GitHub API:\n\n      ```\n      curl -sSf -H \"Authorization: Bearer $GITHUB_TOKEN\" \"https://api.github.com/repos/goreleaser/nfpm/releases/latest\"\n      ```\n\n      Depending on how and where this script is run, this could be a security risk. For example, if it runs in a context like a CI/CD pipeline that should not have general network access, this script could be used as a vector to make unrestricted outbound network requests.\n\n      Consider restricting the script to only access specific pre-approved domains. Also ensure the GITHUB_TOKEN has the minimum required permissions.\n    cwe: CWE-918\n    function_names: []\n    filenames:\n      - scripts/pages/releases.sh\n    classification: slightly promising\n\n```",
+      "date": "2024-06-14T13:40:10.667610",
+      "usage": {
+        "prompt_tokens": 5422,
+        "completion_tokens": 833,
+        "cost": 0.143805
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-32698": "2023-05-30T04:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,96 @@
+{
+  "commit": "35986511dc2cdb8b87b65e92a331144aae252ea9",
+  "repo_url": "https://github.com/mattphillips/deep-object-diff",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "51d0ac1471465709877f"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Prototype pollution vulnerability in preseveArray function\n    analysis: |\n      The preseveArray function in src/preseveArray.js is vulnerable to prototype pollution.\n      \n      It recursively traverses nested objects and arrays in the diff object. When iterating over object keys, it directly accesses and modifies properties on the destination object without checking if the key is a special prototype property like \"__proto__\". \n\n      This allows an attacker to inject a \"__proto__\" key pointing to a malicious object in the input diff object. When preseveArray assigns to this key on the destination object, it will modify the object's prototype, potentially allowing the attacker to overwrite existing properties or add new malicious properties that will exist on all other objects.\n\n      Prototype pollution can enable various other attacks like denial of service, property injection, and in some cases even code execution.\n    cwe: CWE-1321\n    function_names:\n      - preserve\n    filenames:\n      - src/preseveArray.js\n    classification: very promising\n\n  - headline: Prototype pollution vulnerability in detailed diff \n    analysis: |\n      The detailedDiff function in src/detailed/index.js is vulnerable to prototype pollution.\n\n      It calls the addedDiff, deletedDiff and updatedDiff functions, passing the lhs and rhs objects from the input.\n\n      Those diff functions do not perform any prototype pollution checks. They recursively traverse the input objects and copy properties to the result object. If the input contains a \"__proto__\" property, it will pollute the result object's prototype.\n\n      Since detailedDiff returns an object with \"added\", \"deleted\" and \"updated\" keys, an attacker could inject a malicious \"__proto__\" property into any of those keys on the returned object, and it will overwrite the prototype of any object that the result is spread into later.\n\n      So while the detailedDiff function itself doesn't directly write to any prototypes, it enables prototype pollution via the objects it returns.\n    cwe: CWE-1321\n    function_names:\n      - detailedDiff\n    filenames:\n      - src/detailed/index.js\n    classification: very promising\n\n  - headline: Denial of service via stack overflow in diff functions\n    analysis: |  \n      The diff, deletedDiff, updatedDiff and addedDiff functions are vulnerable to denial of service via stack overflow.\n\n      All of these functions recursively traverse the input lhs and rhs objects without any limit on the depth of recursion. An attacker could provide a very deeply nested object as input, which would trigger a large number of recursive function calls, potentially causing a stack overflow and crashing the application.\n\n      For example, the diff function in src/diff/index.js calls itself recursively if the values at a given key in lhs and rhs are both objects. It does not check how deeply nested the objects are before recursing.\n\n      The other diff functions have similar recursive behavior without any max depth checks.\n\n      An attacker could exploit this to crash a server by sending a deeply nested object in the request body, if that object gets passed to one of these diff functions.\n    cwe: CWE-674\n    function_names: \n      - diff\n      - deletedDiff\n      - updatedDiff\n    filenames:\n      - src/diff/index.js \n      - src/deleted/index.js\n      - src/updated/index.js\n    classification: very promising\n    \n  - headline: Regular expression denial of service (ReDoS)\n    analysis: |\n      The isObject, isDate, and isEmpty functions in src/utils/index.js use regular expressions to check if the input is an object, date, or empty object/array. \n\n      However, the regular expressions used are vulnerable to regular expression denial of service (ReDoS) attacks.\n\n      For example, isObject uses the regex `/^[object Object]$/` to check if the input is an object. But this regex has overlapping nodes in the NFA (nondeterministic finite automaton), which can cause catastrophic backtracking for certain input strings.\n\n      If an attacker can control the input to these utility functions (e.g. by passing a malicious string in the request body that ends up being passed to isObject), they could block the event loop and bring down the server by triggering catastrophic backtracking.\n\n      The regexes in isDate and isEmpty have similar problems.\n\n      To avoid ReDoS, regexes should be refactored to remove overlapping nodes in the NFA. Using character classes like `[ob]` instead of alternations like `(o|b)` is one way to prevent overlapping NFA nodes.\n    cwe: CWE-1333\n    function_names:\n      - isObject\n      - isDate \n      - isEmpty\n    filenames:\n      - src/utils/index.js\n    classification: very promising\n```",
+      "date": "2024-06-14T14:47:04.257850",
+      "usage": {
+        "prompt_tokens": 16073,
+        "completion_tokens": 1136,
+        "cost": 0.326295
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Prototype pollution vulnerability in preseveArray function",
+      "analysis": "The preseveArray function in src/preseveArray.js is vulnerable to prototype pollution.\n\nIt recursively traverses nested objects and arrays in the diff object. When iterating over object keys, it directly accesses and modifies properties on the destination object without checking if the key is a special prototype property like \"__proto__\". \n\nThis allows an attacker to inject a \"__proto__\" key pointing to a malicious object in the input diff object. When preseveArray assigns to this key on the destination object, it will modify the object's prototype, potentially allowing the attacker to overwrite existing properties or add new malicious properties that will exist on all other objects.\n\nPrototype pollution can enable various other attacks like denial of service, property injection, and in some cases even code execution.\n",
+      "classification": "very promising",
+      "cwe": "CWE-1321",
+      "function_names": [
+        "preserve"
+      ],
+      "filenames": [
+        "src/preseveArray.js"
+      ]
+    },
+    {
+      "headline": "Prototype pollution vulnerability in detailed diff",
+      "analysis": "The detailedDiff function in src/detailed/index.js is vulnerable to prototype pollution.\n\nIt calls the addedDiff, deletedDiff and updatedDiff functions, passing the lhs and rhs objects from the input.\n\nThose diff functions do not perform any prototype pollution checks. They recursively traverse the input objects and copy properties to the result object. If the input contains a \"__proto__\" property, it will pollute the result object's prototype.\n\nSince detailedDiff returns an object with \"added\", \"deleted\" and \"updated\" keys, an attacker could inject a malicious \"__proto__\" property into any of those keys on the returned object, and it will overwrite the prototype of any object that the result is spread into later.\n\nSo while the detailedDiff function itself doesn't directly write to any prototypes, it enables prototype pollution via the objects it returns.\n",
+      "classification": "very promising",
+      "cwe": "CWE-1321",
+      "function_names": [
+        "detailedDiff"
+      ],
+      "filenames": [
+        "src/detailed/index.js"
+      ]
+    },
+    {
+      "headline": "Denial of service via stack overflow in diff functions",
+      "analysis": "The diff, deletedDiff, updatedDiff and addedDiff functions are vulnerable to denial of service via stack overflow.\n\nAll of these functions recursively traverse the input lhs and rhs objects without any limit on the depth of recursion. An attacker could provide a very deeply nested object as input, which would trigger a large number of recursive function calls, potentially causing a stack overflow and crashing the application.\n\nFor example, the diff function in src/diff/index.js calls itself recursively if the values at a given key in lhs and rhs are both objects. It does not check how deeply nested the objects are before recursing.\n\nThe other diff functions have similar recursive behavior without any max depth checks.\n\nAn attacker could exploit this to crash a server by sending a deeply nested object in the request body, if that object gets passed to one of these diff functions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-674",
+      "function_names": [
+        "diff",
+        "deletedDiff",
+        "updatedDiff"
+      ],
+      "filenames": [
+        "src/diff/index.js",
+        "src/deleted/index.js",
+        "src/updated/index.js"
+      ]
+    },
+    {
+      "headline": "Regular expression denial of service (ReDoS)",
+      "analysis": "The isObject, isDate, and isEmpty functions in src/utils/index.js use regular expressions to check if the input is an object, date, or empty object/array. \n\nHowever, the regular expressions used are vulnerable to regular expression denial of service (ReDoS) attacks.\n\nFor example, isObject uses the regex /^[object Object]$/ to check if the input is an object. But this regex has overlapping nodes in the NFA (nondeterministic finite automaton), which can cause catastrophic backtracking for certain input strings.\n\nIf an attacker can control the input to these utility functions (e.g. by passing a malicious string in the request body that ends up being passed to isObject), they could block the event loop and bring down the server by triggering catastrophic backtracking.\n\nThe regexes in isDate and isEmpty have similar problems.\n\nTo avoid ReDoS, regexes should be refactored to remove overlapping nodes in the NFA. Using character classes like [ob] instead of alternations like (o|b) is one way to prevent overlapping NFA nodes.\n",
+      "classification": "very promising",
+      "cwe": "CWE-1333",
+      "function_names": [
+        "isObject",
+        "isDate",
+        "isEmpty"
+      ],
+      "filenames": [
+        "src/utils/index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 2
+      },
+      "mapping": {
+        "0": "CVE-2022-41713",
+        "1": "CVE-2022-41713"
+      },
+      "vuln_dates": {
+        "CVE-2022-41713": "2022-11-03T20:15:31"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,154 @@
+{
+  "commit": "493dc3d7c85f39c44e879941df9d5682865da109",
+  "repo_url": "https://github.com/onsdigital/ras-collection-instrument",
+  "model": "claude-3-sonnet-20240229",
+  "chunk_hashes": [
+    "a4309143678bbc515b9b"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential unvalidated file upload vulnerability\n    analysis: |\n      The application allows users to upload files to the `/collection-instrument-api/1.0.2/upload` and `/survey_response-api/v1/survey_responses/<case_id>` endpoints. However, there does not appear to be any validation or sanitization of the uploaded file contents or handling of file extensions that could allow for arbitrary code execution.\n    cwe: CWE-434\n    function_names:\n      - upload_collection_instrument\n      - add_survey_response\n    filenames:\n      - application/views/collection_instrument_view.py\n      - application/views/survey_responses_view.py\n    classification: very promising\n\n  - headline: Potential lack of authentication on admin endpoints\n    analysis: |\n      The `/collection-instrument-api/1.0.2/collectioninstrument` and `/info` endpoints do not appear to have any authentication checks. An attacker may be able to access sensitive information or perform unauthorized actions.\n    cwe: CWE-306\n    function_names:\n      - collection_instrument_by_search_string\n      - get_info\n    filenames:\n      - application/views/collection_instrument_view.py\n      - application/views/info_view.py  \n    classification: very promising\n\n  - headline: Potential server-side request forgery vulnerability\n    analysis: |\n      The application makes requests to internal services like case-service, collectionexercise-service, survey-service, and party-service based on user input. If the input is not properly sanitized, an attacker could potentially cause the application to make requests to arbitrary external systems.\n    cwe: CWE-918\n    function_names:\n      - get_case_group\n      - get_collection_exercise\n      - get_survey_ref\n      - get_business_party\n      - service_request\n    filenames:\n      - application/controllers/service_helper.py\n    classification: very promising\n    \n  - headline: Potential hardcoded credentials\n    analysis: |\n      The application appears to use hardcoded credentials for basic authentication in the `get_pw` function. This could expose the system to unauthorized access if the credentials are compromised.\n    cwe: CWE-798\n    function_names:\n      - get_pw\n    filenames:\n      - application/controllers/basic_auth.py\n    classification: very promising\n    \n  - headline: Potential cleartext transmission of sensitive data\n    analysis: |\n      The application transmits survey response files and instrument data to RabbitMQ queues/exchanges. If the data is not properly encrypted during transmission, it could be intercepted by an attacker.\n    cwe: CWE-319\n    function_names:\n      - _send_message_to_rabbitmq\n      - send_message_to_rabbitmq_queue\n      - send_message_to_rabbitmq_exchange\n    filenames:\n      - application/controllers/rabbit_helper.py\n    classification: very promising\n\n  - headline: Use of insecure encryption algorithms\n    analysis: |\n      The `Cryptographer` class uses the AES encryption algorithm with ECB mode, which is not recommended for encryption of large amounts of data due to the risk of repeating patterns. A more secure mode like CBC or GCM should be used.\n    cwe: CWE-327\n    function_names:\n      - encrypt\n      - decrypt\n    filenames:\n      - application/controllers/cryptographer.py\n    classification: very promising\n    \n  - headline: Potential unhandled exceptions\n    analysis: |\n      There are multiple instances where exceptions are raised but not properly handled or logged, which could lead to information exposure or denial of service.\n    cwe: CWE-754\n    function_names: []\n    filenames:\n      - application/controllers/service_helper.py\n      - application/controllers/collection_instrument.py\n    classification: slightly promising\n\n  - headline: Usage of insecure pseudorandom number generator\n    analysis: |\n      The application uses `Random.new().read()` from the `pycrypto` library to generate initialization vectors for encryption. This is not a cryptographically secure pseudorandom number generator and should not be used for cryptographic purposes.\n    cwe: CWE-338\n    function_names:\n      - encrypt\n    filenames:\n      - application/controllers/cryptographer.py\n    classification: very promising\n\n  - headline: Potential path traversal vulnerability\n    analysis: |\n      The application allows uploading files with arbitrary filenames, which could potentially lead to path traversal attacks if the filenames are not properly sanitized before use.\n    cwe: CWE-22\n    function_names: []\n    filenames:\n      - application/controllers/collection_instrument.py\n      - application/controllers/survey_response.py\n    classification: slightly promising\n```\n\nThe key potential vulnerabilities identified include:\n\n- Unvalidated file uploads that could allow arbitrary code execution\n- Lack of authentication on some admin endpoints \n- Server-side request forgery via unsanitized requests to internal services\n- Use of hardcoded credentials\n- Cleartext transmission of sensitive data to RabbitMQ\n- Use of insecure encryption algorithms and pseudorandom number generators\n- Potential path traversal via unsanitized filenames\n\nThe analysis covers various CWE categories like improper input validation, authentication issues, cryptographic failures, insecure communications, and potential code execution vulnerabilities. Many of these are classified as \"very promising\" leads requiring further investigation.",
+      "date": "2024-06-14T15:04:23.352696",
+      "usage": {
+        "prompt_tokens": 43749,
+        "completion_tokens": 1302,
+        "cost": 0.150777
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential unvalidated file upload vulnerability",
+      "analysis": "The application allows users to upload files to the /collection-instrument-api/1.0.2/upload and /survey_response-api/v1/survey_responses/<case_id> endpoints. However, there does not appear to be any validation or sanitization of the uploaded file contents or handling of file extensions that could allow for arbitrary code execution.\n",
+      "classification": "very promising",
+      "cwe": "CWE-434",
+      "function_names": [
+        "upload_collection_instrument",
+        "add_survey_response"
+      ],
+      "filenames": [
+        "application/views/collection_instrument_view.py",
+        "application/views/survey_responses_view.py"
+      ]
+    },
+    {
+      "headline": "Potential lack of authentication on admin endpoints",
+      "analysis": "The /collection-instrument-api/1.0.2/collectioninstrument and /info endpoints do not appear to have any authentication checks. An attacker may be able to access sensitive information or perform unauthorized actions.\n",
+      "classification": "very promising",
+      "cwe": "CWE-306",
+      "function_names": [
+        "collection_instrument_by_search_string",
+        "get_info"
+      ],
+      "filenames": [
+        "application/views/collection_instrument_view.py",
+        "application/views/info_view.py"
+      ]
+    },
+    {
+      "headline": "Potential server-side request forgery vulnerability",
+      "analysis": "The application makes requests to internal services like case-service, collectionexercise-service, survey-service, and party-service based on user input. If the input is not properly sanitized, an attacker could potentially cause the application to make requests to arbitrary external systems.\n",
+      "classification": "very promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "get_case_group",
+        "get_collection_exercise",
+        "get_survey_ref"
+      ],
+      "filenames": [
+        "application/controllers/service_helper.py"
+      ]
+    },
+    {
+      "headline": "Potential hardcoded credentials",
+      "analysis": "The application appears to use hardcoded credentials for basic authentication in the get_pw function. This could expose the system to unauthorized access if the credentials are compromised.\n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "get_pw"
+      ],
+      "filenames": [
+        "application/controllers/basic_auth.py"
+      ]
+    },
+    {
+      "headline": "Potential cleartext transmission of sensitive data",
+      "analysis": "The application transmits survey response files and instrument data to RabbitMQ queues/exchanges. If the data is not properly encrypted during transmission, it could be intercepted by an attacker.\n",
+      "classification": "very promising",
+      "cwe": "CWE-319",
+      "function_names": [
+        "_send_message_to_rabbitmq",
+        "send_message_to_rabbitmq_queue",
+        "send_message_to_rabbitmq_exchange"
+      ],
+      "filenames": [
+        "application/controllers/rabbit_helper.py"
+      ]
+    },
+    {
+      "headline": "Use of insecure encryption algorithms",
+      "analysis": "The Cryptographer class uses the AES encryption algorithm with ECB mode, which is not recommended for encryption of large amounts of data due to the risk of repeating patterns. A more secure mode like CBC or GCM should be used.\n",
+      "classification": "very promising",
+      "cwe": "CWE-327",
+      "function_names": [
+        "encrypt",
+        "decrypt"
+      ],
+      "filenames": [
+        "application/controllers/cryptographer.py"
+      ]
+    },
+    {
+      "headline": "Potential unhandled exceptions",
+      "analysis": "There are multiple instances where exceptions are raised but not properly handled or logged, which could lead to information exposure or denial of service.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-754",
+      "function_names": [],
+      "filenames": [
+        "application/controllers/service_helper.py",
+        "application/controllers/collection_instrument.py"
+      ]
+    },
+    {
+      "headline": "Usage of insecure pseudorandom number generator",
+      "analysis": "The application uses Random.new().read() from the pycrypto library to generate initialization vectors for encryption. This is not a cryptographically secure pseudorandom number generator and should not be used for cryptographic purposes.\n",
+      "classification": "very promising",
+      "cwe": "CWE-338",
+      "function_names": [
+        "encrypt"
+      ],
+      "filenames": [
+        "application/controllers/cryptographer.py"
+      ]
+    },
+    {
+      "headline": "Potential path traversal vulnerability",
+      "analysis": "The application allows uploading files with arbitrary filenames, which could potentially lead to path traversal attacks if the filenames are not properly sanitized before use.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [],
+      "filenames": [
+        "application/controllers/collection_instrument.py",
+        "application/controllers/survey_response.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 7
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-36762": "2023-07-18T15:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

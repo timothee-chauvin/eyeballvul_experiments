@@ -1,0 +1,98 @@
+{
+  "commit": "3dddadbedbceb407f140dfb78964caa3b002cef9",
+  "repo_url": "https://github.com/floragunncom/search-guard-kibana-plugin",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "944c8e893f8e89cb9d81"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Insecure session cookie configuration\n    analysis: |\n      The code configures the session cookie with the \"secure\" flag set to false based on the searchguard.cookie.secure config value. This means the cookie will be transmitted over unencrypted HTTP connections, exposing it to interception. The session cookie contains sensitive data like the username.\n      \n      Additionally, the session cookie uses a default password if one is not configured, which is very weak. The code even logs a warning about this.\n    cwe: CWE-614\n    function_names:\n      - SearchGuardControlService\n    filenames:\n      - public/services/access_control.js\n      - lib/session/validate.js \n    classification: very promising\n  \n  - headline: Server-side request forgery (SSRF) and local file inclusion (LFI) through tenant name \n    analysis: | \n      The code allows specifying the tenant name via an 'sg_tenant' query parameter. This tenant name is then used to build file paths and Elasticsearch API calls without sufficient validation.\n\n      An attacker could potentially provide a malicious tenant name containing relative paths (e.g. dots ..) or absolute paths to try to access sensitive local files on the Kibana server filesystem.\n      \n      The tenant name also flows to Elasticsearch API calls made by the backend. If an attacker can influence the tenant name to point to an arbitrary host/URL, they may be able to make the backend send requests to servers/services other than Elasticsearch, leading to SSRF.\n    cwe: CWE-918\n    function_names:\n      - getTenantByPreference\n      - validateTenant\n    filenames:\n      - lib/backend/searchguard.js\n      - lib/multitenancy/headers.js  \n    classification: very promising\n  \n  - headline: Insecure JWT handling\n    analysis: |\n      The code allows passing a JSON Web Token (JWT) either via a querystring parameter or a header. The name of these are configurable via kibana.yml.\n\n      The JWT is then directly passed to the Elasticsearch backend without any validation in Kibana. An attacker could craft malicious JWTs to attempt to bypass authentication on the Elasticsearch side.\n\n      Additionally, the JWT cookie uses a default weak password if one is not configured.\n    cwe: CWE-345\n    function_names:\n      - onPostAuth\n    filenames:  \n      - lib/jwt/headers.js\n    classification: very promising\n\n  - headline: Sensitive data exposure via client-side storage \n    analysis: |\n      The code stores potentially sensitive data like usernames in browser cookies and local/session storage. \n      \n      While some of the cookies have the HTTP-Only flag, others like the tenant cookie do not and can be read by malicious client-side JavaScript.\n\n      The code also clears localStorage and sessionStorage on login/logout, indicating they are used to store sensitive session data which could be leaked.\n    cwe: CWE-922  \n    function_names:\n      - selectTenant\n      - LoginController\n    filenames:\n      - lib/backend/searchguard.js\n      - public/apps/login/login_controller.js\n      - public/apps/multitenancy/multitenancy.js\n    classification: slightly promising\n```",
+      "date": "2024-06-14T13:34:13.535925",
+      "usage": {
+        "prompt_tokens": 21793,
+        "completion_tokens": 774,
+        "cost": 0.384945
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insecure session cookie configuration",
+      "analysis": "The code configures the session cookie with the \"secure\" flag set to false based on the searchguard.cookie.secure config value. This means the cookie will be transmitted over unencrypted HTTP connections, exposing it to interception. The session cookie contains sensitive data like the username.\n\nAdditionally, the session cookie uses a default password if one is not configured, which is very weak. The code even logs a warning about this.\n",
+      "classification": "very promising",
+      "cwe": "CWE-614",
+      "function_names": [
+        "SearchGuardControlService"
+      ],
+      "filenames": [
+        "public/services/access_control.js",
+        "lib/session/validate.js"
+      ]
+    },
+    {
+      "headline": "Server-side request forgery (SSRF) and local file inclusion (LFI) through tenant name",
+      "analysis": "The code allows specifying the tenant name via an 'sg_tenant' query parameter. This tenant name is then used to build file paths and Elasticsearch API calls without sufficient validation.\n\nAn attacker could potentially provide a malicious tenant name containing relative paths (e.g. dots ..) or absolute paths to try to access sensitive local files on the Kibana server filesystem.\n\nThe tenant name also flows to Elasticsearch API calls made by the backend. If an attacker can influence the tenant name to point to an arbitrary host/URL, they may be able to make the backend send requests to servers/services other than Elasticsearch, leading to SSRF.\n",
+      "classification": "very promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "getTenantByPreference",
+        "validateTenant"
+      ],
+      "filenames": [
+        "lib/backend/searchguard.js",
+        "lib/multitenancy/headers.js"
+      ]
+    },
+    {
+      "headline": "Insecure JWT handling",
+      "analysis": "The code allows passing a JSON Web Token (JWT) either via a querystring parameter or a header. The name of these are configurable via kibana.yml.\n\nThe JWT is then directly passed to the Elasticsearch backend without any validation in Kibana. An attacker could craft malicious JWTs to attempt to bypass authentication on the Elasticsearch side.\n\nAdditionally, the JWT cookie uses a default weak password if one is not configured.\n",
+      "classification": "very promising",
+      "cwe": "CWE-345",
+      "function_names": [
+        "onPostAuth"
+      ],
+      "filenames": [
+        "lib/jwt/headers.js"
+      ]
+    },
+    {
+      "headline": "Sensitive data exposure via client-side storage",
+      "analysis": "The code stores potentially sensitive data like usernames in browser cookies and local/session storage. \n\nWhile some of the cookies have the HTTP-Only flag, others like the tenant cookie do not and can be read by malicious client-side JavaScript.\n\nThe code also clears localStorage and sessionStorage on login/logout, indicating they are used to store sensitive session data which could be leaked.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-922",
+      "function_names": [
+        "selectTenant",
+        "LoginController"
+      ],
+      "filenames": [
+        "lib/backend/searchguard.js",
+        "public/apps/login/login_controller.js",
+        "public/apps/multitenancy/multitenancy.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 2,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2018-20698",
+        "2": "CVE-2019-13423"
+      },
+      "vuln_dates": {
+        "CVE-2019-13422": "2019-08-23T14:15:11",
+        "CVE-2019-13423": "2019-08-23T14:15:11",
+        "CVE-2018-20698": "2019-04-09T18:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

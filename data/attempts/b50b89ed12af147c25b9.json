@@ -1,0 +1,39 @@
+{
+  "commit": "457bbfd786f02db852da07137bd54c139194e2d7",
+  "repo_url": "https://github.com/commenthol/safer-eval",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "441aa887bba98f5df5ca"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Sandbox Escape in saferEval Browser Version\n    analysis: |\n      The `saferEval` function, when used in a browser environment, attempts to create a safer sandbox for evaluating JavaScript code. However, it fails to adequately isolate the evaluation context, allowing malicious code to escape the sandbox and potentially access sensitive information.\n\n      The `protectBuiltInObjects` function aims to wrap built-in objects with cloned copies, preventing overwriting. However, the cloning process used by the `clones` library might not be sufficient for certain objects, like `window` or `document`. Malicious code could potentially modify the properties or methods of these cloned objects, which would affect the actual global objects due to JavaScript's reference behavior.\n\n      For instance, consider the following scenario:\n\n      ```js\n      const context = { window: { ...window } };\n      saferEval('window.alert = function() { console.log(\"Hacked!\"); }', context);\n\n      // The `alert` method on the actual `window` object is now replaced.\n      window.alert(); // Outputs \"Hacked!\" to the console.\n      ```\n\n      Despite the attempt to sandbox `window` within the `context` object, the malicious code can still modify it because the cloned `window` object within `context` still holds references to the original `window` object's properties.\n\n      This vulnerability makes it possible for an attacker to execute arbitrary code in the context of the web page if they can inject malicious JavaScript into the evaluated code.\n    cwe: CWE-94\n    function_names:\n      - saferEval\n      - protectBuiltInObjects\n    filenames:\n      - src/browser.js\n      - src/common.js\n    classification: very promising\n  - headline: Prototype Pollution in saferEval via `clones`\n    analysis: |\n      The `saferEval` function uses the `clones` library to create copies of objects passed in the context. However, depending on the version of `clones` used, this might introduce a prototype pollution vulnerability.\n\n      If `clones` doesn't properly handle properties in the prototype chain, an attacker might be able to inject arbitrary properties into the prototype of built-in objects like `Object`. This would allow them to modify the behavior of all objects inheriting from that prototype.\n\n      Consider the following scenario:\n\n      ```js\n      const maliciousContext = JSON.parse('{ \"__proto__\": { \"polluted\": \"yes\" } }');\n      saferEval('Object.prototype.polluted', maliciousContext); // Prototype polluted!\n      ```\n\n      In this case, if `clones` doesn't prevent prototype pollution, the `polluted` property will be added to the `Object.prototype`. This allows the attacker to execute arbitrary code or access sensitive information.\n\n      The severity of this vulnerability depends on the version of `clones` used and whether it's patched against prototype pollution.\n    cwe: CWE-1321\n    function_names:\n      - saferEval\n    filenames:\n      - src/browser.js\n      - src/common.js\n      - src/index.js\n    classification: slightly promising\n  - headline: Denial of Service via Infinite Loops in saferEval\n    analysis: |\n      The `saferEval` function lacks any protection against infinite loops within the evaluated code. An attacker could provide malicious code that runs indefinitely, effectively causing a denial of service (DoS) by blocking the execution of other scripts on the page.\n\n      For instance:\n\n      ```js\n      saferEval('while(true) {}'); // Blocks the execution indefinitely.\n      ```\n\n      This vulnerability can render the web page unresponsive and disrupt its normal functionality.\n    cwe: CWE-835\n    function_names:\n      - saferEval\n    filenames:\n      - src/browser.js\n      - src/index.js\n    classification: not promising\n```",
+      "date": "2024-06-14T13:06:32.436135",
+      "usage": {
+        "prompt_tokens": 8723,
+        "completion_tokens": 790,
+        "cost": 0.006933125
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-10759": "2019-10-15T15:15:11",
+        "CVE-2019-10760": "2019-10-15T15:15:11"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

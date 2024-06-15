@@ -1,0 +1,81 @@
+{
+  "commit": "35d051ca4b54a3a3b16c243cac3f3bb6678e69bb",
+  "repo_url": "https://github.com/mozilla/bleach",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "6f2950d727f9c58571e8"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Potential SQL Injection vulnerability in Linker.linkify()\n    analysis: |\n      The Linker.linkify() method takes a text input and converts URLs, domain names, and email addresses into links. However, it does not appear to properly sanitize this input before using it to construct URLs.\n      \n      For example, an attacker could potentially pass in a malicious string like:\n      ' onclick=\"alert(1)\"@example.com\n      \n      This would get turned into a link like:\n      <a href=\"mailto:' onclick=\"alert(1)\"@example.com\">...</a>\n      \n      Allowing arbitrary JavaScript to be injected and executed.\n    cwe: CWE-89\n    function_names:\n      - Linker.linkify\n    filenames:\n      - bleach/linkifier.py\n    classification: very promising\n\n  - headline: Possible XSS in clean() if using unsafe filters \n    analysis: |\n      The clean() method takes an allow_list of filters that get applied after the main sanitization. The documentation warns that using filters can change the output and to make sure they are safe.\n      \n      If an unsafe filter was used that allowed script tags or dangerous attributes, it could potentially introduce XSS vulnerabilities, since the output of filters is not further sanitized.\n      \n      To exploit this, a user would need to specify an unsafe filter, so it's less likely to be an issue in most use cases. But it's worth investigating if there are any commonly used filters that might be unsafe.\n    cwe: CWE-79\n    function_names:\n      - clean\n      - Cleaner.clean\n    filenames: \n      - bleach/__init__.py\n      - bleach/sanitizer.py\n    classification: slightly promising\n\n  - headline: Potential directory traversal in LinkifyFilter.strip_non_url_bits()\n    analysis: |\n      The LinkifyFilter.strip_non_url_bits() method tries to strip invalid characters from the end of URLs. It assumes text after certain characters can be safely stripped.\n      \n      It's possible there are some edge cases where this allows directory traversal characters through. For example:\n      http://example.com/../../\n      \n      Would get turned into:\n      <a href=\"http://example.com/../../\">http://example.com/../../</a>\n      \n      Meaning the link would still contain the directory traversal. This requires more investigation to determine exploitability.\n    cwe: CWE-22\n    function_names:\n      - LinkifyFilter.strip_non_url_bits\n    filenames:\n      - bleach/linkifier.py  \n    classification: slightly promising\n```",
+      "date": "2024-06-14T14:49:24.060895",
+      "usage": {
+        "prompt_tokens": 38571,
+        "completion_tokens": 631,
+        "cost": 0.62589
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Potential SQL Injection vulnerability in Linker.linkify()",
+      "analysis": "The Linker.linkify() method takes a text input and converts URLs, domain names, and email addresses into links. However, it does not appear to properly sanitize this input before using it to construct URLs.\n\nFor example, an attacker could potentially pass in a malicious string like:\n' onclick=\"alert(1)\"@example.com\n\nThis would get turned into a link like:\n<a href=\"mailto:' onclick=\"alert(1)\"@example.com\">...</a>\n\nAllowing arbitrary JavaScript to be injected and executed.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "Linker.linkify"
+      ],
+      "filenames": [
+        "bleach/linkifier.py"
+      ]
+    },
+    {
+      "headline": "Possible XSS in clean() if using unsafe filters",
+      "analysis": "The clean() method takes an allow_list of filters that get applied after the main sanitization. The documentation warns that using filters can change the output and to make sure they are safe.\n\nIf an unsafe filter was used that allowed script tags or dangerous attributes, it could potentially introduce XSS vulnerabilities, since the output of filters is not further sanitized.\n\nTo exploit this, a user would need to specify an unsafe filter, so it's less likely to be an issue in most use cases. But it's worth investigating if there are any commonly used filters that might be unsafe.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "clean",
+        "Cleaner.clean"
+      ],
+      "filenames": [
+        "bleach/__init__.py",
+        "bleach/sanitizer.py"
+      ]
+    },
+    {
+      "headline": "Potential directory traversal in LinkifyFilter.strip_non_url_bits()",
+      "analysis": "The LinkifyFilter.strip_non_url_bits() method tries to strip invalid characters from the end of URLs. It assumes text after certain characters can be safely stripped.\n\nIt's possible there are some edge cases where this allows directory traversal characters through. For example:\nhttp://example.com/../../\n\nWould get turned into:\n<a href=\"http://example.com/../../\">http://example.com/../../</a>\n\nMeaning the link would still contain the directory traversal. This requires more investigation to determine exploitability.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "LinkifyFilter.strip_non_url_bits"
+      ],
+      "filenames": [
+        "bleach/linkifier.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 5,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-6817": "2023-02-16T22:15:10",
+        "CVE-2021-23980": "2023-02-16T22:15:10",
+        "CVE-2020-6802": "2020-03-24T22:15:12",
+        "CVE-2020-6816": "2020-03-24T22:15:12",
+        "CVE-2018-7753": "2018-03-07T23:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

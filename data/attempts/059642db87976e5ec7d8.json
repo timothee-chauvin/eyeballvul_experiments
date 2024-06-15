@@ -1,0 +1,87 @@
+{
+  "commit": "3795a3cda744b599a9247cca35395be4f3635b1b",
+  "repo_url": "https://github.com/ionicabizau/parse-path",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "70ac16d7e0bacdab66a7"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper neutralization of special elements in URL pathname\n    analysis: |\n      The 'parsePath' function does not properly validate and sanitize the URL pathname before using it in the output.\n      Attackers could inject special elements like '@' in the pathname to make it appear like a username, which may enable semantic attacks or trick other services consuming this package's output.\n      For example, the URL \"https://attacker.com\\\\@example.com\" is parsed such that the pathname is \"/@example.com\". \n      A service consuming this output may incorrectly interpret \"@example.com\" as a username and \"attacker.com\" as the hostname.\n    cwe: CWE-20\n    function_names:\n      - parsePath\n    filenames:\n      - lib/index.js\n    classification: very promising\n\n  - headline: Improper neutralization of CRLF sequences in URL\n    analysis: |\n      The 'parsePath' function uses a regular expression to replace CRLF sequences in the input URL. \n      However, it does not account for other URL-encoded CRLF sequences like '%0d%0a'.\n      This improper neutralization of CRLF sequences enables splitting the URL in an unexpected way.\n      An example is the input URL \"jav\\r\\nascript://%0aalert(1)\" where '%0a' creates a new line, making everything after that a separate path. \n    cwe: CWE-94\n    function_names:\n      - parsePath\n    filenames:\n      - lib/index.js\n    classification: slightly promising\n  \n  - headline: Uncontrolled recursion in regular expressions\n    analysis: |\n      The regular expression \"/\\r?\\n|\\r/gm\" used to sanitize CRLF sequences in the URL is vulnerable to ReDoS attacks.\n      An attacker can provide very long strings to the 'parsePath' function containing many repetitions of \"\\r\\n\" or \"\\n\".\n      This will cause the regular expression matching to take a very long time, consuming high CPU and memory.\n    cwe: CWE-1333\n    function_names:\n      - parsePath\n    filenames:\n      - lib/index.js\n    classification: slightly promising\n\n  - headline: Incomplete sanitization of \".\" and \"..\" in file paths\n    analysis: |\n      When the URL starts with a \".\" or \"./\", 'parsePath' simply removes the first 2 characters before setting it as the 'pathname'.\n      However, it does not recursively remove \"./\" or handle \"..\" parent directory traversal.  \n      So the function retains paths like \"./../../sensitive.txt\" allowing attackers to potentially access files outside the intended directory.\n    cwe: CWE-22\n    function_names:\n      - parsePath\n    filenames:\n      - lib/index.js\n    classification: slightly promising\n```",
+      "date": "2024-06-14T13:57:03.009891",
+      "usage": {
+        "prompt_tokens": 6471,
+        "completion_tokens": 680,
+        "cost": 0.148065
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper neutralization of special elements in URL pathname",
+      "analysis": "The 'parsePath' function does not properly validate and sanitize the URL pathname before using it in the output.\nAttackers could inject special elements like '@' in the pathname to make it appear like a username, which may enable semantic attacks or trick other services consuming this package's output.\nFor example, the URL \"https://attacker.com\\\\@example.com\" is parsed such that the pathname is \"/@example.com\". \nA service consuming this output may incorrectly interpret \"@example.com\" as a username and \"attacker.com\" as the hostname.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "parsePath"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    },
+    {
+      "headline": "Improper neutralization of CRLF sequences in URL",
+      "analysis": "The 'parsePath' function uses a regular expression to replace CRLF sequences in the input URL. \nHowever, it does not account for other URL-encoded CRLF sequences like '%0d%0a'.\nThis improper neutralization of CRLF sequences enables splitting the URL in an unexpected way.\nAn example is the input URL \"jav\\r\\nascript://%0aalert(1)\" where '%0a' creates a new line, making everything after that a separate path. \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "parsePath"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    },
+    {
+      "headline": "Uncontrolled recursion in regular expressions",
+      "analysis": "The regular expression \"/\\r?\\n|\\r/gm\" used to sanitize CRLF sequences in the URL is vulnerable to ReDoS attacks.\nAn attacker can provide very long strings to the 'parsePath' function containing many repetitions of \"\\r\\n\" or \"\\n\".\nThis will cause the regular expression matching to take a very long time, consuming high CPU and memory.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-1333",
+      "function_names": [
+        "parsePath"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    },
+    {
+      "headline": "Incomplete sanitization of \".\" and \"..\" in file paths",
+      "analysis": "When the URL starts with a \".\" or \"./\", 'parsePath' simply removes the first 2 characters before setting it as the 'pathname'.\nHowever, it does not recursively remove \"./\" or handle \"..\" parent directory traversal.  \nSo the function retains paths like \"./../../sensitive.txt\" allowing attackers to potentially access files outside the intended directory.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "parsePath"
+      ],
+      "filenames": [
+        "lib/index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-0624": "2022-06-28T09:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
