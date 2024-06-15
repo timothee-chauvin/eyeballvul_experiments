@@ -247,12 +247,13 @@ def plot_performance_before_after_training_cutoff(
     for attempt_filename in attempt_filenames:
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
-        results.setdefault(attempt.model, {"fp": 0})
+        results.setdefault(attempt.model, {})
         for key in "before", "after":
             results[attempt.model].setdefault(
                 key,
                 {
                     "tp": 0,
+                    "fp": 0.0,
                     "fn": 0,
                     "precision": 0.0,
                     "recall": 0.0,
@@ -273,9 +274,18 @@ def plot_performance_before_after_training_cutoff(
         stats = score.stats_with_cutoff(
             cutoff_date=datetime.fromisoformat(cutoff_dates[attempt.model])
         )
-        results[attempt.model]["fp"] += stats.fp
+        results[attempt.model]["before"]["fp"] += (
+            stats.fp
+            * (stats.before.tp + stats.before.fn)
+            / (stats.before.tp + stats.before.fn + stats.after.tp + stats.after.fn)
+        )
         results[attempt.model]["before"]["tp"] += stats.before.tp
         results[attempt.model]["before"]["fn"] += stats.before.fn
+        results[attempt.model]["after"]["fp"] += (
+            stats.fp
+            * (stats.after.tp + stats.after.fn)
+            / (stats.before.tp + stats.before.fn + stats.after.tp + stats.after.fn)
+        )
         results[attempt.model]["after"]["tp"] += stats.after.tp
         results[attempt.model]["after"]["fn"] += stats.after.fn
 
@@ -289,6 +299,7 @@ def plot_performance_before_after_training_cutoff(
         )
 
         for key in ["before", "after"]:
+            results[model][key]["fp"] = round(results[model][key]["fp"])
             # tp
             reconstructed_classifications[model][key]["y_true"].extend(
                 [1] * results[model][key]["tp"]
@@ -298,8 +309,12 @@ def plot_performance_before_after_training_cutoff(
             )
 
             # fp
-            reconstructed_classifications[model][key]["y_true"].extend([0] * results[model]["fp"])
-            reconstructed_classifications[model][key]["y_pred"].extend([1] * results[model]["fp"])
+            reconstructed_classifications[model][key]["y_true"].extend(
+                [0] * results[model][key]["fp"]
+            )
+            reconstructed_classifications[model][key]["y_pred"].extend(
+                [1] * results[model][key]["fp"]
+            )
 
             # fn
             reconstructed_classifications[model][key]["y_true"].extend(
@@ -333,7 +348,7 @@ def plot_performance_before_after_training_cutoff(
                 average="binary",
             )
             # Sanity checks: verify that confidenceinterval computes the same values as we do
-            classified_positive = results[model][key]["tp"] + results[model]["fp"]
+            classified_positive = results[model][key]["tp"] + results[model][key]["fp"]
             all_positive = results[model][key]["tp"] + results[model][key]["fn"]
             our_precision = results[model][key]["tp"] / classified_positive
             our_recall = results[model][key]["tp"] / (all_positive)
