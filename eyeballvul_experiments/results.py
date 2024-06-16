@@ -239,6 +239,25 @@ def plot_overall_performance(
     fig.write_image(Config.paths.plots / "pareto_efficiency.png")
 
 
+def average_number_of_chunks_by_model(instruction_template_hash: str):
+    """Among attempts that have been scored, count the average number of chunks given to models (the
+    number of times they've been run)."""
+    total_chunks_by_model: dict[str, list[int]] = {}
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    for attempt_filename in attempt_filenames:
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        total_chunks_by_model.setdefault(attempt.model, [0, 0])
+        if get_scores_with_hash(attempt, instruction_template_hash):
+            total_chunks_by_model[attempt.model][0] += len(attempt.chunk_hashes)
+            total_chunks_by_model[attempt.model][1] += 1
+    results = {model: values[0] / values[1] for model, values in total_chunks_by_model.items()}
+    results = {k: results[k] for k in sorted(results)}
+    with open(Config.paths.results / "average_chunks_by_model.json", "w") as f:
+        json.dump(results, f, indent=2)
+        f.write("\n")
+
+
 def plot_performance_before_after_training_cutoff(
     instruction_template_hash: str,
     model_order: list[str],
@@ -599,3 +618,4 @@ if __name__ == "__main__":
     plot_performance_before_after_training_cutoff(
         instruction_template_hash, model_order, color_map, training_data_cutoffs
     )
+    average_number_of_chunks_by_model(instruction_template_hash)
