@@ -604,6 +604,7 @@ def plot_cve_severities(instruction_template_hash: str):
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     cve_ids: set[str] = set()
     cve_severities: dict[float, int] = {}
+    no_severity = 0
     for attempt_filename in attempt_filenames:
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
@@ -614,14 +615,22 @@ def plot_cve_severities(instruction_template_hash: str):
         cve_ids.update(set(score.mapping.values()))
     for cve_id in tqdm(cve_ids):
         vuln = get_vulns(id=cve_id)[0]
-        for severity in vuln.severity or []:
-            if severity["type"] == "CVSS_V3":
-                value = CVSS3(severity["score"]).scores()[0]
-                cve_severities[value] = cve_severities.get(value, 0) + 1
+        v3_severities = [
+            severity for severity in vuln.severity or [] if severity["type"] == "CVSS_V3"
+        ]
+        if v3_severities:
+            value = CVSS3(v3_severities[0]["score"]).scores()[0]
+            cve_severities[value] = cve_severities.get(value, 0) + 1
+        else:
+            no_severity += 1
     average = sum(value * count for value, count in cve_severities.items()) / sum(
         cve_severities.values()
     )
-    results = {"average": average, "values": dict(sorted(cve_severities.items()))}
+    results = {
+        "no_severity": no_severity,
+        "average": average,
+        "values": dict(sorted(cve_severities.items())),
+    }
     with open(Config.paths.results / "cve_severities.json", "w") as f:
         json.dump(results, f, indent=2)
         f.write("\n")
@@ -663,7 +672,7 @@ def plot_cve_severities(instruction_template_hash: str):
             )
     fig.update_layout(
         template="plotly_white",
-        xaxis={"title": "Severity", "nticks": len(cve_severities_05) + 1},
+        xaxis={"title": "Base Severity (CVSS v3)", "nticks": len(cve_severities_05) + 1},
         yaxis={"title": "Occurrences"},
     )
     fig.write_image(Config.paths.plots / "cve_severities.png")
