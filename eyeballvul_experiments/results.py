@@ -587,6 +587,19 @@ def plot_cwes_found(instruction_template_hash: str, top_n: int):
     fig.write_image(Config.paths.plots / "cwes_found.png")
 
 
+def get_severity_category(severity):
+    if severity == 0:
+        return "None"
+    elif severity < 4:
+        return "Low"
+    elif severity < 7:
+        return "Medium"
+    elif severity < 9:
+        return "High"
+    else:
+        return "Critical"
+
+
 def plot_cve_severities(instruction_template_hash: str):
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     cve_ids: set[str] = set()
@@ -605,12 +618,24 @@ def plot_cve_severities(instruction_template_hash: str):
             if severity["type"] == "CVSS_V3":
                 value = CVSS3(severity["score"]).scores()[0]
                 cve_severities[value] = cve_severities.get(value, 0) + 1
-    cve_severities = dict(sorted(cve_severities.items()))
+    average = sum(value * count for value, count in cve_severities.items()) / sum(
+        cve_severities.values()
+    )
+    results = {"average": average, "values": dict(sorted(cve_severities.items()))}
     with open(Config.paths.results / "cve_severities.json", "w") as f:
-        json.dump(cve_severities, f, indent=2)
+        json.dump(results, f, indent=2)
         f.write("\n")
 
     # Plot the distribution with a bin size of 0.5.
+
+    severity_colors = {
+        "None": "gray",
+        "Low": "green",
+        "Medium": "yellow",
+        "High": "orange",
+        "Critical": "red",
+    }
+
     cve_severities_05: dict[float, int] = {}
     for severity_score in cve_severities:
         bin = int(severity_score * 2) / 2
@@ -624,13 +649,18 @@ def plot_cve_severities(instruction_template_hash: str):
         }
     )
     df = df.sort_values("severity", ascending=True)
-    fig.add_trace(
-        go.Bar(
-            x=df["severity"],
-            y=df["occurrences"],
-            marker_color="rgb(138, 146, 251)",
-        )
-    )
+
+    for category, color in severity_colors.items():
+        df_category = df[df["severity"].apply(get_severity_category) == category]
+        if not df_category.empty:
+            fig.add_trace(
+                go.Bar(
+                    x=df_category["severity"],
+                    y=df_category["occurrences"],
+                    name=category,
+                    marker_color=color,
+                )
+            )
     fig.update_layout(
         template="plotly_white",
         xaxis={"title": "Severity", "nticks": len(cve_severities_05) + 1},
