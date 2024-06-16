@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from confidenceinterval import f1_score, precision_score, recall_score
 from cvss import CVSS3
-from eyeballvul import EyeballvulScore, get_vulns
+from eyeballvul import EyeballvulItem, EyeballvulScore, get_vulns
 from tqdm import tqdm
 
 from eyeballvul_experiments.attempt import Attempt
@@ -600,6 +600,13 @@ def get_severity_category(severity):
         return "Critical"
 
 
+def get_severity_score(vuln: EyeballvulItem) -> float | None:
+    v3_severities = [severity for severity in vuln.severity or [] if severity["type"] == "CVSS_V3"]
+    if v3_severities:
+        return CVSS3(v3_severities[0]["score"]).scores()[0]
+    return None
+
+
 def plot_cve_severities(instruction_template_hash: str):
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     cve_ids: set[str] = set()
@@ -615,20 +622,21 @@ def plot_cve_severities(instruction_template_hash: str):
         cve_ids.update(set(score.mapping.values()))
     for cve_id in tqdm(cve_ids):
         vuln = get_vulns(id=cve_id)[0]
-        v3_severities = [
-            severity for severity in vuln.severity or [] if severity["type"] == "CVSS_V3"
-        ]
-        if v3_severities:
-            value = CVSS3(v3_severities[0]["score"]).scores()[0]
-            cve_severities[value] = cve_severities.get(value, 0) + 1
+        severity_score = get_severity_score(vuln)
+        if severity_score:
+            cve_severities[severity_score] = cve_severities.get(severity_score, 0) + 1
         else:
             no_severity += 1
     average = sum(value * count for value, count in cve_severities.items()) / sum(
         cve_severities.values()
     )
+    fraction_critical = sum(count for value, count in cve_severities.items() if value >= 9) / sum(
+        cve_severities.values()
+    )
     results = {
         "no_severity": no_severity,
         "average": average,
+        "fraction_critical": fraction_critical,
         "values": dict(sorted(cve_severities.items())),
     }
     with open(Config.paths.results / "cve_severities.json", "w") as f:
