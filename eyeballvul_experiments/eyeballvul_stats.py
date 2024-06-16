@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from eyeballvul import get_revisions, get_vulns
+from tqdm import tqdm
 
 from eyeballvul_experiments.config.config_loader import Config
 
@@ -268,7 +269,7 @@ def average_vulns_per_revision_and_revisions_per_vuln():
     all_revisions = get_revisions()
     vulns_per_revision_mapping: dict[str, list[str]] = {}
     revisions_per_vuln_mapping: dict[str, list[str]] = {}
-    for revision in all_revisions:
+    for revision in tqdm(all_revisions):
         vulns_here = get_vulns(commit=revision.commit)
         vulns_per_revision_mapping[revision.commit] = [vuln.id for vuln in vulns_here]
         for vuln in vulns_here:
