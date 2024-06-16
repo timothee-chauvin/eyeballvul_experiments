@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -607,21 +608,10 @@ def get_severity_score(vuln: EyeballvulItem) -> float | None:
     return None
 
 
-def plot_cve_severities(instruction_template_hash: str):
-    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
-    cve_ids: set[str] = set()
+def get_severity_scores(vulns: list[EyeballvulItem]) -> dict[str, Any]:
     cve_severities: dict[float, int] = {}
     no_severity = 0
-    for attempt_filename in attempt_filenames:
-        with open(Config.paths.attempts / attempt_filename) as f:
-            attempt = Attempt.model_validate_json(f.read())
-        scores = get_scores_with_hash(attempt, instruction_template_hash)
-        if not scores:
-            continue
-        score = scores[0]
-        cve_ids.update(set(score.mapping.values()))
-    for cve_id in tqdm(cve_ids):
-        vuln = get_vulns(id=cve_id)[0]
+    for vuln in tqdm(vulns):
         severity_score = get_severity_score(vuln)
         if severity_score:
             cve_severities[severity_score] = cve_severities.get(severity_score, 0) + 1
@@ -633,12 +623,28 @@ def plot_cve_severities(instruction_template_hash: str):
     fraction_critical = sum(count for value, count in cve_severities.items() if value >= 9) / sum(
         cve_severities.values()
     )
-    results = {
+    return {
         "no_severity": no_severity,
         "average": average,
         "fraction_critical": fraction_critical,
         "values": dict(sorted(cve_severities.items())),
     }
+
+
+def plot_cve_severities(instruction_template_hash: str):
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    cve_ids: set[str] = set()
+    for attempt_filename in attempt_filenames:
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        if not scores:
+            continue
+        score = scores[0]
+        cve_ids.update(set(score.mapping.values()))
+    vulns = [get_vulns(id=cve_id)[0] for cve_id in cve_ids]
+    results = get_severity_scores(vulns)
+    cve_severities = results["values"]
     with open(Config.paths.results / "cve_severities.json", "w") as f:
         json.dump(results, f, indent=2)
         f.write("\n")
