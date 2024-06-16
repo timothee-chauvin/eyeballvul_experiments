@@ -4,7 +4,9 @@ from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 from confidenceinterval import f1_score, precision_score, recall_score
-from eyeballvul import EyeballvulScore
+from cvss import CVSS3
+from eyeballvul import EyeballvulScore, get_vulns
+from tqdm import tqdm
 
 from eyeballvul_experiments.attempt import Attempt
 from eyeballvul_experiments.config.config_loader import Config
@@ -585,6 +587,58 @@ def plot_cwes_found(instruction_template_hash: str, top_n: int):
     fig.write_image(Config.paths.plots / "cwes_found.png")
 
 
+def plot_cve_severities(instruction_template_hash: str):
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    cve_ids: set[str] = set()
+    cve_severities: dict[float, int] = {}
+    for attempt_filename in attempt_filenames:
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        if not scores:
+            continue
+        score = scores[0]
+        cve_ids.update(set(score.mapping.values()))
+    for cve_id in tqdm(cve_ids):
+        vuln = get_vulns(id=cve_id)[0]
+        for severity in vuln.severity or []:
+            if severity["type"] == "CVSS_V3":
+                value = CVSS3(severity["score"]).scores()[0]
+                cve_severities[value] = cve_severities.get(value, 0) + 1
+    cve_severities = dict(sorted(cve_severities.items()))
+    with open(Config.paths.results / "cve_severities.json", "w") as f:
+        json.dump(cve_severities, f, indent=2)
+        f.write("\n")
+
+    # Plot the distribution with a bin size of 0.5.
+    cve_severities_05: dict[float, int] = {}
+    for severity_score in cve_severities:
+        bin = int(severity_score * 2) / 2
+        cve_severities_05[bin] = cve_severities_05.get(bin, 0) + cve_severities[severity_score]
+
+    fig = go.Figure()
+    df = pd.DataFrame(
+        {
+            "severity": list(cve_severities_05.keys()),
+            "occurrences": list(cve_severities_05.values()),
+        }
+    )
+    df = df.sort_values("severity", ascending=True)
+    fig.add_trace(
+        go.Bar(
+            x=df["severity"],
+            y=df["occurrences"],
+            marker_color="rgb(138, 146, 251)",
+        )
+    )
+    fig.update_layout(
+        template="plotly_white",
+        xaxis={"title": "Severity", "nticks": len(cve_severities_05) + 1},
+        yaxis={"title": "Occurrences"},
+    )
+    fig.write_image(Config.paths.plots / "cve_severities.png")
+
+
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     model_order = [
@@ -619,3 +673,4 @@ if __name__ == "__main__":
         instruction_template_hash, model_order, color_map, training_data_cutoffs
     )
     average_number_of_chunks_by_model(instruction_template_hash)
+    plot_cve_severities(instruction_template_hash)
