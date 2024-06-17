@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from confidenceinterval import f1_score, precision_score, recall_score
 from cvss import CVSS3
 from eyeballvul import EyeballvulItem, EyeballvulScore, get_vulns
+from plotly.subplots import make_subplots
 from tqdm import tqdm
 
 from eyeballvul_experiments.attempt import Attempt
@@ -608,26 +609,30 @@ def get_severity_score(vuln: EyeballvulItem) -> float | None:
     return None
 
 
-def get_severity_scores(vulns: list[EyeballvulItem]) -> dict[str, Any]:
-    cve_severities: dict[float, int] = {}
+def get_severity_stats(vulns: list[EyeballvulItem]) -> dict[str, Any]:
+    cve_severity_counts: dict[float, int] = {}
     no_severity = 0
     for vuln in tqdm(vulns):
         severity_score = get_severity_score(vuln)
         if severity_score:
-            cve_severities[severity_score] = cve_severities.get(severity_score, 0) + 1
+            cve_severity_counts[severity_score] = cve_severity_counts.get(severity_score, 0) + 1
         else:
             no_severity += 1
-    average = sum(value * count for value, count in cve_severities.items()) / sum(
-        cve_severities.values()
+    average = sum(value * count for value, count in cve_severity_counts.items()) / sum(
+        cve_severity_counts.values()
     )
-    fraction_critical = sum(count for value, count in cve_severities.items() if value >= 9) / sum(
-        cve_severities.values()
-    )
+    fraction_critical = sum(
+        count for value, count in cve_severity_counts.items() if value >= 9
+    ) / sum(cve_severity_counts.values())
+    cve_severity_fractions = {
+        value: count / sum(cve_severity_counts.values())
+        for value, count in cve_severity_counts.items()
+    }
     return {
         "no_severity": no_severity,
         "average": average,
         "fraction_critical": fraction_critical,
-        "values": dict(sorted(cve_severities.items())),
+        "values": dict(sorted(cve_severity_fractions.items())),
     }
 
 
@@ -642,9 +647,17 @@ def plot_cve_severities(instruction_template_hash: str):
             continue
         score = scores[0]
         cve_ids.update(set(score.mapping.values()))
-    vulns = [get_vulns(id=cve_id)[0] for cve_id in cve_ids]
-    results = get_severity_scores(vulns)
-    cve_severities = results["values"]
+    tp_vulns = [get_vulns(id=cve_id)[0] for cve_id in cve_ids]
+    tp_stats = get_severity_stats(tp_vulns)
+    tp_cve_severities = tp_stats["values"]
+    all_vulns = get_vulns()
+    all_stats = get_severity_stats(all_vulns)
+    all_cve_severities = all_stats["values"]
+    results = {
+        "tp": tp_stats,
+        "all": all_stats,
+    }
+
     with open(Config.paths.results / "cve_severities.json", "w") as f:
         json.dump(results, f, indent=2)
         f.write("\n")
@@ -659,36 +672,83 @@ def plot_cve_severities(instruction_template_hash: str):
         "Critical": "red",
     }
 
-    cve_severities_05: dict[float, int] = {}
-    for severity_score in cve_severities:
+    tp_cve_severities_05: dict[float, int] = {}
+    for severity_score in tp_cve_severities:
         bin = int(severity_score * 2) / 2
-        cve_severities_05[bin] = cve_severities_05.get(bin, 0) + cve_severities[severity_score]
+        tp_cve_severities_05[bin] = (
+            tp_cve_severities_05.get(bin, 0) + tp_cve_severities[severity_score]
+        )
+    all_cve_severities_05: dict[float, int] = {}
+    for severity_score in all_cve_severities:
+        bin = int(severity_score * 2) / 2
+        all_cve_severities_05[bin] = (
+            all_cve_severities_05.get(bin, 0) + all_cve_severities[severity_score]
+        )
 
-    fig = go.Figure()
-    df = pd.DataFrame(
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1)
+    tp_df = pd.DataFrame(
         {
-            "severity": list(cve_severities_05.keys()),
-            "occurrences": list(cve_severities_05.values()),
+            "severity": list(tp_cve_severities_05.keys()),
+            "occurrences": list(tp_cve_severities_05.values()),
         }
     )
-    df = df.sort_values("severity", ascending=True)
+    tp_df = tp_df.sort_values("severity", ascending=True)
+    all_df = pd.DataFrame(
+        {
+            "severity": list(all_cve_severities_05.keys()),
+            "occurrences": list(all_cve_severities_05.values()),
+        }
+    )
+    all_df = all_df.sort_values("severity", ascending=True)
 
     for category, color in severity_colors.items():
-        df_category = df[df["severity"].apply(get_severity_category) == category]
-        if not df_category.empty:
+        tp_category = tp_df[tp_df["severity"].apply(get_severity_category) == category]
+        all_category = all_df[all_df["severity"].apply(get_severity_category) == category]
+        if not tp_category.empty:
             fig.add_trace(
                 go.Bar(
-                    x=df_category["severity"],
-                    y=df_category["occurrences"],
+                    x=tp_category["severity"],
+                    y=tp_category["occurrences"],
                     name=category,
                     marker_color=color,
-                )
+                    legendgroup="tp",
+                    legendgrouptitle_text="True Positives",
+                ),
+                row=1,
+                col=1,
             )
-    fig.update_layout(
-        template="plotly_white",
-        xaxis={"title": "Base Severity (CVSS v3)", "nticks": len(cve_severities_05) + 1},
-        yaxis={"title": "Occurrences"},
-    )
+        if not all_category.empty:
+            fig.add_trace(
+                go.Bar(
+                    x=all_category["severity"],
+                    y=all_category["occurrences"],
+                    name=category,
+                    marker_color=color,
+                    opacity=0.8,
+                    marker={
+                        "color": color,
+                        "opacity": 0.8,
+                        "pattern": {
+                            "shape": "/",
+                            "bgcolor": "white",
+                            "fgcolor": color,
+                            "size": 4,
+                            "solidity": 0.7,
+                        },
+                    },
+                    legendgroup="all",
+                    legendgrouptitle_text="All Vulnerabilities",
+                ),
+                row=2,
+                col=1,
+            )
+    nticks = len(set(tp_cve_severities_05.keys() | set(all_cve_severities_05.keys()))) + 1
+    fig.update_layout(template="plotly_white")
+
+    fig.update_xaxes(title_text="Base Severity (CVSS v3)", nticks=nticks, row=2, col=1)
+    fig.update_yaxes(title_text="Rate", row=1, col=1)
+    fig.update_yaxes(title_text="Rate", row=2, col=1)
+
     fig.write_image(Config.paths.plots / "cve_severities.png")
 
 
