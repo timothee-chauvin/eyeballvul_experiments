@@ -428,7 +428,7 @@ async def run_models():
 
 
 async def re_score_attempt(
-    semaphore, task_id: str, attempt_filename: str, add_if_exists: bool = False
+    semaphore, task_id: str, attempt_filename: str, scoring_model: str, add_if_exists: bool = False
 ):
     """Using a semaphore to avoid being rate-limited."""
     async with semaphore:
@@ -436,6 +436,7 @@ async def re_score_attempt(
             attempt = Attempt.model_validate_json(f.read())
             if not add_if_exists and any(
                 score.instruction_template_hash == instruction_template_hash
+                and score.scoring_model == scoring_model
                 for score in attempt.scores
             ):
                 logging.info(
@@ -447,15 +448,17 @@ async def re_score_attempt(
                 attempt.log()
 
 
-async def re_score_all(add_if_exists: bool = False):
-    """Re-score all attempts, unless those that have already been scored with the current
+async def re_score_all(scoring_model: str, add_if_exists: bool = False):
+    """Re-score all attempts, except those that have already been scored with the current
     instruction template hash if `add_if_exists` is False."""
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     total = len(attempt_filenames)
     max_concurrent_tasks = 5
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
     tasks = [
-        asyncio.create_task(re_score_attempt(semaphore, f"{i+1}/{total}", filename, add_if_exists))
+        asyncio.create_task(
+            re_score_attempt(semaphore, f"{i+1}/{total}", filename, scoring_model, add_if_exists)
+        )
         for i, filename in enumerate(attempt_filenames)
     ]
     await asyncio.gather(*tasks)
