@@ -1,6 +1,8 @@
 import json
 import random
+from typing import Any
 
+import numpy as np
 from eyeballvul import EyeballvulScore, get_vulns
 
 from eyeballvul_experiments.attempt import Attempt
@@ -83,6 +85,88 @@ def generate_random_sample_human_agreement(instruction_template_hash: str, n: in
         f.write("\n")
 
 
+def get_llm_score() -> list[int]:
+    with open(Config.paths.human_baselines / "sample.json") as f:
+        data = json.load(f)
+    return [el["score"] for el in data["sample"]]
+
+
+def get_human_score(filename: str) -> list[int]:
+    with open(Config.paths.human_baselines / filename) as f:
+        data = json.load(f)
+    maximum = max([int(k) for k in data.keys()])
+    return [data[str(i + 1)]["score"] for i in range(maximum)]
+
+
+def cohen_kappa(score1: list[int], score2: list[int]) -> tuple[list, float]:
+    n = len(score1)
+    # Create contingency table
+    table = np.zeros((2, 2))
+    for i in range(n):
+        table[score1[i], score2[i]] += 1
+    print(table)
+
+    # Calculate observed agreement
+    po = (table[0, 0] + table[1, 1]) / n
+
+    # Calculate expected agreement
+    pe = (
+        (table[0, 0] + table[0, 1]) * (table[0, 0] + table[1, 0])
+        + (table[1, 0] + table[1, 1]) * (table[0, 1] + table[1, 1])
+    ) / (n * n)
+
+    # Compute kappa
+    kappa = (po - pe) / (1 - pe)
+
+    return table.tolist(), kappa
+
+
+def cohen_kappas(filenames: list[str]):
+    llm_score = get_llm_score()
+    results: dict[str, tuple[list, float]] = {}
+    for filename in filenames:
+        score = get_human_score(filename)
+        results[filename] = cohen_kappa(llm_score, score)
+    average = sum([res[1] for res in results.values()]) / len(results)
+    with open(Config.paths.results / "cohen_kappa.json", "w") as f:
+        json.dump({"individual": results, "average": average}, f, indent=2)
+        f.write("\n")
+
+
+def average_confidence(filenames: list[str]):
+    llm_score = get_llm_score()
+    results: dict[str, dict[str, Any]] = {"individual": {}, "average": {}}
+    for filename in filenames:
+        with open(Config.paths.human_baselines / filename) as f:
+            data = json.load(f)
+        maximum = max([int(k) for k in data.keys()])
+        score = [data[str(i + 1)]["score"] for i in range(maximum)]
+        confidence = [data[str(i + 1)]["confidence"] for i in range(maximum)]
+        average_confidence = sum(confidence) / len(confidence)
+        disagreement_indices = [i for i in range(maximum) if score[i] != llm_score[i]]
+        confidence_on_disagreement = [confidence[i] for i in disagreement_indices]
+        average_confidence_on_disagreement = sum(confidence_on_disagreement) / len(
+            confidence_on_disagreement
+        )
+        results["individual"][filename] = {
+            "confidence": average_confidence,
+            "confidence_on disagreement": average_confidence_on_disagreement,
+        }
+    results["average"] = {
+        "confidence": sum(item["confidence"] for item in results["individual"].values())
+        / len(results["individual"]),
+        "confidence_on_disagreement": sum(
+            item["confidence_on disagreement"] for item in results["individual"].values()
+        )
+        / len(results["individual"]),
+    }
+    with open(Config.paths.results / "confidence.json", "w") as f:
+        json.dump(results, f, indent=2)
+        f.write("\n")
+
+
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     generate_random_sample_human_agreement(instruction_template_hash, 100)
+    cohen_kappas(["score_a.json", "score_b.json", "score_c.json"])
+    average_confidence(["score_a.json", "score_b.json", "score_c.json"])
