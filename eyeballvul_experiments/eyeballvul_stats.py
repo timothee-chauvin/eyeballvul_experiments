@@ -72,6 +72,7 @@ def plot_repo_size_histogram():
         legend=dict(
             x=0.01, y=0.99, bgcolor="rgba(255, 255, 255, 0)", bordercolor="rgba(255, 255, 255, 0)"
         ),
+        margin=dict(t=5, l=5, r=5, b=5),
     )
 
     fig.write_image(Config.paths.plots / "repo_size_histogram.png")
@@ -184,6 +185,7 @@ def plot_commits_and_vulns_by_date():
             x=0.01, y=0.99, bgcolor="rgba(255, 255, 255, 0)", bordercolor="rgba(255, 255, 255, 0)"
         ),
         font_size=35,
+        margin=dict(t=5, l=5, r=5, b=5),
     )
 
     fig.write_image(Config.paths.plots / "commits_and_vulns_by_date.png", width=1920, height=1080)

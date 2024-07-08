@@ -215,6 +215,7 @@ def plot_overall_performance(
         width=800,
         height=600,
         font=dict(size=12),
+        margin=dict(t=5, l=5, r=5, b=5),
     )
     fig.write_image(Config.paths.plots / "overall_performance.png")
 
@@ -265,6 +266,7 @@ def plot_overall_performance(
         width=800,
         height=600,
         font=dict(size=12),
+        margin=dict(t=5, l=5, r=5, b=5),
     )
 
     fig.update_xaxes(rangemode="tozero")
@@ -558,6 +560,7 @@ def plot_performance_before_after_training_cutoff(
         height=600,
         font=dict(size=12),
         legend=dict(title="Model (Period)"),
+        margin=dict(t=5, l=5, r=5, b=5),
     )
 
     fig.update_xaxes(rangemode="tozero")
@@ -633,6 +636,7 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
         )
     fig.update_layout(
         template="plotly_white",
+        margin=dict(t=5, l=5, r=5, b=5),
         xaxis={"title": "Frequency among true positives", "tickformat": ",.0%"},
     )
     fig.write_image(Config.paths.plots / "cwes_found.png")
@@ -792,7 +796,7 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
                 col=1,
             )
     nticks = len(set(tp_cve_severities_05.keys() | set(all_cve_severities_05.keys()))) + 1
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(template="plotly_white", margin=dict(t=5, l=5, r=5, b=5))
 
     fig.update_xaxes(title_text="Base Severity (CVSS v3)", nticks=nticks, row=2, col=1)
     fig.update_yaxes(title_text="Rate", row=1, col=1)
@@ -877,6 +881,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
         barmode="group",
         template="plotly_white",
         showlegend=False,
+        margin=dict(t=5, l=5, r=5, b=5),
     )
     fig.update_yaxes(row=1, col=1, tickprefix="$")
     fig.update_yaxes(row=1, col=1, range=[0, df["inference_cost_per_tp"].max() * 1.4])
