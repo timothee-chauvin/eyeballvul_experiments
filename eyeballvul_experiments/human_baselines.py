@@ -146,8 +146,13 @@ def cohen_kappas(instruction_template_hash: str, filenames: list[str], scoring_m
         human_scores = get_human_scores(filename)
         results[filename] = cohen_kappa(llm_scores, human_scores)
     average = sum([res["kappa"] for res in results.values()]) / len(results)
+    all_llm_positive = [i + 1 for i, score in enumerate(llm_scores) if score == 1]
     with open(Config.paths.results / "cohen_kappa.json", "w") as f:
-        json.dump({"individual": results, "average": average}, f, indent=2)
+        json.dump(
+            {"individual": results, "average": average, "all_llm_positive": all_llm_positive},
+            f,
+            indent=2,
+        )
         f.write("\n")
 
 
