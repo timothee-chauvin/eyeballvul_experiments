@@ -308,11 +308,13 @@ if __name__ == "__main__":
             "2023-11-01",  # GPT-4o, "October 2023" as of 2024-05-28
             "2023-12-01",  # Gemini, "November 2023" as of 2024-05-28
             "2024-01-01",  # gpt-4-turbo-2024-04-09, "December 2023" as of 2024-05-28
+            "2024-05-01",  # Claude 3.5 Sonnet, "April 2024" as of 2024-07-08
         ]
     )
     fraction_of_benchmark_after_knowledge_cutoffs_by_context_window(
         [
             ("2023-09-01", 200000),  # Claude 3
+            ("2024-05-01", 200000),  # Claude 3.5 Sonnet
             ("2023-11-01", 128000),  # GPT-4o
             ("2023-12-01", 1000000),  # Gemini 1.5 Pro (1M)
             ("2023-12-01", 10000000),  # Gemini 1.5 Pro (10M)

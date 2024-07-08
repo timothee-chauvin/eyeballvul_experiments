@@ -14,16 +14,22 @@ from eyeballvul_experiments.attempt import Attempt
 from eyeballvul_experiments.config.config_loader import Config
 
 
-def get_scores_with_hash(attempt: Attempt, instruction_template_hash: str) -> list[EyeballvulScore]:
+def get_scores_with_hash(
+    attempt: Attempt, instruction_template_hash: str, scoring_model: str
+) -> list[EyeballvulScore]:
     return [
         score
         for score in attempt.scores
         if score.instruction_template_hash == instruction_template_hash
+        and score.scoring_model == scoring_model
     ]
 
 
 def plot_overall_performance(
-    instruction_template_hash: str, model_order: list[str], color_map: dict[str, str]
+    instruction_template_hash: str,
+    scoring_model: str,
+    model_order: list[str],
+    color_map: dict[str, str],
 ):
     results: dict[str, dict] = {}
     reconstructed_classifications: dict[str, dict] = {}
@@ -49,7 +55,7 @@ def plot_overall_performance(
             },
         )
         # Only keep the first score.
-        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        scores = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)
         if not scores:
             continue
         score = scores[0]
@@ -243,7 +249,7 @@ def plot_overall_performance(
     fig.write_image(Config.paths.plots / "pareto_efficiency.png")
 
 
-def average_number_of_chunks_by_model(instruction_template_hash: str):
+def average_number_of_chunks_by_model(instruction_template_hash: str, scoring_model: str):
     """Among attempts that have been scored, count the average number of chunks given to models (the
     number of times they've been run)."""
     total_chunks_by_model: dict[str, list[int]] = {}
@@ -252,7 +258,7 @@ def average_number_of_chunks_by_model(instruction_template_hash: str):
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
         total_chunks_by_model.setdefault(attempt.model, [0, 0])
-        if get_scores_with_hash(attempt, instruction_template_hash):
+        if get_scores_with_hash(attempt, instruction_template_hash, scoring_model):
             total_chunks_by_model[attempt.model][0] += len(attempt.chunk_hashes)
             total_chunks_by_model[attempt.model][1] += 1
     results = {model: values[0] / values[1] for model, values in total_chunks_by_model.items()}
@@ -264,6 +270,7 @@ def average_number_of_chunks_by_model(instruction_template_hash: str):
 
 def plot_performance_before_after_training_cutoff(
     instruction_template_hash: str,
+    scoring_model: str,
     model_order: list[str],
     color_map: dict[str, str],
     cutoff_dates: dict[str, str],
@@ -294,7 +301,7 @@ def plot_performance_before_after_training_cutoff(
                 },
             )
         # Only keep the first score.
-        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        scores = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)
         if not scores:
             continue
         score = scores[0]
@@ -529,7 +536,7 @@ def plot_performance_before_after_training_cutoff(
     fig.write_image(Config.paths.plots / "pareto_efficiency_before_after_training_cutoff.png")
 
 
-def plot_cwes_found(instruction_template_hash: str, top_n: int):
+def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: int):
     cwe_occurrences: dict[str, float] = {}
     cwe_descriptions: dict[str, str] = {
         "CWE-79": "XSS",
@@ -548,7 +555,7 @@ def plot_cwes_found(instruction_template_hash: str, top_n: int):
     for attempt_filename in attempt_filenames:
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
-        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        scores = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)
         if not scores:
             continue
         score = scores[0]
@@ -636,13 +643,13 @@ def get_severity_stats(vulns: list[EyeballvulItem]) -> dict[str, Any]:
     }
 
 
-def plot_cve_severities(instruction_template_hash: str):
+def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     cve_ids: set[str] = set()
     for attempt_filename in attempt_filenames:
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
-        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        scores = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)
         if not scores:
             continue
         score = scores[0]
@@ -754,10 +761,12 @@ def plot_cve_severities(instruction_template_hash: str):
 
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
+    scoring_model = "claude-3-5-sonnet-20240620"
     model_order = [
         "claude-3-haiku-20240307",
         "claude-3-sonnet-20240229",
         "claude-3-opus-20240229",
+        "claude-3-5-sonnet-20240620",
         "gpt-4o-2024-05-13",
         "gpt-4-turbo-2024-04-09",
         "gemini/gemini-1.5-pro",
@@ -767,6 +776,7 @@ if __name__ == "__main__":
         "claude-3-haiku-20240307": "rgb(252, 244, 10)",
         "claude-3-sonnet-20240229": "rgb(255, 139, 15)",
         "claude-3-opus-20240229": "rgb(255, 0, 0)",
+        "claude-3-5-sonnet-20240620": "rgb(255, 0, 225)",
         "gpt-4o-2024-05-13": "rgb(15, 212, 40)",
         "gpt-4-turbo-2024-04-09": "rgb(7, 99, 19)",
         "gemini/gemini-1.5-pro": "rgb(2, 14, 150)",
@@ -776,14 +786,15 @@ if __name__ == "__main__":
         "claude-3-haiku-20240307": "2023-09-01",
         "claude-3-sonnet-20240229": "2023-09-01",
         "claude-3-opus-20240229": "2023-09-01",
+        "claude-3-5-sonnet-20240620": "2024-05-01",
         "gpt-4o-2024-05-13": "2023-11-01",
         "gpt-4-turbo-2024-04-09": "2024-01-01",
         "gemini/gemini-1.5-pro": "2023-12-01",
     }
-    plot_overall_performance(instruction_template_hash, model_order, color_map)
-    plot_cwes_found(instruction_template_hash, top_n=10)
+    plot_overall_performance(instruction_template_hash, scoring_model, model_order, color_map)
+    plot_cwes_found(instruction_template_hash, scoring_model, top_n=10)
     plot_performance_before_after_training_cutoff(
-        instruction_template_hash, model_order, color_map, training_data_cutoffs
+        instruction_template_hash, scoring_model, model_order, color_map, training_data_cutoffs
     )
-    average_number_of_chunks_by_model(instruction_template_hash)
-    plot_cve_severities(instruction_template_hash)
+    average_number_of_chunks_by_model(instruction_template_hash, scoring_model)
+    plot_cve_severities(instruction_template_hash, scoring_model)
