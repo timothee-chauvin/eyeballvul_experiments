@@ -1,0 +1,75 @@
+{
+  "commit": "23d6cac36a16b81b46c26649cb357c3938d1fd95",
+  "repo_url": "https://github.com/fastify/fastify-http-proxy",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "846181db4f753e4f73d4"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cross-Site Scripting (XSS) vulnerability in proxy rewrite logic\n    analysis: |\n      The proxy rewrite logic in the rewriteHeaders function does not properly sanitize or encode the location header value before rewriting it. This could allow an attacker to inject malicious JavaScript into the location header, which would then be executed when the browser follows the redirect. The vulnerable code is in the rewriteHeaders function in index.js:\n\n      if (location) {\n        headers.location = location.replace(rewritePrefix, fastify.prefix)\n      }\n\n      An attacker could potentially craft a malicious upstream response with a location header containing JavaScript, which would then be rewritten and sent to the client.\n    cwe: CWE-79\n    function_names:\n      - rewriteHeaders\n    filenames:\n      - index.js\n    classification: very promising\n\n  - headline: Potential denial of service via unbounded proxy connections\n    analysis: |\n      The proxy does not implement any limits on the number of concurrent connections or requests. This could allow an attacker to exhaust server resources by opening many simultaneous connections. The WebSocket proxy implementation in particular creates a new WebSocket connection for each incoming connection without any limits. This is evident in the setupWebSocketProxy function in index.js:\n\n      server.on('connection', (source, request) => {\n        const url = createWebSocketUrl(options, request)\n        const target = new WebSocket(url, options.wsClientOptions)\n        proxyWebSockets(source, target)\n      })\n\n      Without proper limits, this could lead to resource exhaustion.\n    cwe: CWE-400\n    function_names:\n      - setupWebSocketProxy\n    filenames:\n      - index.js  \n    classification: slightly promising\n\n  - headline: Potential HTTP request smuggling vulnerability\n    analysis: |\n      The proxy forwards requests without fully parsing or validating them. This could potentially allow HTTP request smuggling attacks if there are discrepancies in how the proxy and upstream server parse requests. The handler function in index.js forwards requests directly:\n\n      function handler (request, reply) {\n        let dest = request.raw.url\n        dest = dest.replace(this.prefix, rewritePrefix)\n        reply.from(dest || '/', replyOpts)\n      }\n\n      Without proper validation, malformed requests could potentially be used to smuggle additional requests.\n    cwe: CWE-444\n    function_names:\n      - handler\n    filenames:\n      - index.js\n    classification: slightly promising\n```",
+      "date": "2024-07-08T06:14:23.072160",
+      "usage": {
+        "prompt_tokens": 10781,
+        "completion_tokens": 599,
+        "cost": 0.041328
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cross-Site Scripting (XSS) vulnerability in proxy rewrite logic",
+      "analysis": "The proxy rewrite logic in the rewriteHeaders function does not properly sanitize or encode the location header value before rewriting it. This could allow an attacker to inject malicious JavaScript into the location header, which would then be executed when the browser follows the redirect. The vulnerable code is in the rewriteHeaders function in index.js:\n\nif (location) {\n  headers.location = location.replace(rewritePrefix, fastify.prefix)\n}\n\nAn attacker could potentially craft a malicious upstream response with a location header containing JavaScript, which would then be rewritten and sent to the client.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "rewriteHeaders"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Potential denial of service via unbounded proxy connections",
+      "analysis": "The proxy does not implement any limits on the number of concurrent connections or requests. This could allow an attacker to exhaust server resources by opening many simultaneous connections. The WebSocket proxy implementation in particular creates a new WebSocket connection for each incoming connection without any limits. This is evident in the setupWebSocketProxy function in index.js:\n\nserver.on('connection', (source, request) => {\n  const url = createWebSocketUrl(options, request)\n  const target = new WebSocket(url, options.wsClientOptions)\n  proxyWebSockets(source, target)\n})\n\nWithout proper limits, this could lead to resource exhaustion.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "setupWebSocketProxy"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Potential HTTP request smuggling vulnerability",
+      "analysis": "The proxy forwards requests without fully parsing or validating them. This could potentially allow HTTP request smuggling attacks if there are discrepancies in how the proxy and upstream server parse requests. The handler function in index.js forwards requests directly:\n\nfunction handler (request, reply) {\n  let dest = request.raw.url\n  dest = dest.replace(this.prefix, rewritePrefix)\n  reply.from(dest || '/', replyOpts)\n}\n\nWithout proper validation, malformed requests could potentially be used to smuggle additional requests.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-444",
+      "function_names": [
+        "handler"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-21322": "2021-03-02T04:15:12"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

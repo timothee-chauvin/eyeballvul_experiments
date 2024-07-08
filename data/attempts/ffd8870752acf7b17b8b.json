@@ -1,0 +1,101 @@
+{
+  "commit": "b43f3bf95421f0bd1bfec0a35cdf94f17616ecb3",
+  "repo_url": "https://github.com/frostming/unearth",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "53e287cee6b73de5b4a4"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Insecure use of Python's tempfile module\n    analysis: |\n      The code uses Python's tempfile.TemporaryDirectory() without specifying secure permissions. By default, this creates a world-readable temporary directory, which could allow other users on the system to access sensitive data stored there. An attacker with local access could potentially read or modify files in this temporary directory. To mitigate this, the code should use the 'mode' parameter to set more restrictive permissions, e.g. mode=0o700 for a user-only readable/writable directory.\n    cwe: CWE-732\n    function_names:\n      - cli\n    filenames:\n      - src/unearth/__main__.py\n    classification: slightly promising\n\n  - headline: Potential command injection vulnerability in VCS commands\n    analysis: |\n      The VersionControl base class and its subclasses (Git, Mercurial, etc.) use subprocess.run() to execute VCS commands. While they do use a list of arguments rather than a shell string, which mitigates most injection risks, there are still places where user-controlled input (e.g. from URLs or arguments) is passed directly to these commands. An attacker could potentially craft a malicious repository URL or revision string that breaks out of its expected context and injects additional commands. More rigorous input validation and sanitization should be implemented before passing user-controlled data to VCS commands.\n    cwe: CWE-78\n    function_names:\n      - run_command\n    filenames:\n      - src/unearth/vcs/base.py\n    classification: slightly promising\n\n  - headline: Insecure use of Python's eval() function\n    analysis: |\n      The code uses Python's eval() function to parse JSON data in the parse_json_response() function. The eval() function can execute arbitrary Python code, which is dangerous if the input is not fully trusted. An attacker who can control the JSON response could potentially execute malicious code on the system. To fix this, the code should use the json.loads() function instead, which safely parses JSON without executing code.\n    cwe: CWE-94\n    function_names:\n      - parse_json_response\n    filenames:\n      - src/unearth/collector.py  \n    classification: very promising\n\n  - headline: Potential path traversal vulnerability in archive extraction\n    analysis: |\n      The unpack_archive() function extracts files from ZIP and TAR archives without properly validating that the extracted paths are within the target directory. An attacker could potentially craft a malicious archive with files that extract to locations outside the intended directory, potentially overwriting system files. The code does have some checks using is_within_directory(), but these may not catch all cases. More robust path traversal prevention should be implemented, such as resolving symlinks and using os.path.realpath() to get absolute normalized paths before comparison.\n    cwe: CWE-22\n    function_names:\n      - unpack_archive\n      - _unzip_archive\n      - _untar_archive\n    filenames:\n      - src/unearth/preparer.py\n    classification: slightly promising\n\n  - headline: Insecure temporary file creation\n    analysis: |\n      The code creates temporary files and directories using Python's tempfile module without specifying secure permissions. This could potentially allow other local users to access sensitive data stored in these temporary locations. The code should use the 'mode' parameter when creating temporary files/directories to set restrictive permissions (e.g. 0o600 for files, 0o700 for directories) to prevent unauthorized access.\n    cwe: CWE-732\n    function_names:\n      - download_and_unpack\n    filenames:\n      - src/unearth/finder.py\n    classification: slightly promising\n```",
+      "date": "2024-07-07T21:11:30.141642",
+      "usage": {
+        "prompt_tokens": 52836,
+        "completion_tokens": 884,
+        "cost": 0.171768
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insecure use of Python's tempfile module",
+      "analysis": "The code uses Python's tempfile.TemporaryDirectory() without specifying secure permissions. By default, this creates a world-readable temporary directory, which could allow other users on the system to access sensitive data stored there. An attacker with local access could potentially read or modify files in this temporary directory. To mitigate this, the code should use the 'mode' parameter to set more restrictive permissions, e.g. mode=0o700 for a user-only readable/writable directory.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "cli"
+      ],
+      "filenames": [
+        "src/unearth/__main__.py"
+      ]
+    },
+    {
+      "headline": "Potential command injection vulnerability in VCS commands",
+      "analysis": "The VersionControl base class and its subclasses (Git, Mercurial, etc.) use subprocess.run() to execute VCS commands. While they do use a list of arguments rather than a shell string, which mitigates most injection risks, there are still places where user-controlled input (e.g. from URLs or arguments) is passed directly to these commands. An attacker could potentially craft a malicious repository URL or revision string that breaks out of its expected context and injects additional commands. More rigorous input validation and sanitization should be implemented before passing user-controlled data to VCS commands.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "run_command"
+      ],
+      "filenames": [
+        "src/unearth/vcs/base.py"
+      ]
+    },
+    {
+      "headline": "Insecure use of Python's eval() function",
+      "analysis": "The code uses Python's eval() function to parse JSON data in the parse_json_response() function. The eval() function can execute arbitrary Python code, which is dangerous if the input is not fully trusted. An attacker who can control the JSON response could potentially execute malicious code on the system. To fix this, the code should use the json.loads() function instead, which safely parses JSON without executing code.\n",
+      "classification": "very promising",
+      "cwe": "CWE-94",
+      "function_names": [
+        "parse_json_response"
+      ],
+      "filenames": [
+        "src/unearth/collector.py"
+      ]
+    },
+    {
+      "headline": "Potential path traversal vulnerability in archive extraction",
+      "analysis": "The unpack_archive() function extracts files from ZIP and TAR archives without properly validating that the extracted paths are within the target directory. An attacker could potentially craft a malicious archive with files that extract to locations outside the intended directory, potentially overwriting system files. The code does have some checks using is_within_directory(), but these may not catch all cases. More robust path traversal prevention should be implemented, such as resolving symlinks and using os.path.realpath() to get absolute normalized paths before comparison.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "unpack_archive",
+        "_unzip_archive",
+        "_untar_archive"
+      ],
+      "filenames": [
+        "src/unearth/preparer.py"
+      ]
+    },
+    {
+      "headline": "Insecure temporary file creation",
+      "analysis": "The code creates temporary files and directories using Python's tempfile module without specifying secure permissions. This could potentially allow other local users to access sensitive data stored in these temporary locations. The code should use the 'mode' parameter when creating temporary files/directories to set restrictive permissions (e.g. 0o600 for files, 0o700 for directories) to prevent unauthorized access.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-732",
+      "function_names": [
+        "download_and_unpack"
+      ],
+      "filenames": [
+        "src/unearth/finder.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-45805": "2023-10-20T19:15:08"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

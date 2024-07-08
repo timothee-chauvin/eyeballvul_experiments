@@ -1,0 +1,103 @@
+{
+  "commit": "d1cf36c67c2aa0e76882a08a5cd878b3306e0671",
+  "repo_url": "https://github.com/vantage6/vantage6-ui",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "ed70b5454075361027ed"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cross-site Scripting (XSS) vulnerability in login page\n    analysis: |\n      The login component (src/app/components/login/login/login.component.html) contains potential XSS vulnerabilities. The error message is inserted directly into the DOM without sanitization:\n      \n      <div class=\"alert alert-danger\" role=\"alert\" *ngIf=\"f.submitted && isLoginFailed\">\n        Login failed: {{ errorMessage }}\n      </div>\n\n      If the errorMessage contains malicious JavaScript, it could be executed in the user's browser. An attacker could potentially exploit this by manipulating the error response from the server.\n    cwe: CWE-79\n    function_names:\n      - onSubmit\n    filenames:\n      - src/app/components/login/login/login.component.ts\n      - src/app/components/login/login/login.component.html\n    classification: very promising\n\n  - headline: Insecure direct object references in API calls\n    analysis: |\n      The application makes API calls using IDs passed directly from the client, without verifying authorization. For example, in the TaskViewSingleComponent:\n\n      async setTask(): Promise<void> {\n        (await this.taskDataService.get(this.route_id as number)).subscribe(\n          (task) => {\n            this.task = task;\n            this.setSubResources();\n          }\n        );\n      }\n\n      The route_id is used directly to fetch the task, allowing an attacker to potentially access unauthorized tasks by manipulating the ID. This pattern is repeated across multiple components.\n    cwe: CWE-639\n    function_names:\n      - setTask\n      - setResources \n    filenames:\n      - src/app/components/view-single/task-view-single/task-view-single.component.ts\n    classification: very promising\n\n  - headline: Insecure storage of sensitive information in browser storage\n    analysis: |\n      The application stores authentication tokens and user info in browser sessionStorage:\n\n      public saveToken(token: string, key: string = TOKEN_KEY): void {\n        this.deleteToken(key);\n        window.sessionStorage.setItem(key, token);\n      }\n\n      public saveUserInfo(user: any): void {\n        window.sessionStorage.removeItem(USER_KEY);\n        window.sessionStorage.setItem(USER_KEY, JSON.stringify(user));\n      }\n\n      This makes the tokens vulnerable to XSS attacks. An attacker who can execute JavaScript in the user's browser could steal these tokens and impersonate the user.\n    cwe: CWE-922\n    function_names:\n      - saveToken\n      - saveUserInfo\n    filenames:\n      - src/app/services/common/token-storage.service.ts  \n    classification: very promising\n\n  - headline: Potential server-side request forgery in version check\n    analysis: |\n      The VersionApiService makes an HTTP request to a URL constructed from user-controllable input:\n\n      async getVersion() : Promise<string> {\n        if (this.version)\n          return this.version;\n        let response: any = await this.http.get(\n          `${environment.api_url}/version`).toPromise();\n        this.version = response.version;\n        return this.version;\n      }\n\n      If an attacker can control the api_url in the environment configuration, they could potentially make the server send requests to arbitrary URLs, enabling server-side request forgery.\n    cwe: CWE-918\n    function_names:\n      - getVersion\n    filenames:\n      - src/app/services/api/version-api.service.ts\n    classification: slightly promising\n\n  - headline: Inadequate protection of API key\n    analysis: |\n      The application retrieves and displays API keys for nodes:\n\n      async generateApiKey() {\n        let api_key = await this.nodeApiService.reset_api_key(this.node);\n        if (api_key) {\n          this.modalService.openMessageModal([\n            'Your new API key is:',\n            api_key,\n            ...\n          ]);\n        }\n      }\n\n      Displaying the API key in a modal could lead to unauthorized access if the user's screen is visible to others. Additionally, there's no indication that the API key is masked or protected in transit or storage.\n    cwe: CWE-522\n    function_names:\n      - generateApiKey\n    filenames:\n      - src/app/components/view/node-view/node-view.component.ts\n    classification: slightly promising\n```",
+      "date": "2024-07-08T05:21:17.777163",
+      "usage": {
+        "prompt_tokens": 150635,
+        "completion_tokens": 1093,
+        "cost": 0.4683
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cross-site Scripting (XSS) vulnerability in login page",
+      "analysis": "The login component (src/app/components/login/login/login.component.html) contains potential XSS vulnerabilities. The error message is inserted directly into the DOM without sanitization:\n\n<div class=\"alert alert-danger\" role=\"alert\" *ngIf=\"f.submitted && isLoginFailed\">\n  Login failed: {{ errorMessage }}\n</div>\n\nIf the errorMessage contains malicious JavaScript, it could be executed in the user's browser. An attacker could potentially exploit this by manipulating the error response from the server.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "onSubmit"
+      ],
+      "filenames": [
+        "src/app/components/login/login/login.component.ts",
+        "src/app/components/login/login/login.component.html"
+      ]
+    },
+    {
+      "headline": "Insecure direct object references in API calls",
+      "analysis": "The application makes API calls using IDs passed directly from the client, without verifying authorization. For example, in the TaskViewSingleComponent:\n\nasync setTask(): Promise<void> {\n  (await this.taskDataService.get(this.route_id as number)).subscribe(\n    (task) => {\n      this.task = task;\n      this.setSubResources();\n    }\n  );\n}\n\nThe route_id is used directly to fetch the task, allowing an attacker to potentially access unauthorized tasks by manipulating the ID. This pattern is repeated across multiple components.\n",
+      "classification": "very promising",
+      "cwe": "CWE-639",
+      "function_names": [
+        "setTask",
+        "setResources"
+      ],
+      "filenames": [
+        "src/app/components/view-single/task-view-single/task-view-single.component.ts"
+      ]
+    },
+    {
+      "headline": "Insecure storage of sensitive information in browser storage",
+      "analysis": "The application stores authentication tokens and user info in browser sessionStorage:\n\npublic saveToken(token: string, key: string = TOKEN_KEY): void {\n  this.deleteToken(key);\n  window.sessionStorage.setItem(key, token);\n}\n\npublic saveUserInfo(user: any): void {\n  window.sessionStorage.removeItem(USER_KEY);\n  window.sessionStorage.setItem(USER_KEY, JSON.stringify(user));\n}\n\nThis makes the tokens vulnerable to XSS attacks. An attacker who can execute JavaScript in the user's browser could steal these tokens and impersonate the user.\n",
+      "classification": "very promising",
+      "cwe": "CWE-922",
+      "function_names": [
+        "saveToken",
+        "saveUserInfo"
+      ],
+      "filenames": [
+        "src/app/services/common/token-storage.service.ts"
+      ]
+    },
+    {
+      "headline": "Potential server-side request forgery in version check",
+      "analysis": "The VersionApiService makes an HTTP request to a URL constructed from user-controllable input:\n\nasync getVersion() : Promise<string> {\n  if (this.version)\n    return this.version;\n  let response: any = await this.http.get(\n    ${environment.api_url}/version).toPromise();\n  this.version = response.version;\n  return this.version;\n}\n\nIf an attacker can control the api_url in the environment configuration, they could potentially make the server send requests to arbitrary URLs, enabling server-side request forgery.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "getVersion"
+      ],
+      "filenames": [
+        "src/app/services/api/version-api.service.ts"
+      ]
+    },
+    {
+      "headline": "Inadequate protection of API key",
+      "analysis": "The application retrieves and displays API keys for nodes:\n\nasync generateApiKey() {\n  let api_key = await this.nodeApiService.reset_api_key(this.node);\n  if (api_key) {\n    this.modalService.openMessageModal([\n      'Your new API key is:',\n      api_key,\n      ...\n    ]);\n  }\n}\n\nDisplaying the API key in a modal could lead to unauthorized access if the user's screen is visible to others. Additionally, there's no indication that the API key is masked or protected in transit or storage.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-522",
+      "function_names": [
+        "generateApiKey"
+      ],
+      "filenames": [
+        "src/app/components/view/node-view/node-view.component.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-24562": "2024-03-14T19:15:49",
+        "CVE-2024-22200": "2024-01-30T16:15:48"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

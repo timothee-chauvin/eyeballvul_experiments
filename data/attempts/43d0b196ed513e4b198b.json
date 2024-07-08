@@ -1,0 +1,103 @@
+{
+  "commit": "d9806033899a9a19fa24976dd2587fb3b3bdb7e0",
+  "repo_url": "https://github.com/zediious/raptor-web",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "7fbea9dab47f507476a1"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: SQL Injection in Server Creation\n    analysis: |\n      The Server model allows direct user input into database fields like server_address and server_port without any input validation or sanitization. This could allow an attacker to inject malicious SQL code when creating or updating server records. For example, in the create_user method of ServerManager, the server_address and server_port values are inserted directly into the database query without any sanitization. An attacker could potentially inject SQL to alter or delete database records, or even execute arbitrary commands on the database server.\n    cwe: CWE-89\n    function_names:\n      - create_user\n    filenames:\n      - raptorWeb/gameservers/models.py\n    classification: very promising\n\n  - headline: Cross-Site Scripting (XSS) in Server Details\n    analysis: |\n      Several fields in the Server model like modpack_description, server_description, server_rules, etc. allow HTML content to be stored and rendered without proper sanitization. This content is then displayed on various pages using the |safe filter, which disables XSS protections. An attacker could insert malicious JavaScript into these fields when creating/editing a server, and it would be executed in users' browsers when they view the server details. This could allow session hijacking, redirection to malicious sites, and other client-side attacks.\n    cwe: CWE-79 \n    function_names:\n      - __str__\n    filenames:\n      - raptorWeb/gameservers/models.py\n      - raptorWeb/templates/gameservers/server_list_modals.html\n    classification: very promising\n\n  - headline: Insecure Direct Object Reference in User Profiles\n    analysis: |\n      The User_Profile view retrieves user profiles based on the user_slug parameter in the URL without proper authorization checks. An attacker could potentially access any user's profile information by guessing or enumerating user_slug values, even if they don't have permission to view that user's data. The view only checks if the user is authenticated, not if they have permission to view the specific requested profile.\n    cwe: CWE-639\n    function_names:\n      - get\n      - get_object\n    filenames:\n      - raptorWeb/authprofiles/views.py\n    classification: slightly promising\n\n  - headline: Weak Password Reset Functionality \n    analysis: |\n      The password reset functionality uses a simple token generated from user data that could potentially be guessed or brute-forced. The token is generated using a combination of the user's ID, timestamp, and some profile fields. A more secure approach would be to use a cryptographically strong random token. Additionally, there don't appear to be any controls on token expiration or limiting reset attempts, which could allow an attacker to try many tokens.\n    cwe: CWE-640\n    function_names:\n      - _make_hash_value\n      - send_reset_email\n    filenames:\n      - raptorWeb/authprofiles/tokens.py\n      - raptorWeb/authprofiles/models.py\n    classification: slightly promising\n\n  - headline: Potential Server-Side Request Forgery in Profile Pictures\n    analysis: |\n      The save_profile_picture_from_url method in UserProfileInfo allows saving images from arbitrary URLs. This could potentially be exploited for SSRF attacks if an attacker can control the URL. The method uses urlopen to fetch the image, which could allow an attacker to make requests to internal network resources or abuse file:// URLs to read local files. There's no validation on the provided URL to ensure it's pointing to an allowed external resource.\n    cwe: CWE-918\n    function_names:\n      - save_profile_picture_from_url\n    filenames:\n      - raptorWeb/authprofiles/models.py\n    classification: slightly promising\n```",
+      "date": "2024-07-08T05:27:34.343122",
+      "usage": {
+        "prompt_tokens": 133765,
+        "completion_tokens": 901,
+        "cost": 0.41481
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "SQL Injection in Server Creation",
+      "analysis": "The Server model allows direct user input into database fields like server_address and server_port without any input validation or sanitization. This could allow an attacker to inject malicious SQL code when creating or updating server records. For example, in the create_user method of ServerManager, the server_address and server_port values are inserted directly into the database query without any sanitization. An attacker could potentially inject SQL to alter or delete database records, or even execute arbitrary commands on the database server.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "create_user"
+      ],
+      "filenames": [
+        "raptorWeb/gameservers/models.py"
+      ]
+    },
+    {
+      "headline": "Cross-Site Scripting (XSS) in Server Details",
+      "analysis": "Several fields in the Server model like modpack_description, server_description, server_rules, etc. allow HTML content to be stored and rendered without proper sanitization. This content is then displayed on various pages using the |safe filter, which disables XSS protections. An attacker could insert malicious JavaScript into these fields when creating/editing a server, and it would be executed in users' browsers when they view the server details. This could allow session hijacking, redirection to malicious sites, and other client-side attacks.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "__str__"
+      ],
+      "filenames": [
+        "raptorWeb/gameservers/models.py",
+        "raptorWeb/templates/gameservers/server_list_modals.html"
+      ]
+    },
+    {
+      "headline": "Insecure Direct Object Reference in User Profiles",
+      "analysis": "The User_Profile view retrieves user profiles based on the user_slug parameter in the URL without proper authorization checks. An attacker could potentially access any user's profile information by guessing or enumerating user_slug values, even if they don't have permission to view that user's data. The view only checks if the user is authenticated, not if they have permission to view the specific requested profile.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-639",
+      "function_names": [
+        "get",
+        "get_object"
+      ],
+      "filenames": [
+        "raptorWeb/authprofiles/views.py"
+      ]
+    },
+    {
+      "headline": "Weak Password Reset Functionality",
+      "analysis": "The password reset functionality uses a simple token generated from user data that could potentially be guessed or brute-forced. The token is generated using a combination of the user's ID, timestamp, and some profile fields. A more secure approach would be to use a cryptographically strong random token. Additionally, there don't appear to be any controls on token expiration or limiting reset attempts, which could allow an attacker to try many tokens.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-640",
+      "function_names": [
+        "_make_hash_value",
+        "send_reset_email"
+      ],
+      "filenames": [
+        "raptorWeb/authprofiles/tokens.py",
+        "raptorWeb/authprofiles/models.py"
+      ]
+    },
+    {
+      "headline": "Potential Server-Side Request Forgery in Profile Pictures",
+      "analysis": "The save_profile_picture_from_url method in UserProfileInfo allows saving images from arbitrary URLs. This could potentially be exploited for SSRF attacks if an attacker can control the URL. The method uses urlopen to fetch the image, which could allow an attacker to make requests to internal network resources or abuse file:// URLs to read local files. There's no validation on the provided URL to ensure it's pointing to an allowed external resource.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-918",
+      "function_names": [
+        "save_profile_picture_from_url"
+      ],
+      "filenames": [
+        "raptorWeb/authprofiles/models.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-49078": "2023-11-28T19:15:07"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

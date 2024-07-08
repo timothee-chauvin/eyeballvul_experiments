@@ -1,0 +1,100 @@
+{
+  "commit": "2f24db2b23feaa9f77698ef9721d5d1fe569b911",
+  "repo_url": "https://github.com/folio-org/spring-module-core",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "86bf4078824e41573ff3"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Insufficient input validation in TenantController\n    analysis: |\n      The TenantController class in tenant/src/main/java/org/folio/spring/tenant/controller/TenantController.java does not properly validate the tenant parameter passed to its methods. The tenant value is obtained from a header using the @TenantHeader annotation, but there is no validation to ensure it is not null, empty, or otherwise invalid before using it to create or delete tenants. This could allow an attacker to create or delete arbitrary tenants by manipulating the header value.\n    cwe: CWE-20\n    function_names:\n      - create\n      - delete  \n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/controller/TenantController.java\n    classification: very promising\n\n  - headline: Potential SQL injection in HibernateMultiTenantConnectionProvider\n    analysis: |\n      The getConnection method in HibernateMultiTenantConnectionProvider directly uses the tenant parameter to construct SQL statements without proper sanitization. For example, it executes \"USE \" + schema for H2 databases. An attacker who can control the tenant value could potentially inject malicious SQL code. While the tenant value is supposed to come from a trusted source, lack of input validation earlier in the flow makes this a serious risk.\n    cwe: CWE-89\n    function_names:\n      - getConnection\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateMultiTenantConnectionProvider.java\n    classification: very promising\n\n  - headline: Insecure deserialization in JsonSchemasService\n    analysis: |\n      The getSchemaByPath method in JsonSchemasService uses Jackson to deserialize JSON data from an external source without any validation or sanitization. An attacker could potentially craft malicious JSON input that leads to arbitrary code execution when deserialized. The method should implement checks on the input before passing it to the ObjectMapper.\n    cwe: CWE-502\n    function_names:\n      - getSchemaByPath\n    filenames:\n      - domain/src/main/java/org/folio/spring/service/JsonSchemasService.java\n    classification: slightly promising\n\n  - headline: Insufficient access control in TenantController\n    analysis: |\n      The TenantController exposes sensitive operations like creating and deleting tenants without any apparent authentication or authorization checks. While there may be security measures implemented elsewhere, the controller itself does not enforce any access controls. This could allow unauthorized users to perform privileged tenant operations if other security layers are bypassed.\n    cwe: CWE-862\n    function_names:\n      - create\n      - delete\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/controller/TenantController.java  \n    classification: slightly promising\n\n  - headline: Information exposure through error messages\n    analysis: |\n      Several exception handlers in the application, such as those in TenantControllerAdvice, directly include exception messages in the error responses sent to clients. This could potentially leak sensitive information about the system's internals or database structure to attackers. Error messages returned to clients should be generic and not include raw exception details.\n    cwe: CWE-209\n    function_names: []\n    filenames:\n      - tenant/src/main/java/org/folio/spring/tenant/controller/advice/TenantControllerAdvice.java\n      - domain/src/main/java/org/folio/spring/controller/advice/DomainAdvice.java\n    classification: slightly promising\n```",
+      "date": "2024-07-07T21:09:54.465753",
+      "usage": {
+        "prompt_tokens": 23624,
+        "completion_tokens": 863,
+        "cost": 0.083817
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Insufficient input validation in TenantController",
+      "analysis": "The TenantController class in tenant/src/main/java/org/folio/spring/tenant/controller/TenantController.java does not properly validate the tenant parameter passed to its methods. The tenant value is obtained from a header using the @TenantHeader annotation, but there is no validation to ensure it is not null, empty, or otherwise invalid before using it to create or delete tenants. This could allow an attacker to create or delete arbitrary tenants by manipulating the header value.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "create",
+        "delete"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/controller/TenantController.java"
+      ]
+    },
+    {
+      "headline": "Potential SQL injection in HibernateMultiTenantConnectionProvider",
+      "analysis": "The getConnection method in HibernateMultiTenantConnectionProvider directly uses the tenant parameter to construct SQL statements without proper sanitization. For example, it executes \"USE \" + schema for H2 databases. An attacker who can control the tenant value could potentially inject malicious SQL code. While the tenant value is supposed to come from a trusted source, lack of input validation earlier in the flow makes this a serious risk.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "getConnection"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/hibernate/HibernateMultiTenantConnectionProvider.java"
+      ]
+    },
+    {
+      "headline": "Insecure deserialization in JsonSchemasService",
+      "analysis": "The getSchemaByPath method in JsonSchemasService uses Jackson to deserialize JSON data from an external source without any validation or sanitization. An attacker could potentially craft malicious JSON input that leads to arbitrary code execution when deserialized. The method should implement checks on the input before passing it to the ObjectMapper.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "getSchemaByPath"
+      ],
+      "filenames": [
+        "domain/src/main/java/org/folio/spring/service/JsonSchemasService.java"
+      ]
+    },
+    {
+      "headline": "Insufficient access control in TenantController",
+      "analysis": "The TenantController exposes sensitive operations like creating and deleting tenants without any apparent authentication or authorization checks. While there may be security measures implemented elsewhere, the controller itself does not enforce any access controls. This could allow unauthorized users to perform privileged tenant operations if other security layers are bypassed.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-862",
+      "function_names": [
+        "create",
+        "delete"
+      ],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/controller/TenantController.java"
+      ]
+    },
+    {
+      "headline": "Information exposure through error messages",
+      "analysis": "Several exception handlers in the application, such as those in TenantControllerAdvice, directly include exception messages in the error responses sent to clients. This could potentially leak sensitive information about the system's internals or database structure to attackers. Error messages returned to clients should be generic and not include raw exception details.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [],
+      "filenames": [
+        "tenant/src/main/java/org/folio/spring/tenant/controller/advice/TenantControllerAdvice.java",
+        "domain/src/main/java/org/folio/spring/controller/advice/DomainAdvice.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 2
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-4963": "2024-03-21T02:44:57"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

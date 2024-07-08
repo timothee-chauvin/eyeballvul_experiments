@@ -1,0 +1,77 @@
+{
+  "commit": "3b08ab1e7404dc00dfb3050d6f34821ae300b59c",
+  "repo_url": "https://github.com/sindresorhus/file-type",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "f7006f63078151916eb2"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Lack of Input Validation in fromTokenizer()\n    analysis: |\n      The `fromTokenizer()` function accepts an untrusted `ITokenizer` source and does not appear to perform any input validation or sanitization on it before using it. An attacker could potentially provide a malicious tokenizer that causes unexpected behavior.\n\n      The function passes the tokenizer directly to the `_fromTokenizer()` function which uses it to read file data. While this interface is intended for special tokenizer readers, without input validation it may be possible for an attacker to abuse this to read arbitrary file data or cause denial of service.\n\n      To exploit this, an attacker would need to be able to provide a custom `ITokenizer` implementation to the `fromTokenizer()` function. So the severity depends on how and where this function is used.\n    cwe: CWE-20\n    function_names:\n      - fromTokenizer\n    filenames:\n      - core.js\n    classification: very promising\n\n  - headline: Lack of Maximum Size Limit on TAR Headers\n    analysis: |\n      The `_fromTokenizer()` function attempts to detect TAR files by reading the file header and checking if the checksum matches. However, it does not appear to limit the size of the header it reads. \n\n      The code uses a hardcoded `minimumBytes` size of 4100 bytes when buffering data to perform file type checks. It then later doubles this to 512 bytes when detecting TAR files via the `tarHeaderChecksumMatches()` function.\n\n      If an attacker can provide a malicious TAR file with an extremely large header, this could potentially cause the `_fromTokenizer()` function to buffer a very large amount of data into memory to parse the header, potentially leading to denial of service via memory exhaustion. The impact depends on if there are any limits on the size of input files accepted.\n    cwe: CWE-400\n    function_names:\n      - _fromTokenizer\n      - tarHeaderChecksumMatches\n    filenames:\n      - core.js\n      - util.js\n    classification: slightly promising\n\n  - headline: Unsafe Eval Usage\n    analysis: |\n      The `stream()` function uses `eval()` to conditionally require the Node.js 'stream' module based on whether it is being bundled with Webpack. \n\n      The use of `eval()` is unsafe as it can allow an attacker to execute arbitrary code if they can control the input. However, in this case the input to `eval()` appears to be hardcoded to `require('stream')`.\n\n      While this is not an ideal coding practice, it does not seem easily exploitable since the eval input is not dynamic or attacker controlled. The risk is low but it's still best to avoid eval() in general.\n    cwe: CWE-95\n    function_names:\n      - stream\n    filenames:\n      - core.js\n    classification: not promising\n```",
+      "date": "2024-07-08T08:34:56.742019",
+      "usage": {
+        "prompt_tokens": 31956,
+        "completion_tokens": 685,
+        "cost": 0.530715
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Lack of Input Validation in fromTokenizer()",
+      "analysis": "The fromTokenizer() function accepts an untrusted ITokenizer source and does not appear to perform any input validation or sanitization on it before using it. An attacker could potentially provide a malicious tokenizer that causes unexpected behavior.\n\nThe function passes the tokenizer directly to the _fromTokenizer() function which uses it to read file data. While this interface is intended for special tokenizer readers, without input validation it may be possible for an attacker to abuse this to read arbitrary file data or cause denial of service.\n\nTo exploit this, an attacker would need to be able to provide a custom ITokenizer implementation to the fromTokenizer() function. So the severity depends on how and where this function is used.\n",
+      "classification": "very promising",
+      "cwe": "CWE-20",
+      "function_names": [
+        "fromTokenizer"
+      ],
+      "filenames": [
+        "core.js"
+      ]
+    },
+    {
+      "headline": "Lack of Maximum Size Limit on TAR Headers",
+      "analysis": "The _fromTokenizer() function attempts to detect TAR files by reading the file header and checking if the checksum matches. However, it does not appear to limit the size of the header it reads. \n\nThe code uses a hardcoded minimumBytes size of 4100 bytes when buffering data to perform file type checks. It then later doubles this to 512 bytes when detecting TAR files via the tarHeaderChecksumMatches() function.\n\nIf an attacker can provide a malicious TAR file with an extremely large header, this could potentially cause the _fromTokenizer() function to buffer a very large amount of data into memory to parse the header, potentially leading to denial of service via memory exhaustion. The impact depends on if there are any limits on the size of input files accepted.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "_fromTokenizer",
+        "tarHeaderChecksumMatches"
+      ],
+      "filenames": [
+        "core.js",
+        "util.js"
+      ]
+    },
+    {
+      "headline": "Unsafe Eval Usage",
+      "analysis": "The stream() function uses eval() to conditionally require the Node.js 'stream' module based on whether it is being bundled with Webpack. \n\nThe use of eval() is unsafe as it can allow an attacker to execute arbitrary code if they can control the input. However, in this case the input to eval() appears to be hardcoded to require('stream').\n\nWhile this is not an ideal coding practice, it does not seem easily exploitable since the eval input is not dynamic or attacker controlled. The risk is low but it's still best to avoid eval() in general.\n",
+      "classification": "not promising",
+      "cwe": "CWE-95",
+      "function_names": [
+        "stream"
+      ],
+      "filenames": [
+        "core.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2022-36313": "2022-07-21T16:15:09"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

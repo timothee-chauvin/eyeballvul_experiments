@@ -1,0 +1,88 @@
+{
+  "commit": "e160d2a4cacbfcb652b267dca31e9759e0a20ed9",
+  "repo_url": "https://github.com/dromara/sureness",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "c0a66b3e2d756a00b1b0",
+    "b68d9d03e23d6966e64f"
+  ],
+  "responses": [
+    {
+      "content": "Based on my analysis of the provided codebase, here are the main security vulnerabilities I've identified:\n\n1. Insufficient Input Validation (CWE-20):\n\nThere is limited input validation across the codebase. For example, in AccountController.java, user-supplied input is not properly sanitized before being used:\n\n```java\nString appId = requestBody.get(\"appId\");\nString password = requestBody.get(\"password\");\n```\n\nThis could potentially lead to injection attacks.\n\n2. Use of Hard-coded Credentials (CWE-798):\n\nIn SurenessConfiguration.java, there is a hard-coded JWT secret key:\n\n```java\nprivate static final String TOM_SECRET_KEY = \"?::4s9ssf2sf4sed45pf):...\";\n```\n\nHard-coded secrets are a security risk as they can be easily discovered in source code.\n\n3. Inadequate Encryption Strength (CWE-326):\n\nThe JWT tokens are signed using HMAC-SHA512, which while strong, may not be sufficient for high-security applications. Consider using asymmetric algorithms like RSA or ECDSA.\n\n4. Insecure Storage of Sensitive Information (CWE-922):\n\nIn TokenStorage.java, sensitive token information is stored in-memory:\n\n```java\nprivate static final Map<String, String> TOKEN_MAP = new ConcurrentHashMap<>();\n```\n\nThis could potentially be accessed by an attacker if the application memory is compromised.\n\n5. Insufficient Session Expiration (CWE-613):\n\nThe JWT token expiration is set to a fixed value (3600L seconds) in multiple places, which may be too long for sensitive operations:\n\n```java\nString jwt = JsonWebTokenUtil.issueJwt(UUID.randomUUID().toString(), appId,\n        \"token-server\", 3600L, roles);\n```\n\n6. Potential Information Exposure (CWE-200):\n\nError messages in some cases may reveal too much information. For example, in AccountController.java:\n\n```java\nreturn ResponseEntity.status(HttpStatus.FORBIDDEN).build();\n```\n\nThis could allow attackers to enumerate valid usernames.\n\n7. Lack of Rate Limiting (CWE-770):\n\nThere doesn't appear to be any rate limiting implemented, which could leave the application vulnerable to brute force attacks.\n\nTo address these vulnerabilities, consider implementing proper input validation, using secure credential storage, strengthening encryption, implementing proper session management, improving error handling, and adding rate limiting mechanisms.",
+      "date": "2024-07-07T20:59:58.856007",
+      "usage": {
+        "prompt_tokens": 179763,
+        "completion_tokens": 576,
+        "cost": 0.547929
+      }
+    },
+    {
+      "content": "```yaml\nleads:\n  - headline: JWT secret stored in plaintext configuration\n    analysis: |\n      The JwtProperties class in SurenessProperties.java contains a field 'secret' for storing the JWT signing secret. This secret is likely loaded from a configuration file or environment variable. Storing secrets in plaintext configuration files is insecure as it increases the risk of unauthorized access to the secret. If an attacker gains access to the configuration or environment where this secret is stored, they could potentially forge valid JWTs and bypass authentication. A more secure approach would be to use a secret management system or encrypt the secret at rest.\n    cwe: CWE-798\n    function_names:\n      - getSecret\n      - setSecret  \n    filenames:\n      - support/spring-boot-starter-sureness/src/main/java/com/usthe/sureness/configuration/SurenessProperties.java\n    classification: very promising\n\n  - headline: Potential information disclosure in error responses\n    analysis: |\n      The SurenessFilter class handles various authentication and authorization exceptions by sending detailed error messages in the HTTP response. For example, it returns messages like \"Username or password is incorrect or token expired\" and \"This account has no permission to access this resource\". While these messages are helpful for debugging, they can potentially leak sensitive information about the authentication system to attackers. An attacker could use this information to determine valid usernames or the existence of certain resources. It's generally recommended to use generic error messages that don't reveal specifics about the failure reason.\n    cwe: CWE-209\n    function_names:\n      - doFilter\n    filenames:\n      - support/spring-boot-starter-sureness/src/main/java/com/usthe/sureness/configuration/SurenessFilter.java\n    classification: slightly promising\n\n  - headline: Potential for incorrect authorization if SurenessContextHolder is not cleared\n    analysis: |\n      In the SurenessFilter class, the subject is bound to the SurenessContextHolder in a ThreadLocal variable. While there is a finally block that attempts to clear this context, it only does so if the response is not a WebSocket upgrade. If an exception occurs during request processing that bypasses the finally block, or if the WebSocket logic has a bug, it's possible that the ThreadLocal could retain stale authentication data. This could potentially lead to a situation where a subsequent request on the same thread is processed with incorrect authorization context.\n    cwe: CWE-863\n    function_names:\n      - doFilter\n    filenames:\n      - support/spring-boot-starter-sureness/src/main/java/com/usthe/sureness/configuration/SurenessFilter.java\n    classification: slightly promising\n```",
+      "date": "2024-07-07T21:00:11.661117",
+      "usage": {
+        "prompt_tokens": 5932,
+        "completion_tokens": 627,
+        "cost": 0.027201
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "JWT secret stored in plaintext configuration",
+      "analysis": "The JwtProperties class in SurenessProperties.java contains a field 'secret' for storing the JWT signing secret. This secret is likely loaded from a configuration file or environment variable. Storing secrets in plaintext configuration files is insecure as it increases the risk of unauthorized access to the secret. If an attacker gains access to the configuration or environment where this secret is stored, they could potentially forge valid JWTs and bypass authentication. A more secure approach would be to use a secret management system or encrypt the secret at rest.\n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "getSecret",
+        "setSecret"
+      ],
+      "filenames": [
+        "support/spring-boot-starter-sureness/src/main/java/com/usthe/sureness/configuration/SurenessProperties.java"
+      ]
+    },
+    {
+      "headline": "Potential information disclosure in error responses",
+      "analysis": "The SurenessFilter class handles various authentication and authorization exceptions by sending detailed error messages in the HTTP response. For example, it returns messages like \"Username or password is incorrect or token expired\" and \"This account has no permission to access this resource\". While these messages are helpful for debugging, they can potentially leak sensitive information about the authentication system to attackers. An attacker could use this information to determine valid usernames or the existence of certain resources. It's generally recommended to use generic error messages that don't reveal specifics about the failure reason.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-209",
+      "function_names": [
+        "doFilter"
+      ],
+      "filenames": [
+        "support/spring-boot-starter-sureness/src/main/java/com/usthe/sureness/configuration/SurenessFilter.java"
+      ]
+    },
+    {
+      "headline": "Potential for incorrect authorization if SurenessContextHolder is not cleared",
+      "analysis": "In the SurenessFilter class, the subject is bound to the SurenessContextHolder in a ThreadLocal variable. While there is a finally block that attempts to clear this context, it only does so if the response is not a WebSocket upgrade. If an exception occurs during request processing that bypasses the finally block, or if the WebSocket logic has a bug, it's possible that the ThreadLocal could retain stale authentication data. This could potentially lead to a situation where a subsequent request on the same thread is processed with incorrect authorization context.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-863",
+      "function_names": [
+        "doFilter"
+      ],
+      "filenames": [
+        "support/spring-boot-starter-sureness/src/main/java/com/usthe/sureness/configuration/SurenessFilter.java"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2023-31581"
+      },
+      "vuln_dates": {
+        "CVE-2023-31581": "2023-10-25T18:17:27"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

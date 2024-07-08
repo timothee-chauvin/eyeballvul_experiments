@@ -1,0 +1,95 @@
+{
+  "commit": "231d566ea3a76534a507dd68840524952c10d5d9",
+  "repo_url": "https://github.com/nyuccl/psiturk",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "472f191fc2b37e0bd71d"
+  ],
+  "responses": [
+    {
+      "content": "Here are the main security vulnerabilities I identified in the codebase:\n\n```yaml\nleads:\n  - headline: Unsafe deserialization of user input\n    analysis: |\n      The `sync` route in experiment.py deserializes user-provided JSON data directly into Python objects without validation. This could allow an attacker to execute arbitrary code by crafting malicious JSON payloads. The vulnerable code is:\n      \n      user.datastring = json.dumps(request.json)\n      \n      An attacker could potentially include serialized Python objects in the JSON that execute code when deserialized.\n    cwe: CWE-502\n    function_names:\n      - update\n    filenames:\n      - psiturk/experiment.py\n    classification: very promising\n\n  - headline: SQL injection vulnerability  \n    analysis: |\n      The code uses string formatting to construct SQL queries in multiple places, allowing potential SQL injection attacks. For example, in models.py:\n      \n      query = cls.query.filter(f\"Participant.{group_by} == Participant.{group_by}\")\n      \n      An attacker could craft malicious input for group_by to inject arbitrary SQL. Parameterized queries should be used instead.\n    cwe: CWE-89\n    function_names:\n      - count_workers_grouped\n    filenames: \n      - psiturk/models.py\n    classification: very promising\n\n  - headline: Cross-site scripting (XSS) vulnerability\n    analysis: |\n      The templates render user-provided data without proper escaping in multiple places. For example, in templates/error.html:\n      \n      <b>Error</b>: {{ errornum }}<br />\n      <b>Description</b>: {{ errordesc }}<br />\n      \n      This allows an attacker to inject malicious JavaScript that would execute in a victim's browser. All user input should be properly escaped before rendering.\n    cwe: CWE-79\n    function_names: []\n    filenames:\n      - psiturk/example/templates/error.html  \n    classification: very promising\n\n  - headline: Insecure direct object reference\n    analysis: |\n      The API routes allow accessing resources like assignments and HITs by ID without proper authorization checks. For example in api/__init__.py:\n      \n      class Hits(Resource):\n        def patch(self, hit_id):\n          # No authorization check\n          data = request.json\n          \n      An attacker could potentially access or modify data belonging to other users. Proper access control should be implemented for all resources.\n    cwe: CWE-639 \n    function_names:\n      - patch\n    filenames:\n      - psiturk/api/__init__.py\n    classification: very promising\n\n  - headline: Hardcoded credentials\n    analysis: |\n      The code contains hardcoded AWS credentials in multiple places. For example in setup_example.py:\n      \n      aws_access_key_id = 'foo'\n      aws_secret_access_key = 'bar'\n      \n      Hardcoded credentials could be exploited if the source code is compromised. Credentials should be stored securely and accessed via environment variables or a secrets management system.\n    cwe: CWE-798\n    function_names: []  \n    filenames:\n      - psiturk/setup_example.py\n    classification: slightly promising\n```\n\nThis analysis identifies several critical vulnerabilities that should be addressed to improve the security of the codebase. The most severe issues are the unsafe deserialization, SQL injection, and XSS vulnerabilities, which could allow remote code execution or theft of sensitive data. Proper input validation, parameterized queries, and output encoding should be implemented to mitigate these risks.",
+      "date": "2024-07-08T08:03:33.141193",
+      "usage": {
+        "prompt_tokens": 179099,
+        "completion_tokens": 868,
+        "cost": 0.550317
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unsafe deserialization of user input",
+      "analysis": "The sync route in experiment.py deserializes user-provided JSON data directly into Python objects without validation. This could allow an attacker to execute arbitrary code by crafting malicious JSON payloads. The vulnerable code is:\n\nuser.datastring = json.dumps(request.json)\n\nAn attacker could potentially include serialized Python objects in the JSON that execute code when deserialized.\n",
+      "classification": "very promising",
+      "cwe": "CWE-502",
+      "function_names": [
+        "update"
+      ],
+      "filenames": [
+        "psiturk/experiment.py"
+      ]
+    },
+    {
+      "headline": "SQL injection vulnerability",
+      "analysis": "The code uses string formatting to construct SQL queries in multiple places, allowing potential SQL injection attacks. For example, in models.py:\n\nquery = cls.query.filter(f\"Participant.{group_by} == Participant.{group_by}\")\n\nAn attacker could craft malicious input for group_by to inject arbitrary SQL. Parameterized queries should be used instead.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "count_workers_grouped"
+      ],
+      "filenames": [
+        "psiturk/models.py"
+      ]
+    },
+    {
+      "headline": "Cross-site scripting (XSS) vulnerability",
+      "analysis": "The templates render user-provided data without proper escaping in multiple places. For example, in templates/error.html:\n\n<b>Error</b>: {{ errornum }}<br />\n<b>Description</b>: {{ errordesc }}<br />\n\nThis allows an attacker to inject malicious JavaScript that would execute in a victim's browser. All user input should be properly escaped before rendering.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [],
+      "filenames": [
+        "psiturk/example/templates/error.html"
+      ]
+    },
+    {
+      "headline": "Insecure direct object reference",
+      "analysis": "The API routes allow accessing resources like assignments and HITs by ID without proper authorization checks. For example in api/__init__.py:\n\nclass Hits(Resource):\n  def patch(self, hit_id):\n    # No authorization check\n    data = request.json\n    \nAn attacker could potentially access or modify data belonging to other users. Proper access control should be implemented for all resources.\n",
+      "classification": "very promising",
+      "cwe": "CWE-639",
+      "function_names": [
+        "patch"
+      ],
+      "filenames": [
+        "psiturk/api/__init__.py"
+      ]
+    },
+    {
+      "headline": "Hardcoded credentials",
+      "analysis": "The code contains hardcoded AWS credentials in multiple places. For example in setup_example.py:\n\naws_access_key_id = 'foo'\naws_secret_access_key = 'bar'\n\nHardcoded credentials could be exploited if the source code is compromised. Credentials should be stored securely and accessed via environment variables or a secrets management system.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-798",
+      "function_names": [],
+      "filenames": [
+        "psiturk/setup_example.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 4
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-4315": "2023-01-28T23:15:08"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

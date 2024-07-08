@@ -1,0 +1,49 @@
+{
+  "commit": "476edc9b795af75952d5d2979b0859aa26eeb099",
+  "repo_url": "https://github.com/tyktechnologies/tyk-identity-broker",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "2765f4e1997241710081"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Tyk Identity Broker installation script uses insecure file permissions.\n    analysis: |\n      The `install/post_install.sh` script sets the permissions of the `/opt/tyk-identity-broker` directory and its contents to `660` (read and write for owner and group) and changes the owner and group to `tyk:tyk`.\n      However, it does not restrict the permissions of the parent directories, meaning any user on the system can potentially traverse the directory structure up to `/opt`, create a new directory there, and gain access to the Tyk Identity Broker installation files.\n    cwe: CWE-276\n    function_names: []\n    filenames:\n      - install/post_install.sh\n    classification: slightly promising\n  - headline: Potential Information Exposure via Error Messages\n    analysis: |\n      In `vendor/gopkg.in/mgo.v2/internal/sasl/sspi_windows.c`, both `sspi_step` and `call_sspi_encrypt_message` return status codes directly from Windows API calls without sanitizing them. \n      If these functions encounter an error during execution, the raw error code might be returned and potentially exposed to an unauthorized actor. This could leak sensitive information about the system or the application itself.\n    cwe: CWE-209\n    function_names:\n      - sspi_step\n      - call_sspi_encrypt_message\n    filenames:\n      - vendor/gopkg.in/mgo.v2/internal/sasl/sspi_windows.c\n    classification: slightly promising\n  - headline: Tyk Identity Broker post-remove script may remove files outside the intended directory.\n    analysis: |\n      The `install/post_remove.sh` script aims to remove various init scripts related to the Tyk Identity Broker.\n      However, the script does not use absolute paths when referencing these files. \n      For instance, if an attacker places a file named `tyk-identity-broker.service` in the current working directory from where the script is executed, the script would remove that file instead of the intended one in `/lib/systemd/system/`.\n    cwe: CWE-22\n    function_names: []\n    filenames:\n      - install/post_remove.sh\n    classification: slightly promising\nleads:\n  - headline: Hardcoded credential in `utils/dist_build.sh`\n    analysis: |\n      The `utils/dist_build.sh` script embeds a GPG key ID directly in the script: `SIGNKEY=\"12B5D62C28F57592D1575BD51ED14C59E37DAC20\"`.\n      Hardcoding sensitive information like this is insecure as it can be easily extracted from the script, especially if the script is publicly accessible. \n    cwe: CWE-798\n    function_names: []\n    filenames:\n      - utils/dist_build.sh\n    classification: very promising\n```",
+      "date": "2024-07-08T09:06:08.303410",
+      "usage": {
+        "prompt_tokens": 18526,
+        "completion_tokens": 582,
+        "cost": 0.10136
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Hardcoded credential in utils/dist_build.sh",
+      "analysis": "The utils/dist_build.sh script embeds a GPG key ID directly in the script: SIGNKEY=\"12B5D62C28F57592D1575BD51ED14C59E37DAC20\".\nHardcoding sensitive information like this is insecure as it can be easily extracted from the script, especially if the script is publicly accessible. \n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [],
+      "filenames": [
+        "utils/dist_build.sh"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-23365": "2021-04-26T10:15:12"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

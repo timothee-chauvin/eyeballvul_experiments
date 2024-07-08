@@ -1,0 +1,101 @@
+{
+  "commit": "155e92aa6eef21db6c36fe5210839509113bd1cd",
+  "repo_url": "https://github.com/lemonldapng/apache-session-ldap",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "2aaa3e9a89e308e25688"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Authentication bypass due to hardcoded credentials\n    analysis: |\n      The LDAP connection credentials (bind DN and password) are hardcoded in the code and passed directly to Net::LDAP->bind(). This allows anyone with access to the source code to obtain the LDAP admin credentials. An attacker could use these credentials to access the LDAP directory directly, bypassing any application-level access controls.\n    cwe: CWE-798\n    function_names:\n      - ldap\n    filenames:\n      - lib/Apache/Session/Store/LDAP.pm\n    classification: very promising\n\n  - headline: Cleartext transmission of sensitive information \n    analysis: |\n      The LDAP bind password is transmitted in cleartext over the network when connecting to the LDAP server. This occurs in the ldap() function when calling $ldap->bind(). An attacker able to intercept network traffic could obtain the LDAP admin credentials. The code does support TLS, but it's optional and not enforced.\n    cwe: CWE-319\n    function_names:\n      - ldap  \n    filenames:\n      - lib/Apache/Session/Store/LDAP.pm\n    classification: very promising\n\n  - headline: SQL injection in LDAP filter\n    analysis: |\n      The LDAP search filter in the materialize() function is constructed by directly interpolating user-controlled data (objectClass value) into the filter string. An attacker could inject arbitrary LDAP filter syntax to modify the query. For example, setting objectClass to \"*)(&\" would result in a filter of \"(objectClass=*)(&)\", potentially returning all objects.\n    cwe: CWE-90\n    function_names:\n      - materialize\n    filenames:\n      - lib/Apache/Session/Store/LDAP.pm  \n    classification: very promising\n\n  - headline: Path traversal in LDAP DN construction\n    analysis: |\n      The LDAP distinguished names for add, modify, search and delete operations are constructed by directly concatenating user-controlled input (session ID) without sanitization. An attacker could potentially inject LDAP DN syntax like commas and equal signs to access or modify arbitrary parts of the directory tree.\n    cwe: CWE-22\n    function_names:\n      - insert\n      - update\n      - materialize\n      - remove\n    filenames:\n      - lib/Apache/Session/Store/LDAP.pm\n    classification: very promising\n\n  - headline: Uncontrolled resource consumption in LDAP search\n    analysis: |\n      The LDAP search in materialize() does not limit the number of results or the search timeout. On a large directory, this could allow an attacker to trigger a denial of service by causing excessively large or long-running searches that consume server resources.\n    cwe: CWE-400  \n    function_names:\n      - materialize\n    filenames:\n      - lib/Apache/Session/Store/LDAP.pm\n    classification: slightly promising\n```",
+      "date": "2024-07-08T07:36:54.350031",
+      "usage": {
+        "prompt_tokens": 6481,
+        "completion_tokens": 705,
+        "cost": 0.030018
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Authentication bypass due to hardcoded credentials",
+      "analysis": "The LDAP connection credentials (bind DN and password) are hardcoded in the code and passed directly to Net::LDAP->bind(). This allows anyone with access to the source code to obtain the LDAP admin credentials. An attacker could use these credentials to access the LDAP directory directly, bypassing any application-level access controls.\n",
+      "classification": "very promising",
+      "cwe": "CWE-798",
+      "function_names": [
+        "ldap"
+      ],
+      "filenames": [
+        "lib/Apache/Session/Store/LDAP.pm"
+      ]
+    },
+    {
+      "headline": "Cleartext transmission of sensitive information",
+      "analysis": "The LDAP bind password is transmitted in cleartext over the network when connecting to the LDAP server. This occurs in the ldap() function when calling $ldap->bind(). An attacker able to intercept network traffic could obtain the LDAP admin credentials. The code does support TLS, but it's optional and not enforced.\n",
+      "classification": "very promising",
+      "cwe": "CWE-319",
+      "function_names": [
+        "ldap"
+      ],
+      "filenames": [
+        "lib/Apache/Session/Store/LDAP.pm"
+      ]
+    },
+    {
+      "headline": "SQL injection in LDAP filter",
+      "analysis": "The LDAP search filter in the materialize() function is constructed by directly interpolating user-controlled data (objectClass value) into the filter string. An attacker could inject arbitrary LDAP filter syntax to modify the query. For example, setting objectClass to \"*)(&\" would result in a filter of \"(objectClass=*)(&)\", potentially returning all objects.\n",
+      "classification": "very promising",
+      "cwe": "CWE-90",
+      "function_names": [
+        "materialize"
+      ],
+      "filenames": [
+        "lib/Apache/Session/Store/LDAP.pm"
+      ]
+    },
+    {
+      "headline": "Path traversal in LDAP DN construction",
+      "analysis": "The LDAP distinguished names for add, modify, search and delete operations are constructed by directly concatenating user-controlled input (session ID) without sanitization. An attacker could potentially inject LDAP DN syntax like commas and equal signs to access or modify arbitrary parts of the directory tree.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "insert",
+        "update",
+        "materialize"
+      ],
+      "filenames": [
+        "lib/Apache/Session/Store/LDAP.pm"
+      ]
+    },
+    {
+      "headline": "Uncontrolled resource consumption in LDAP search",
+      "analysis": "The LDAP search in materialize() does not limit the number of results or the search timeout. On a large directory, this could allow an attacker to trigger a denial of service by causing excessively large or long-running searches that consume server resources.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-400",
+      "function_names": [
+        "materialize"
+      ],
+      "filenames": [
+        "lib/Apache/Session/Store/LDAP.pm"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 4
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2020-36658": "2023-01-27T05:15:12"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

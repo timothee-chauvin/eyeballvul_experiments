@@ -1,0 +1,78 @@
+{
+  "commit": "3016df0730fb7daa85d73e29ec9d02851db831ae",
+  "repo_url": "https://github.com/ziparchive/ziparchive",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "e82f9ac4082d31e649d4"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Buffer overflow risk in unzip function\n    analysis: |\n      The unzip functionality in SSZipArchive uses a fixed-size buffer (UINT16_MAX) to read compressed data. This could potentially lead to a buffer overflow if the compressed data is larger than the buffer size. The relevant code is in the mz_zip_reader_entry_read function in mz_zip.c. The function reads data into the fixed-size buffer without checking if the amount of data exceeds the buffer size. An attacker could craft a malicious zip file with compressed data larger than UINT16_MAX to trigger a buffer overflow.\n    cwe: CWE-120\n    function_names:\n      - mz_zip_reader_entry_read\n    filenames:\n      - SSZipArchive/minizip/mz_zip.c\n    classification: very promising\n\n  - headline: Potential path traversal vulnerability  \n    analysis: |\n      The mz_zip_path_resolve function in mz_os.c is used to resolve and normalize file paths when extracting files from a zip archive. However, it does not appear to properly sanitize file paths or prevent directory traversal attacks. An attacker could potentially include \"../\" sequences in filenames within a zip file to write files outside the intended extraction directory. This could allow overwriting of arbitrary files on the system, depending on the permissions of the process. The function should be updated to detect and prevent path traversal attempts.\n    cwe: CWE-22\n    function_names: \n      - mz_zip_path_resolve\n    filenames:\n      - SSZipArchive/minizip/mz_os.c\n    classification: very promising\n\n  - headline: Potential memory corruption from integer overflow\n    analysis: |\n      In the mz_zip_reader_entry_save_buffer function in mz_zip_rw.c, there is a check if file_info->uncompressed_size > INT32_MAX. However, this check is insufficient as it does not account for potential integer overflow when allocating memory. If uncompressed_size is close to but not exceeding INT32_MAX, the subsequent memory allocation could still overflow and allocate less memory than expected. This could lead to a buffer overflow when writing the uncompressed data. A more robust check comparing against SIZE_MAX/2 or similar should be implemented.\n    cwe: CWE-190  \n    function_names:\n      - mz_zip_reader_entry_save_buffer\n    filenames:\n      - SSZipArchive/minizip/mz_zip_rw.c\n    classification: slightly promising\n```",
+      "date": "2024-07-08T09:36:17.867165",
+      "usage": {
+        "prompt_tokens": 158188,
+        "completion_tokens": 610,
+        "cost": 0.483714
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Buffer overflow risk in unzip function",
+      "analysis": "The unzip functionality in SSZipArchive uses a fixed-size buffer (UINT16_MAX) to read compressed data. This could potentially lead to a buffer overflow if the compressed data is larger than the buffer size. The relevant code is in the mz_zip_reader_entry_read function in mz_zip.c. The function reads data into the fixed-size buffer without checking if the amount of data exceeds the buffer size. An attacker could craft a malicious zip file with compressed data larger than UINT16_MAX to trigger a buffer overflow.\n",
+      "classification": "very promising",
+      "cwe": "CWE-120",
+      "function_names": [
+        "mz_zip_reader_entry_read"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_zip.c"
+      ]
+    },
+    {
+      "headline": "Potential path traversal vulnerability",
+      "analysis": "The mz_zip_path_resolve function in mz_os.c is used to resolve and normalize file paths when extracting files from a zip archive. However, it does not appear to properly sanitize file paths or prevent directory traversal attacks. An attacker could potentially include \"../\" sequences in filenames within a zip file to write files outside the intended extraction directory. This could allow overwriting of arbitrary files on the system, depending on the permissions of the process. The function should be updated to detect and prevent path traversal attempts.\n",
+      "classification": "very promising",
+      "cwe": "CWE-22",
+      "function_names": [
+        "mz_zip_path_resolve"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_os.c"
+      ]
+    },
+    {
+      "headline": "Potential memory corruption from integer overflow",
+      "analysis": "In the mz_zip_reader_entry_save_buffer function in mz_zip_rw.c, there is a check if file_info->uncompressed_size > INT32_MAX. However, this check is insufficient as it does not account for potential integer overflow when allocating memory. If uncompressed_size is close to but not exceeding INT32_MAX, the subsequent memory allocation could still overflow and allocate less memory than expected. This could lead to a buffer overflow when writing the uncompressed data. A more robust check comparing against SIZE_MAX/2 or similar should be implemented.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "mz_zip_reader_entry_save_buffer"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_zip_rw.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 1
+      },
+      "mapping": {
+        "1": "CVE-2022-36943"
+      },
+      "vuln_dates": {
+        "CVE-2023-39136": "2023-08-30T22:15:08",
+        "CVE-2022-36943": "2023-01-03T21:15:12"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,51 @@
+{
+  "commit": "3b3bc471642440e83f33d32c6dad971deffa1401",
+  "repo_url": "https://github.com/troglobit/ssdp-responder",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "d8e30a590c02a0883650"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: SSDP responder transmits hardcoded UUID over the network.\n    analysis: |\n      The `ssdpd.c` file contains a hardcoded UUID string that is transmitted over the network in SSDP NOTIFY messages. This is because the `uuidgen()` function always generates the same UUID value. When running multiple instances of the SSDP responder, they would all claim to have the same UUID, leading to a conflict.\n    cwe: CWE-798\n    function_names:\n      - uuidgen\n      - compose_notify\n      - announce\n    filenames:\n      - ssdpd.c\n    classification: not promising\n  - headline: SSDP responder allows any local user to DoS the SSDP service on the network.\n    analysis: |\n      The program binds a web server to port 1901/tcp on all interfaces by default (including the public one). Any local user can DoS the service by connecting to that port: the service only processes one connection at a time and does not set any timeout, essentially stalling in the `recv()` call indefinitely. If the local user opens enough connections like that, remote SSDP clients will be unable to get their requests processed.\n    cwe: CWE-770\n    function_names:\n      - web_recv\n      - respond\n    filenames:\n      - web.c\n    classification: not promising\n  - headline: SSDP responder does not enable SO_REUSEADDR for its multicast UDP socket.\n    analysis: |\n      The program opens a UDP socket that's bound to 239.255.255.250:1900. It enables SO_REUSEADDR for the web server socket, but not for the multicast UDP socket. This may lead to problems when restarting the SSDP responder, e.g. if there are leftover UDP sockets from a previous instance of the responder that are still bound to that address and port. This is less of a problem on Linux which supports SO_REUSEPORT, but may lead to unexpected behavior on other platforms.\n    cwe: CWE-404\n    function_names:\n      - multicast_init\n    filenames:\n      - ssdpd.c\n    classification: not promising\nleads:\n  - headline: SSDP responder does not rate-limit incoming requests.\n    analysis: |\n      The SSDP responder does not perform any rate-limiting on incoming requests. A malicious actor could send a large number of requests to the responder, potentially causing a denial of service.\n    cwe: CWE-770\n    function_names:\n      - ssdp_recv\n    filenames:\n      - ssdpd.c\n    classification: slightly promising\n```",
+      "date": "2024-07-08T09:00:17.196543",
+      "usage": {
+        "prompt_tokens": 16412,
+        "completion_tokens": 534,
+        "cost": 0.09007000000000001
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "SSDP responder does not rate-limit incoming requests.",
+      "analysis": "The SSDP responder does not perform any rate-limiting on incoming requests. A malicious actor could send a large number of requests to the responder, potentially causing a denial of service.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-770",
+      "function_names": [
+        "ssdp_recv"
+      ],
+      "filenames": [
+        "ssdpd.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-14323": "2019-07-28T13:15:10"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -380,12 +380,13 @@ async def run_models():
         "claude-3-haiku-20240307",
         "claude-3-sonnet-20240229",
         "claude-3-opus-20240229",
+        "claude-3-5-sonnet-20240620",
         "gpt-4o-2024-05-13",
         "gpt-4-turbo-2024-04-09",
         "gemini/gemini-1.5-pro",
     ]
     max_size_bytes = 600_000
-    cost_limit = 500
+    cost_limit = 2000
 
     cache = read_cache()
 
@@ -414,7 +415,7 @@ async def run_models():
         for revision in sorted(get_revisions(), key=lambda r: r.commit)
         if revision.size < max_size_bytes and revision not in revisions_after
     ]
-    limit = 500
+    limit = 700
     other_revisions = other_revisions[:limit]
     await run_models_on_revisions(
         revisions=other_revisions,

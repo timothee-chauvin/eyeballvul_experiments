@@ -1,0 +1,78 @@
+{
+  "commit": "150f4331481fcfac48b870d2335c82c7b7a2eeb0",
+  "repo_url": "https://github.com/braintree/sanitize-url",
+  "model": "claude-3-5-sonnet-20240620",
+  "chunk_hashes": [
+    "f2714468a8fbed78ec1f"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Improper sanitization of URL scheme allows potential XSS attacks\n    analysis: |\n      The sanitizeUrl function attempts to prevent malicious URL schemes like javascript:, data:, and vbscript:. However, the implementation has a flaw that could allow these schemes to bypass the filter. The invalidProtocolRegex pattern uses ^ to match at the start of the string, but this is applied after stripping control characters. An attacker could potentially bypass this by prefixing the scheme with stripped characters like null bytes or spaces. For example, \"\\u0000javascript:alert(1)\" would pass through. Additionally, the regex uses a case-insensitive match (/i flag) but doesn't account for mixing uppercase and lowercase in the protocol name itself, potentially allowing bypasses like \"jaVAscRiPt:alert(1)\".\n    cwe: CWE-116\n    function_names:\n      - sanitizeUrl\n    filenames:\n      - src/index.ts\n    classification: very promising\n\n  - headline: Insufficient validation of URL scheme could lead to open redirect\n    analysis: |\n      The sanitizeUrl function does not thoroughly validate URL schemes beyond checking for a few specific dangerous ones. It allows through any scheme that doesn't match the invalidProtocolRegex pattern. This could potentially be exploited for open redirects if the sanitized URL is used in a redirect without further validation. For example, schemes like \"ftp:\", \"file:\", or custom schemes could be used to redirect users to unexpected destinations or access local resources.\n    cwe: CWE-601\n    function_names:\n      - sanitizeUrl\n    filenames:\n      - src/index.ts\n    classification: slightly promising\n\n  - headline: Potential denial of service through regex complexity\n    analysis: |\n      The urlSchemeRegex uses a greedy quantifier (+) in a global match (/g flag). For certain inputs, this could lead to catastrophic backtracking, causing the function to hang or consume excessive resources. An attacker could potentially exploit this by providing a long input with many colons, leading to a denial of service condition. While the impact may be limited since the regex is only applied to the URL scheme, it's still a concern for availability.\n    cwe: CWE-1333\n    function_names:\n      - sanitizeUrl\n    filenames:\n      - src/index.ts\n    classification: slightly promising\n```",
+      "date": "2024-07-08T05:47:26.449186",
+      "usage": {
+        "prompt_tokens": 5348,
+        "completion_tokens": 553,
+        "cost": 0.024339
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Improper sanitization of URL scheme allows potential XSS attacks",
+      "analysis": "The sanitizeUrl function attempts to prevent malicious URL schemes like javascript:, data:, and vbscript:. However, the implementation has a flaw that could allow these schemes to bypass the filter. The invalidProtocolRegex pattern uses ^ to match at the start of the string, but this is applied after stripping control characters. An attacker could potentially bypass this by prefixing the scheme with stripped characters like null bytes or spaces. For example, \"\\u0000javascript:alert(1)\" would pass through. Additionally, the regex uses a case-insensitive match (/i flag) but doesn't account for mixing uppercase and lowercase in the protocol name itself, potentially allowing bypasses like \"jaVAscRiPt:alert(1)\".\n",
+      "classification": "very promising",
+      "cwe": "CWE-116",
+      "function_names": [
+        "sanitizeUrl"
+      ],
+      "filenames": [
+        "src/index.ts"
+      ]
+    },
+    {
+      "headline": "Insufficient validation of URL scheme could lead to open redirect",
+      "analysis": "The sanitizeUrl function does not thoroughly validate URL schemes beyond checking for a few specific dangerous ones. It allows through any scheme that doesn't match the invalidProtocolRegex pattern. This could potentially be exploited for open redirects if the sanitized URL is used in a redirect without further validation. For example, schemes like \"ftp:\", \"file:\", or custom schemes could be used to redirect users to unexpected destinations or access local resources.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-601",
+      "function_names": [
+        "sanitizeUrl"
+      ],
+      "filenames": [
+        "src/index.ts"
+      ]
+    },
+    {
+      "headline": "Potential denial of service through regex complexity",
+      "analysis": "The urlSchemeRegex uses a greedy quantifier (+) in a global match (/g flag). For certain inputs, this could lead to catastrophic backtracking, causing the function to hang or consume excessive resources. An attacker could potentially exploit this by providing a long input with many colons, leading to a denial of service condition. While the impact may be limited since the regex is only applied to the URL scheme, it's still a concern for availability.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-1333",
+      "function_names": [
+        "sanitizeUrl"
+      ],
+      "filenames": [
+        "src/index.ts"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2021-23648"
+      },
+      "vuln_dates": {
+        "CVE-2022-48345": "2023-02-24T06:15:11",
+        "CVE-2021-23648": "2022-03-16T16:15:10"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

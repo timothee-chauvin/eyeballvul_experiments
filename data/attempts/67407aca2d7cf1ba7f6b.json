@@ -1,0 +1,113 @@
+{
+  "commit": "3ea5e3d0b890dd57cf9742d990961e9e06c2b1d4",
+  "repo_url": "https://github.com/sileht/bird-lg",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "e7e167b26d55aed72406"
+  ],
+  "responses": [
+    {
+      "content": "Here are the vulnerabilities I found in the provided codebase:\n\n```yaml\nleads:\n  - headline: SQL Injection in show_route function\n    analysis: |\n      The show_route function in lg.py takes user input from the 'q' URL parameter and uses it unsanitized in SQL queries like:\n      \n      \"show route for \" + expression + all\n      \n      This allows an attacker to inject arbitrary SQL and potentially extract sensitive data, modify data, or gain unauthorized access.\n    cwe: CWE-89\n    function_names:\n      - show_route  \n      - show_route_filter\n      - show_route_where\n    filenames:\n      - lg.py\n    classification: very promising\n\n  - headline: XML External Entity (XXE) Injection \n    analysis: |\n      The bird_proxy function in lg.py constructs a URL using unsanitized user input from the 'query' parameter:\n      \n      url = \"http://%s.%s:%d/%s?q=%s\" % (host, app.config[\"DOMAIN\"], port, path, quote(query))\n\n      If the backend parses this as XML without disabling external entity resolution, an attacker could supply a malicious XML external entity in the query to access arbitrary files or network resources.\n    cwe: CWE-611\n    function_names:\n      - bird_proxy\n    filenames: \n      - lg.py  \n    classification: slightly promising\n\n  - headline: OS Command Injection in traceroute endpoint\n    analysis: |  \n      The traceroute endpoint in lg-proxy.py executes a traceroute command using unsanitized input from the 'q' URL parameter:\n\n      command = [ 'traceroute' , o ] + src + [ '-A', '-q1', '-N32', '-w1', '-m15', query ]\n      result = subprocess.Popen( command , stdout=subprocess.PIPE).communicate()[0].decode('utf-8', 'ignore').replace(\"\\n\",\"<br>\")\n\n      An attacker can inject arbitrary commands to be executed on the server. E.g. a malicious 'q' value of '; cat /etc/passwd ; ' would execute the injected command.\n    cwe: CWE-78\n    function_names:\n      - traceroute\n    filenames:\n      - lg-proxy.py\n    classification: very promising\n\n  - headline: Missing access controls on admin functions\n    analysis: |\n      The check_accesslist function in lg-proxy.py is meant to restrict access to certain IP addresses defined in ACCESS_LIST. However, this check is missing on the /bird and /bird6 endpoints.\n      \n      This means an attacker can access sensitive BIRD management functions without authorization.\n    cwe: CWE-284\n    function_names:\n      - bird\n    filenames:\n      - lg-proxy.py  \n    classification: very promising\n\n  - headline: Sensitive data exposure in whois endpoint \n    analysis: |\n      The whois endpoint in lg.py returns the full raw output from the whois Linux command based on user supplied input.\n      \n      Depending on the whois record, this may expose sensitive details about IP address ownership without any access controls.\n    cwe: CWE-200\n    function_names:\n      - whois\n    filenames:\n      - lg.py\n    classification: slightly promising\n\n  - headline: Cross-Site Scripting (XSS) via bgpmap \n    analysis: |  \n      The show_bgpmap endpoint in lg.py generates a PNG image based on BGP data in the 'q' URL parameter. The unsanitized data is used when constructing DOT markup for the image.\n      \n      An attacker may be able to inject malicious JavaScript into the DOT markup which could be executed if the PNG is viewed in a browser that supports XSS via images.\n    cwe: CWE-79\n    function_names:\n      - show_bgpmap\n    filenames:\n      - lg.py\n    classification: slightly promising\n```\n\nIn summary, the most severe issues are SQL injection, OS command injection, and missing access controls, which could allow external attackers to gain unauthorized access to sensitive data and functions. The other issues like XSS and information exposure are lower severity but should still be addressed. Thorough input validation and sanitization is needed throughout the codebase.",
+      "date": "2024-07-08T08:33:31.083042",
+      "usage": {
+        "prompt_tokens": 72217,
+        "completion_tokens": 1024,
+        "cost": 1.160055
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "SQL Injection in show_route function",
+      "analysis": "The show_route function in lg.py takes user input from the 'q' URL parameter and uses it unsanitized in SQL queries like:\n\n\"show route for \" + expression + all\n\nThis allows an attacker to inject arbitrary SQL and potentially extract sensitive data, modify data, or gain unauthorized access.\n",
+      "classification": "very promising",
+      "cwe": "CWE-89",
+      "function_names": [
+        "show_route",
+        "show_route_filter",
+        "show_route_where"
+      ],
+      "filenames": [
+        "lg.py"
+      ]
+    },
+    {
+      "headline": "XML External Entity (XXE) Injection",
+      "analysis": "The bird_proxy function in lg.py constructs a URL using unsanitized user input from the 'query' parameter:\n\nurl = \"http://%s.%s:%d/%s?q=%s\" % (host, app.config[\"DOMAIN\"], port, path, quote(query))\n\nIf the backend parses this as XML without disabling external entity resolution, an attacker could supply a malicious XML external entity in the query to access arbitrary files or network resources.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-611",
+      "function_names": [
+        "bird_proxy"
+      ],
+      "filenames": [
+        "lg.py"
+      ]
+    },
+    {
+      "headline": "OS Command Injection in traceroute endpoint",
+      "analysis": "The traceroute endpoint in lg-proxy.py executes a traceroute command using unsanitized input from the 'q' URL parameter:\n\ncommand = [ 'traceroute' , o ] + src + [ '-A', '-q1', '-N32', '-w1', '-m15', query ]\nresult = subprocess.Popen( command , stdout=subprocess.PIPE).communicate()[0].decode('utf-8', 'ignore').replace(\"\\n\",\"<br>\")\n\nAn attacker can inject arbitrary commands to be executed on the server. E.g. a malicious 'q' value of '; cat /etc/passwd ; ' would execute the injected command.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "traceroute"
+      ],
+      "filenames": [
+        "lg-proxy.py"
+      ]
+    },
+    {
+      "headline": "Missing access controls on admin functions",
+      "analysis": "The check_accesslist function in lg-proxy.py is meant to restrict access to certain IP addresses defined in ACCESS_LIST. However, this check is missing on the /bird and /bird6 endpoints.\n\nThis means an attacker can access sensitive BIRD management functions without authorization.\n",
+      "classification": "very promising",
+      "cwe": "CWE-284",
+      "function_names": [
+        "bird"
+      ],
+      "filenames": [
+        "lg-proxy.py"
+      ]
+    },
+    {
+      "headline": "Sensitive data exposure in whois endpoint",
+      "analysis": "The whois endpoint in lg.py returns the full raw output from the whois Linux command based on user supplied input.\n\nDepending on the whois record, this may expose sensitive details about IP address ownership without any access controls.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "whois"
+      ],
+      "filenames": [
+        "lg.py"
+      ]
+    },
+    {
+      "headline": "Cross-Site Scripting (XSS) via bgpmap",
+      "analysis": "The show_bgpmap endpoint in lg.py generates a PNG image based on BGP data in the 'q' URL parameter. The unsanitized data is used when constructing DOT markup for the image.\n\nAn attacker may be able to inject malicious JavaScript into the DOT markup which could be executed if the PNG is viewed in a browser that supports XSS via images.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "show_bgpmap"
+      ],
+      "filenames": [
+        "lg.py"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-4274": "2022-12-21T19:15:14"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

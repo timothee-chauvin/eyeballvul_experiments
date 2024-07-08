@@ -1,0 +1,67 @@
+{
+  "commit": "499fe82028337ae55cb61c24696c1ec16f0f9c9a",
+  "repo_url": "https://github.com/turistforeningen/node-im-resize",
+  "model": "claude-3-opus-20240229",
+  "chunk_hashes": [
+    "30920d18ea648ade68b9"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Command Injection in resize function\n    analysis: |\n      The `resize` function in `index.js` executes a shell command constructed from user input without proper sanitization or escaping. The `image` and `output` parameters are used to construct the command string via `module.exports.cmd(image, output)`, which concatenates the user-provided values into the command.\n\n      An attacker could potentially inject arbitrary commands by crafting malicious values for the `image.path`, `output.path`, `version.format`, `version.prefix` or `version.suffix` properties. This could allow them to execute unauthorized commands on the server with the privileges of the Node.js process.\n\n      To exploit this, the attacker would need to control the values passed into the `resize` function, either directly or indirectly by influencing the code that calls it. Depending on where the `image` and `output` objects originate from, this could potentially be achieved through other vulnerabilities like path traversal, SSRF, etc.\n    cwe: CWE-78\n    function_names:\n      - resize\n      - module.exports.cmd  \n    filenames:\n      - index.js\n    classification: very promising\n\n  - headline: Algorithmic Complexity Issues from User-controlled Regular Expression\n    analysis: |\n      The `resize` function uses the `aspectratio` library to calculate image cropping and resizing dimensions based on a user-provided `aspect` parameter. If this library allows the aspect ratio to be specified as a regular expression, it could be vulnerable to Regular Expression Denial of Service (ReDoS).\n\n      An attacker could provide a malicious regular expression that takes a very long time to evaluate, causing the application to get stuck processing it and become unresponsive. The `aspect.crop` and `aspect.resize` functions would be the ones directly impacted.\n\n      However, based on a quick look at the aspectratio library's source code, it does not appear to accept arbitrary regexes, only a predefined \"x:y\" string format. So this is likely a non-issue, but would need a more thorough review of that library to say conclusively.\n    cwe: CWE-1333\n    function_names:\n      - module.exports.crop\n      - module.exports.resize\n    filenames:\n      - index.js  \n    classification: slightly promising\n```",
+      "date": "2024-07-08T09:05:23.643259",
+      "usage": {
+        "prompt_tokens": 11866,
+        "completion_tokens": 547,
+        "cost": 0.219015
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Command Injection in resize function",
+      "analysis": "The resize function in index.js executes a shell command constructed from user input without proper sanitization or escaping. The image and output parameters are used to construct the command string via module.exports.cmd(image, output), which concatenates the user-provided values into the command.\n\nAn attacker could potentially inject arbitrary commands by crafting malicious values for the image.path, output.path, version.format, version.prefix or version.suffix properties. This could allow them to execute unauthorized commands on the server with the privileges of the Node.js process.\n\nTo exploit this, the attacker would need to control the values passed into the resize function, either directly or indirectly by influencing the code that calls it. Depending on where the image and output objects originate from, this could potentially be achieved through other vulnerabilities like path traversal, SSRF, etc.\n",
+      "classification": "very promising",
+      "cwe": "CWE-78",
+      "function_names": [
+        "resize",
+        "module.exports.cmd"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    },
+    {
+      "headline": "Algorithmic Complexity Issues from User-controlled Regular Expression",
+      "analysis": "The resize function uses the aspectratio library to calculate image cropping and resizing dimensions based on a user-provided aspect parameter. If this library allows the aspect ratio to be specified as a regular expression, it could be vulnerable to Regular Expression Denial of Service (ReDoS).\n\nAn attacker could provide a malicious regular expression that takes a very long time to evaluate, causing the application to get stuck processing it and become unresponsive. The aspect.crop and aspect.resize functions would be the ones directly impacted.\n\nHowever, based on a quick look at the aspectratio library's source code, it does not appear to accept arbitrary regexes, only a predefined \"x:y\" string format. So this is likely a non-issue, but would need a more thorough review of that library to say conclusively.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-1333",
+      "function_names": [
+        "module.exports.crop",
+        "module.exports.resize"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2019-10787"
+      },
+      "vuln_dates": {
+        "CVE-2019-10787": "2020-02-04T21:15:10"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
