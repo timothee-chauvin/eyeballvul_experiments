@@ -100,6 +100,25 @@ def get_llm_scores(instruction_template_hash: str, scoring_model: str) -> list[i
     return [get_llm_score(instruction_template_hash, el, scoring_model) for el in data["sample"]]
 
 
+def export_llm_scores(instruction_template_hash: str, scoring_model: str):
+    llm_scores = get_llm_scores(instruction_template_hash, scoring_model)
+    with open(
+        Config.paths.human_baselines
+        / f"llm_scores_{instruction_template_hash}_{scoring_model.replace('/', '_')}.json",
+        "w",
+    ) as f:
+        json.dump(
+            {
+                "instruction_template_hash": instruction_template_hash,
+                "scoring_model": scoring_model,
+                "scores": {i + 1: score for i, score in enumerate(llm_scores)},
+            },
+            f,
+            indent=2,
+        )
+        f.write("\n")
+
+
 def get_human_scores(filename: str) -> list[int]:
     with open(Config.paths.human_baselines / filename) as f:
         data = json.load(f)
@@ -192,6 +211,7 @@ if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     scoring_model = "claude-3-5-sonnet-20240620"
     # generate_random_sample_human_agreement(instruction_template_hash, scoring_model, 100)
+    export_llm_scores(instruction_template_hash, scoring_model)
     cohen_kappas(
         instruction_template_hash, ["score_a.json", "score_b.json", "score_c.json"], scoring_model
     )
