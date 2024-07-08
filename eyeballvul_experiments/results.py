@@ -254,8 +254,14 @@ def plot_overall_performance(
 
     fig.update_layout(
         template="plotly_white",
-        xaxis_title="Precision",
-        yaxis_title="Recall",
+        xaxis=dict(
+            tickformat=",.0%",
+            title="Precision",
+        ),
+        yaxis=dict(
+            tickformat=",.0%",
+            title="Recall",
+        ),
         width=800,
         height=600,
         font=dict(size=12),
@@ -540,8 +546,14 @@ def plot_performance_before_after_training_cutoff(
         )
     fig.update_layout(
         template="plotly_white",
-        xaxis_title="Precision",
-        yaxis_title="Recall",
+        xaxis=dict(
+            tickformat=",.0%",
+            title="Precision",
+        ),
+        yaxis=dict(
+            tickformat=",.0%",
+            title="Recall",
+        ),
         width=800,
         height=600,
         font=dict(size=12),
