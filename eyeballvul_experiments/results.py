@@ -619,9 +619,21 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
             marker_color="rgb(138, 146, 251)",
         )
     )
+    # Add textual values to the bars.
+    for _, row in df.iterrows():
+        fig.add_annotation(
+            x=0,
+            y=row["cwe"],
+            text=f"{row['occurrences']:.1%}",
+            showarrow=False,
+            xanchor="left",
+            yanchor="middle",
+            font=dict(size=10, color="white"),
+            align="left",
+        )
     fig.update_layout(
         template="plotly_white",
-        xaxis={"title": "Frequency among true positives"},
+        xaxis={"title": "Frequency among true positives", "tickformat": ",.0%"},
     )
     fig.write_image(Config.paths.plots / "cwes_found.png")
 
