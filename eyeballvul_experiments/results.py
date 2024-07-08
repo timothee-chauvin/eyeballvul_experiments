@@ -799,8 +799,8 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     fig.update_layout(template="plotly_white", margin=dict(t=5, l=5, r=5, b=5))
 
     fig.update_xaxes(title_text="Base Severity (CVSS v3)", nticks=nticks, row=2, col=1)
-    fig.update_yaxes(title_text="Rate", row=1, col=1)
-    fig.update_yaxes(title_text="Rate", row=2, col=1)
+    fig.update_yaxes(title_text="Rate", row=1, col=1, tickformat=",.0%")
+    fig.update_yaxes(title_text="Rate", row=2, col=1, tickformat=",.0%")
 
     fig.write_image(Config.paths.plots / "cve_severities.png")
 
@@ -848,7 +848,6 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
         cols=1,
         shared_xaxes=True,
         vertical_spacing=0.1,
-        subplot_titles=("Inference cost per true positive", "False positives per true positive"),
     )
 
     fig.add_trace(
@@ -859,6 +858,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
             text=[f"${x:.2f}" for x in df["inference_cost_per_tp"]],
             textposition="outside",
             textfont=dict(size=10),
+            name="Inference cost per true positive",
         ),
         row=1,
         col=1,
@@ -872,6 +872,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
             text=df["fp_per_tp"].round(1),
             textposition="outside",
             textfont=dict(size=10),
+            name="False positives per true positive",
         ),
         row=2,
         col=1,
@@ -880,8 +881,8 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
     fig.update_layout(
         barmode="group",
         template="plotly_white",
-        showlegend=False,
         margin=dict(t=5, l=5, r=5, b=5),
+        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99),
     )
     fig.update_yaxes(row=1, col=1, tickprefix="$")
     fig.update_yaxes(row=1, col=1, range=[0, df["inference_cost_per_tp"].max() * 1.4])
