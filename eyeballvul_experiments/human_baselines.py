@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 from eyeballvul import EyeballvulScore, get_vulns
+from tqdm import tqdm
 
 from eyeballvul_experiments.attempt import Attempt
 from eyeballvul_experiments.config.config_loader import Config
@@ -20,45 +21,45 @@ few_shot_examples_taken_from_projects = [
 ]
 
 
-def get_scores_with_hash(attempt: Attempt, instruction_template_hash: str) -> list[EyeballvulScore]:
+def get_scores_with_hash(
+    attempt: Attempt, instruction_template_hash: str, scoring_model: str
+) -> list[EyeballvulScore]:
     return [
         score
         for score in attempt.scores
         if score.instruction_template_hash == instruction_template_hash
+        and score.scoring_model == scoring_model
     ]
 
 
-def generate_random_sample_human_agreement(instruction_template_hash: str, n: int):
+def generate_random_sample_human_agreement(
+    instruction_template_hash: str, scoring_model: str, n: int
+):
     """
     Generate a random sample of `n` vulnerability submissions.
 
-    Store that sample, along with the LLM scorer scores, in Config.paths.human_baselines /
-    "sample.json".
+    Store that sample in Config.paths.human_baselines / "sample.json".
 
-    Store a presentation of that sample for human scorers (without LLM scores) in
-    Config.paths.human_baselines / "sample_for_humans.json".
+    Store a presentation of that sample for human scorers in Config.paths.human_baselines /
+    "sample_for_humans.json".
     """
     samples = []
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
-    for attempt_filename in attempt_filenames:
+    for attempt_filename in tqdm(attempt_filenames):
         with open(Config.paths.attempts / attempt_filename) as f:
             attempt = Attempt.model_validate_json(f.read())
         if attempt.repo_url in few_shot_examples_taken_from_projects:
             continue
-        scores = get_scores_with_hash(attempt, instruction_template_hash)
+        scores = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)
         if not scores:
             continue
-        # Only select the first score for each attempt.
-        score = scores[0]
         selected_leads = [lead for lead in attempt.leads if lead.classification == "very promising"]
         vulns = get_vulns(commit=attempt.commit)
         for i, lead in enumerate(selected_leads):
-            label = int(i in score.mapping)
             samples.append(
                 {
                     "attempt": attempt.get_hash(),
                     "lead_index": i,
-                    "score": label,
                     "lead": lead.model_dump(mode="json"),
                     "vulns": {v.id: v.details for v in vulns},
                 }
@@ -69,9 +70,7 @@ def generate_random_sample_human_agreement(instruction_template_hash: str, n: in
         json.dump(
             {
                 "instruction_template_hash": instruction_template_hash,
-                "sample": [
-                    {k: sample[k] for k in ["attempt", "lead_index", "score"]} for sample in subset
-                ],
+                "sample": [{k: sample[k] for k in ["attempt", "lead_index"]} for sample in subset],
             },
             f,
             indent=2,
@@ -85,25 +84,40 @@ def generate_random_sample_human_agreement(instruction_template_hash: str, n: in
         f.write("\n")
 
 
-def get_llm_score() -> list[int]:
+def get_llm_score(
+    instruction_template_hash: str, sample_element: dict[str, int | str], scoring_model: str
+) -> int:
+    with open(Config.paths.attempts / f"{sample_element['attempt']}.json") as f:
+        attempt = Attempt.model_validate_json(f.read())
+    # Only considering the first score
+    full_score = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)[0]
+    return int(sample_element["lead_index"] in full_score.mapping)
+
+
+def get_llm_scores(instruction_template_hash: str, scoring_model: str) -> list[int]:
     with open(Config.paths.human_baselines / "sample.json") as f:
         data = json.load(f)
-    return [el["score"] for el in data["sample"]]
+    return [get_llm_score(instruction_template_hash, el, scoring_model) for el in data["sample"]]
 
 
-def get_human_score(filename: str) -> list[int]:
+def get_human_scores(filename: str) -> list[int]:
     with open(Config.paths.human_baselines / filename) as f:
         data = json.load(f)
     maximum = max([int(k) for k in data.keys()])
     return [data[str(i + 1)]["score"] for i in range(maximum)]
 
 
-def cohen_kappa(score1: list[int], score2: list[int]) -> tuple[list, float]:
-    n = len(score1)
+def cohen_kappa(llm_score: list[int], human_score: list[int]) -> dict[str, Any]:
+    n = len(llm_score)
     # Create contingency table
     table = np.zeros((2, 2))
+    disagreements: dict[str, list[int]] = {"llm-positive": [], "llm-negative": []}
     for i in range(n):
-        table[score1[i], score2[i]] += 1
+        table[llm_score[i], human_score[i]] += 1
+        if llm_score[i] == 1 and human_score[i] == 0:
+            disagreements["llm-positive"].append(i + 1)
+        elif llm_score[i] == 0 and human_score[i] == 1:
+            disagreements["llm-negative"].append(i + 1)
     print(table)
 
     # Calculate observed agreement
@@ -118,32 +132,36 @@ def cohen_kappa(score1: list[int], score2: list[int]) -> tuple[list, float]:
     # Compute kappa
     kappa = (po - pe) / (1 - pe)
 
-    return table.tolist(), kappa
+    return {
+        "contingency_table": table.tolist(),
+        "kappa": kappa,
+        "disagreements": disagreements,
+    }
 
 
-def cohen_kappas(filenames: list[str]):
-    llm_score = get_llm_score()
-    results: dict[str, tuple[list, float]] = {}
+def cohen_kappas(instruction_template_hash: str, filenames: list[str], scoring_model: str):
+    llm_scores = get_llm_scores(instruction_template_hash, scoring_model)
+    results: dict[str, dict[str, Any]] = {}
     for filename in filenames:
-        score = get_human_score(filename)
-        results[filename] = cohen_kappa(llm_score, score)
-    average = sum([res[1] for res in results.values()]) / len(results)
+        human_scores = get_human_scores(filename)
+        results[filename] = cohen_kappa(llm_scores, human_scores)
+    average = sum([res["kappa"] for res in results.values()]) / len(results)
     with open(Config.paths.results / "cohen_kappa.json", "w") as f:
         json.dump({"individual": results, "average": average}, f, indent=2)
         f.write("\n")
 
 
-def average_confidence(filenames: list[str]):
-    llm_score = get_llm_score()
+def average_confidence(instruction_template_hash: str, filenames: list[str], scoring_model: str):
+    llm_scores = get_llm_scores(instruction_template_hash, scoring_model)
     results: dict[str, dict[str, Any]] = {"individual": {}, "average": {}}
     for filename in filenames:
         with open(Config.paths.human_baselines / filename) as f:
             data = json.load(f)
         maximum = max([int(k) for k in data.keys()])
-        score = [data[str(i + 1)]["score"] for i in range(maximum)]
+        scores = [data[str(i + 1)]["score"] for i in range(maximum)]
         confidence = [data[str(i + 1)]["confidence"] for i in range(maximum)]
         average_confidence = sum(confidence) / len(confidence)
-        disagreement_indices = [i for i in range(maximum) if score[i] != llm_score[i]]
+        disagreement_indices = [i for i in range(maximum) if scores[i] != llm_scores[i]]
         confidence_on_disagreement = [confidence[i] for i in disagreement_indices]
         average_confidence_on_disagreement = sum(confidence_on_disagreement) / len(
             confidence_on_disagreement
@@ -167,6 +185,11 @@ def average_confidence(filenames: list[str]):
 
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
-    generate_random_sample_human_agreement(instruction_template_hash, 100)
-    cohen_kappas(["score_a.json", "score_b.json", "score_c.json"])
-    average_confidence(["score_a.json", "score_b.json", "score_c.json"])
+    scoring_model = "claude-3-5-sonnet-20240620"
+    # generate_random_sample_human_agreement(instruction_template_hash, scoring_model, 100)
+    cohen_kappas(
+        instruction_template_hash, ["score_a.json", "score_b.json", "score_c.json"], scoring_model
+    )
+    average_confidence(
+        instruction_template_hash, ["score_a.json", "score_b.json", "score_c.json"], scoring_model
+    )
