@@ -801,6 +801,90 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     fig.write_image(Config.paths.plots / "cve_severities.png")
 
 
+def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: list[str]):
+    """Plot the cost per vulnerability of each model, in terms of inference cost and false
+    positives."""
+    results: dict[str, dict] = {}
+    attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
+    for attempt_filename in attempt_filenames:
+        with open(Config.paths.attempts / attempt_filename) as f:
+            attempt = Attempt.model_validate_json(f.read())
+        results.setdefault(
+            attempt.model,
+            {
+                "inference_cost": 0.0,
+                "fp": 0,
+                "tp": 0,
+                "fp_per_tp": 0.0,
+                "inference_cost_per_tp": 0.0,
+            },
+        )
+        # Only keep the first score.
+        scores = get_scores_with_hash(attempt, instruction_template_hash, scoring_model)
+        if not scores:
+            continue
+        score = scores[0]
+        results[attempt.model]["inference_cost"] += sum(
+            response.usage.cost for response in attempt.responses
+        )
+        results[attempt.model]["fp"] += score.stats.fp
+        results[attempt.model]["tp"] += score.stats.tp
+
+    for model in results:
+        results[model]["fp_per_tp"] = results[model]["fp"] / results[model]["tp"]
+        results[model]["inference_cost_per_tp"] = (
+            results[model]["inference_cost"] / results[model]["tp"]
+        )
+
+    df = pd.DataFrame.from_dict(results, orient="index")
+    df = df.reindex(model_order)
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.1,
+        subplot_titles=("Inference cost per true positive", "False positives per true positive"),
+    )
+
+    fig.add_trace(
+        go.Bar(
+            x=df.index,
+            y=df["inference_cost_per_tp"],
+            marker_color="rgb(69, 126, 172)",
+            text=[f"${x:.2f}" for x in df["inference_cost_per_tp"]],
+            textposition="outside",
+            textfont=dict(size=10),
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Bar(
+            x=df.index,
+            y=df["fp_per_tp"],
+            marker_color="rgb(194, 175, 240)",
+            text=df["fp_per_tp"].round(1),
+            textposition="outside",
+            textfont=dict(size=10),
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig.update_layout(
+        barmode="group",
+        template="plotly_white",
+        showlegend=False,
+    )
+    fig.update_yaxes(row=1, col=1, tickprefix="$")
+    fig.update_yaxes(row=1, col=1, range=[0, df["inference_cost_per_tp"].max() * 1.4])
+    fig.update_yaxes(row=2, col=1, range=[0, df["fp_per_tp"].max() * 1.3])
+
+    fig.write_image(Config.paths.plots / "costs.png")
+
+
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     scoring_model = "claude-3-5-sonnet-20240620"
@@ -840,3 +924,4 @@ if __name__ == "__main__":
     )
     average_number_of_chunks_by_model(instruction_template_hash, scoring_model)
     plot_cve_severities(instruction_template_hash, scoring_model)
+    plot_costs(instruction_template_hash, scoring_model, model_order)
