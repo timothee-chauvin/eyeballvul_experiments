@@ -152,7 +152,7 @@ def plot_overall_performance(
             x=df["model"],
             y=df["precision"],
             name="Precision",
-            marker_color="blue",
+            marker_color="rgb(69, 126, 172)",
             error_y={
                 "type": "data",
                 "symmetric": False,
@@ -166,7 +166,7 @@ def plot_overall_performance(
             x=df["model"],
             y=df["recall"],
             name="Recall",
-            marker_color="green",
+            marker_color="rgb(194, 175, 240)",
             error_y={
                 "type": "data",
                 "symmetric": False,
@@ -181,7 +181,7 @@ def plot_overall_performance(
             x=df["model"],
             y=df["f1"],
             name="F1 Score",
-            marker_color="yellow",
+            marker_color="rgb(138, 146, 251)",
             error_y={
                 "type": "data",
                 "symmetric": False,
@@ -191,7 +191,25 @@ def plot_overall_performance(
         )
     )
 
+    # Add textual values to the bars.
+    for i, model in enumerate(df["model"]):
+        for j, metric in enumerate(["precision", "recall", "f1"]):
+            fig.add_annotation(
+                x=model,
+                y=0,
+                text=f"{df[metric].iloc[i]:.1%}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor="center",
+                yanchor="bottom",
+                xshift=(-1 + j) * 20,
+                textangle=90,
+            )
+
     fig.update_layout(
+        yaxis=dict(
+            tickformat=",.0%",
+        ),
         template="plotly_white",
         barmode="group",
         width=800,
