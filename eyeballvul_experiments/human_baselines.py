@@ -219,6 +219,25 @@ def generate_random_cves(n: int):
         f.write("\n")
 
 
+def stats_from_scored_cves(filename: str):
+    with open(Config.paths.human_baselines / filename) as f:
+        data = json.load(f)
+    histogram = {i: 0 for i in range(1, 6)}
+    for item in data:
+        histogram[item["rating"]] += 1
+    average = sum(k * v for k, v in histogram.items()) / sum(histogram.values())
+
+    # For each rating, the number of items above this rating
+    n_above = {}
+    for i in range(1, 6):
+        n_above[i] = sum(histogram[j] for j in range(i, 6))
+    with open(Config.paths.human_baselines / "random_cve_stats.json", "w") as f:
+        json.dump(
+            {"histogram": histogram, "number_above": n_above, "average": average}, f, indent=2
+        )
+        f.write("\n")
+
+
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     scoring_model = "claude-3-5-sonnet-20240620"
@@ -231,3 +250,4 @@ if __name__ == "__main__":
     average_confidence(
         instruction_template_hash, ["score_a.json", "score_b.json", "score_c.json"], scoring_model
     )
+    stats_from_scored_cves("random_cves_scored.json")
