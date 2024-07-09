@@ -754,6 +754,9 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     )
     all_df = all_df.sort_values("severity", ascending=True)
 
+    n_tp = len(tp_vulns)
+    n_all = len(all_vulns)
+
     for category, color in severity_colors.items():
         tp_category = tp_df[tp_df["severity"].apply(get_severity_category) == category]
         all_category = all_df[all_df["severity"].apply(get_severity_category) == category]
@@ -765,7 +768,7 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
                     name=category,
                     marker_color=color,
                     legendgroup="tp",
-                    legendgrouptitle_text="True Positives",
+                    legendgrouptitle_text=f"True Positives (n={n_tp})",
                 ),
                 row=1,
                 col=1,
@@ -790,7 +793,7 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
                         },
                     },
                     legendgroup="all",
-                    legendgrouptitle_text="All Vulnerabilities",
+                    legendgrouptitle_text=f"All Vulnerabilities (n={n_all})",
                 ),
                 row=2,
                 col=1,
@@ -799,8 +802,8 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     fig.update_layout(template="plotly_white", margin=dict(t=5, l=5, r=5, b=5))
 
     fig.update_xaxes(title_text="Base Severity (CVSS v3)", nticks=nticks, row=2, col=1)
-    fig.update_yaxes(title_text="Rate", row=1, col=1, tickformat=",.0%")
-    fig.update_yaxes(title_text="Rate", row=2, col=1, tickformat=",.0%")
+    fig.update_yaxes(title_text="Rate", row=1, col=1, tickformat=",.0%", range=[0, 0.22])
+    fig.update_yaxes(title_text="Rate", row=2, col=1, tickformat=",.0%", range=[0, 0.22])
 
     fig.write_image(Config.paths.plots / "cve_severities.png")
 
