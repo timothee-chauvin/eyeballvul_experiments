@@ -207,10 +207,23 @@ def average_confidence(instruction_template_hash: str, filenames: list[str], sco
         f.write("\n")
 
 
+def generate_random_cves(n: int):
+    vulns = get_vulns()
+    subset = random.Random(0).sample(vulns, n)  # nosec
+    presentation = [
+        {"id": v.id, "repo_url": v.repo_url, "details": v.details, "cwes": v.cwes, "rating": -1}
+        for v in subset
+    ]
+    with open(Config.paths.human_baselines / "random_cves.json", "w") as f:
+        json.dump(presentation, f, indent=2)
+        f.write("\n")
+
+
 if __name__ == "__main__":
     instruction_template_hash = "245ace12b6361954d0a2"
     scoring_model = "claude-3-5-sonnet-20240620"
     # generate_random_sample_human_agreement(instruction_template_hash, scoring_model, 100)
+    generate_random_cves(n=100)
     export_llm_scores(instruction_template_hash, scoring_model)
     cohen_kappas(
         instruction_template_hash, ["score_a.json", "score_b.json", "score_c.json"], scoring_model
