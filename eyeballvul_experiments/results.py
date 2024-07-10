@@ -33,6 +33,7 @@ def plot_overall_performance(
     instruction_template_hash: str,
     scoring_model: str,
     model_order: list[str],
+    model_names: dict[str, str],
     color_map: dict[str, str],
 ):
     results: dict[str, dict] = {}
@@ -135,6 +136,7 @@ def plot_overall_performance(
     df = pd.DataFrame(
         {
             "model": list(results.keys()),
+            "model_name": [model_names[model] for model in results],
             "precision": [results[model]["precision"] for model in results],
             "recall": [results[model]["recall"] for model in results],
             "f1": [results[model]["f1"] for model in results],
@@ -153,7 +155,7 @@ def plot_overall_performance(
     fig = go.Figure()
     fig.add_trace(
         go.Bar(
-            x=df["model"],
+            x=df["model_name"],
             y=df["precision"],
             name="Precision",
             marker_color="rgb(69, 126, 172)",
@@ -167,7 +169,7 @@ def plot_overall_performance(
     )
     fig.add_trace(
         go.Bar(
-            x=df["model"],
+            x=df["model_name"],
             y=df["recall"],
             name="Recall",
             marker_color="rgb(194, 175, 240)",
@@ -182,7 +184,7 @@ def plot_overall_performance(
 
     fig.add_trace(
         go.Bar(
-            x=df["model"],
+            x=df["model_name"],
             y=df["f1"],
             name="F1 Score",
             marker_color="rgb(138, 146, 251)",
@@ -196,10 +198,10 @@ def plot_overall_performance(
     )
 
     # Add textual values to the bars.
-    for i, model in enumerate(df["model"]):
+    for i in range(len(df)):
         for j, metric in enumerate(["precision", "recall", "f1"]):
             fig.add_annotation(
-                x=model,
+                x=df["model_name"].iloc[i],
                 y=0,
                 text=f"{df[metric].iloc[i]:.1%}",
                 showarrow=False,
@@ -230,7 +232,7 @@ def plot_overall_performance(
             x=df.loc[df["model"] == model, "precision"],
             y=df.loc[df["model"] == model, "recall"],
             mode="markers",
-            name=model,
+            name=model_names[model],
             marker=dict(color=color_map[model]),
             error_x=dict(
                 type="data",
@@ -302,6 +304,7 @@ def plot_performance_before_after_training_cutoff(
     instruction_template_hash: str,
     scoring_model: str,
     model_order: list[str],
+    model_names: dict[str, str],
     color_map: dict[str, str],
     cutoff_dates: dict[str, str],
 ):
@@ -444,6 +447,7 @@ def plot_performance_before_after_training_cutoff(
     df_before = pd.DataFrame(
         {
             "model": list(results.keys()),
+            "model_name": [model_names[model] for model in results],
             "precision": [results[model]["before"]["precision"] for model in results],
             "recall": [results[model]["before"]["recall"] for model in results],
             "precision_ci_low": [results[model]["before"]["precision_ci_low"] for model in results],
@@ -458,6 +462,7 @@ def plot_performance_before_after_training_cutoff(
     df_after = pd.DataFrame(
         {
             "model": list(results.keys()),
+            "model_name": [model_names[model] for model in results],
             "precision": [results[model]["after"]["precision"] for model in results],
             "recall": [results[model]["after"]["recall"] for model in results],
             "precision_ci_low": [results[model]["after"]["precision_ci_low"] for model in results],
@@ -475,7 +480,7 @@ def plot_performance_before_after_training_cutoff(
             x=df_before.loc[df_before["model"] == model, "precision"],
             y=df_before.loc[df_before["model"] == model, "recall"],
             mode="markers",
-            name=f"{model} (before)",
+            name=f"{model_names[model]} (before)",
             marker=dict(color=color_map[model], symbol="circle-open"),
             error_x=dict(
                 type="data",
@@ -502,7 +507,7 @@ def plot_performance_before_after_training_cutoff(
             x=df_after.loc[df_after["model"] == model, "precision"],
             y=df_after.loc[df_after["model"] == model, "recall"],
             mode="markers",
-            name=f"{model} (after)",
+            name=f"{model_names[model]} (after)",
             marker=dict(color=color_map[model], symbol="circle"),
             error_x=dict(
                 type="data",
@@ -812,7 +817,12 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     fig.write_image(Config.paths.plots / "cve_severities.pdf")
 
 
-def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: list[str]):
+def plot_costs(
+    instruction_template_hash: str,
+    scoring_model: str,
+    model_order: list[str],
+    model_names: dict[str, str],
+):
     """Plot the cost per vulnerability of each model, in terms of inference cost and false
     positives."""
     results: dict[str, dict] = {}
@@ -849,6 +859,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
 
     df = pd.DataFrame.from_dict(results, orient="index")
     df = df.reindex(model_order)
+    df["model_name"] = df.index.map(model_names)
 
     fig = make_subplots(
         rows=2,
@@ -859,7 +870,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
 
     fig.add_trace(
         go.Bar(
-            x=df.index,
+            x=df["model_name"],
             y=df["inference_cost_per_tp"],
             marker_color="rgb(69, 126, 172)",
             text=[f"${x:.2f}" for x in df["inference_cost_per_tp"]],
@@ -873,7 +884,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
 
     fig.add_trace(
         go.Bar(
-            x=df.index,
+            x=df["model_name"],
             y=df["fp_per_tp"],
             marker_color="rgb(194, 175, 240)",
             text=df["fp_per_tp"].round(1),
@@ -911,6 +922,16 @@ if __name__ == "__main__":
         "gemini/gemini-1.5-pro",
     ]
 
+    model_names = {
+        "claude-3-haiku-20240307": "Claude 3 Haiku",
+        "claude-3-sonnet-20240229": "Claude 3 Sonnet",
+        "claude-3-opus-20240229": "Claude 3 Opus",
+        "claude-3-5-sonnet-20240620": "Claude 3.5 Sonnet",
+        "gpt-4o-2024-05-13": "GPT-4o",
+        "gpt-4-turbo-2024-04-09": "GPT-4 Turbo",
+        "gemini/gemini-1.5-pro": "Gemini 1.5 Pro",
+    }
+
     color_map = {
         "claude-3-haiku-20240307": "rgb(252, 244, 10)",
         "claude-3-sonnet-20240229": "rgb(255, 139, 15)",
@@ -930,11 +951,18 @@ if __name__ == "__main__":
         "gpt-4-turbo-2024-04-09": "2024-01-01",
         "gemini/gemini-1.5-pro": "2023-12-01",
     }
-    plot_overall_performance(instruction_template_hash, scoring_model, model_order, color_map)
+    plot_overall_performance(
+        instruction_template_hash, scoring_model, model_order, model_names, color_map
+    )
     plot_cwes_found(instruction_template_hash, scoring_model, top_n=10)
     plot_performance_before_after_training_cutoff(
-        instruction_template_hash, scoring_model, model_order, color_map, training_data_cutoffs
+        instruction_template_hash,
+        scoring_model,
+        model_order,
+        model_names,
+        color_map,
+        training_data_cutoffs,
     )
     average_number_of_chunks_by_model(instruction_template_hash, scoring_model)
     plot_cve_severities(instruction_template_hash, scoring_model)
-    plot_costs(instruction_template_hash, scoring_model, model_order)
+    plot_costs(instruction_template_hash, scoring_model, model_order, model_names)
