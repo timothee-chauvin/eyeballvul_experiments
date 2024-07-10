@@ -1,5 +1,6 @@
 import json
 import random
+from itertools import combinations
 from typing import Any
 
 import numpy as np
@@ -175,6 +176,32 @@ def cohen_kappas(instruction_template_hash: str, filenames: list[str], scoring_m
         f.write("\n")
 
 
+def intra_human_cohen_kappas(filenames: list[str]):
+    human_scores = {filename: get_human_scores(filename) for filename in filenames}
+    human_pairs = list(combinations(human_scores.keys(), 2))
+    results: dict[str, dict[str, Any]] = {}
+    for pair in human_pairs:
+        human1_scores = human_scores[pair[0]]
+        human2_scores = human_scores[pair[1]]
+        results[f"{pair[0]}_vs_{pair[1]}"] = cohen_kappa(human1_scores, human2_scores)
+        # Rename "llm-positive" and "llm-negative" in the disagreements
+        for key in ["llm-positive", "llm-negative"]:
+            new_key = f"{pair[0]}-{key.split('-')[1]}"
+            results[f"{pair[0]}_vs_{pair[1]}"]["disagreements"][new_key] = results[
+                f"{pair[0]}_vs_{pair[1]}"
+            ]["disagreements"].pop(key)
+
+    average_kappa = sum(result["kappa"] for result in results.values()) / len(results)
+
+    with open(Config.paths.results / "intra_human_cohen_kappa.json", "w") as f:
+        json.dump(
+            {"individual": results, "average": average_kappa},
+            f,
+            indent=2,
+        )
+        f.write("\n")
+
+
 def average_confidence(instruction_template_hash: str, filenames: list[str], scoring_model: str):
     llm_scores = get_llm_scores(instruction_template_hash, scoring_model)
     results: dict[str, dict[str, Any]] = {"individual": {}, "average": {}}
@@ -251,3 +278,4 @@ if __name__ == "__main__":
         instruction_template_hash, ["score_a.json", "score_b.json", "score_c.json"], scoring_model
     )
     stats_from_scored_cves("random_cves_scored.json")
+    intra_human_cohen_kappas(["score_a.json", "score_b.json", "score_c.json"])
