@@ -45,6 +45,29 @@ def plot_repo_size_histogram():
         )
     )
 
+    # Add vertical lines for context windows
+    context_windows = {
+        "128k": 128000 * 4,
+        "200k": 200000 * 4,
+        "1M": 1000000 * 4,
+    }
+    for window in context_windows.values():
+        fig.add_vline(x=np.log10(window), line_dash="dot", line_color="black", line_width=1)
+
+    # Add vertical text labels for context windows
+    for name, window in context_windows.items():
+        fig.add_annotation(
+            x=np.log10(window) * 1.005,  # small adjustment to make text closer to the line
+            y=0.2,
+            text=f"{name} context window",
+            textangle=-90,
+            yanchor="bottom",
+            showarrow=False,
+            xanchor="right",
+            yref="paper",
+            font=dict(size=13),
+        )
+
     fig.update_layout(
         xaxis=dict(
             title="Size of the repository in bytes according to linguist",
