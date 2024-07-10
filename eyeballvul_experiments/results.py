@@ -218,9 +218,7 @@ def plot_overall_performance(
         ),
         template="plotly_white",
         barmode="group",
-        width=800,
-        height=600,
-        font=dict(size=12),
+        font_size=16,
         margin=dict(t=5, l=5, r=5, b=5),
     )
     fig.write_image(Config.paths.plots / "overall_performance.pdf")
@@ -269,9 +267,7 @@ def plot_overall_performance(
             tickformat=",.0%",
             title="Recall",
         ),
-        width=800,
-        height=600,
-        font=dict(size=12),
+        font_size=16,
         margin=dict(t=5, l=5, r=5, b=5),
     )
 
@@ -565,9 +561,7 @@ def plot_performance_before_after_training_cutoff(
             tickformat=",.0%",
             title="Recall",
         ),
-        width=800,
-        height=600,
-        font=dict(size=12),
+        font_size=14,
         legend=dict(title="Model (Period)"),
         margin=dict(t=5, l=5, r=5, b=5),
     )
@@ -640,13 +634,14 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
             showarrow=False,
             xanchor="left",
             yanchor="middle",
-            font=dict(size=10, color="white"),
+            font=dict(size=14, color="white"),
             align="left",
         )
     fig.update_layout(
         template="plotly_white",
         margin=dict(t=5, l=5, r=5, b=5),
         xaxis={"title": "Frequency among true positives", "tickformat": ",.0%"},
+        font_size=16,
     )
     fig.write_image(Config.paths.plots / "cwes_found.pdf")
 
@@ -808,7 +803,7 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
                 col=1,
             )
     nticks = len(set(tp_cve_severities_05.keys() | set(all_cve_severities_05.keys()))) + 1
-    fig.update_layout(template="plotly_white", margin=dict(t=5, l=5, r=5, b=5))
+    fig.update_layout(template="plotly_white", margin=dict(t=5, l=5, r=5, b=5), font_size=14)
 
     fig.update_xaxes(title_text="Base Severity (CVSS v3)", nticks=nticks, row=2, col=1)
     fig.update_yaxes(title_text="Rate", row=1, col=1, tickformat=",.0%", range=[0, 0.22])
@@ -875,7 +870,7 @@ def plot_costs(
             marker_color="rgb(69, 126, 172)",
             text=[f"${x:.2f}" for x in df["inference_cost_per_tp"]],
             textposition="outside",
-            textfont=dict(size=10),
+            textfont=dict(size=14),
             name="Inference cost per true positive",
         ),
         row=1,
@@ -889,7 +884,7 @@ def plot_costs(
             marker_color="rgb(194, 175, 240)",
             text=df["fp_per_tp"].round(1),
             textposition="outside",
-            textfont=dict(size=10),
+            textfont=dict(size=14),
             name="False positives per true positive",
         ),
         row=2,
@@ -900,6 +895,7 @@ def plot_costs(
         barmode="group",
         template="plotly_white",
         margin=dict(t=5, l=5, r=5, b=5),
+        font_size=16,
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99),
     )
     fig.update_yaxes(row=1, col=1, tickprefix="$")

@@ -31,7 +31,6 @@ def plot_repo_size_histogram():
             name="Number of revisions",
             nbinsx=100,
             opacity=0.75,
-            marker=dict(color="rgb(138, 146, 251)", line=dict(color="white", width=0.5)),
         )
     )
 
@@ -77,6 +76,7 @@ def plot_repo_size_histogram():
             x=0.01, y=0.99, bgcolor="rgba(255, 255, 255, 0)", bordercolor="rgba(255, 255, 255, 0)"
         ),
         margin=dict(t=5, l=5, r=5, b=5),
+        font_size=16,
     )
 
     fig.write_image(Config.paths.plots / "repo_size_histogram.pdf")
@@ -153,7 +153,6 @@ def plot_commits_and_vulns_by_date():
             name="Number of revisions",
             xbins=dict(size="M1"),
             opacity=0.5,
-            marker=dict(color="rgb(138, 146, 251)", line=dict(color="white", width=1)),
         )
     )
 
@@ -163,7 +162,6 @@ def plot_commits_and_vulns_by_date():
             name="Number of vulnerabilities",
             xbins=dict(size="M1"),
             opacity=0.5,
-            marker=dict(color="rgb(255, 0, 0)", line=dict(color="white", width=1)),
         )
     )
 
@@ -188,11 +186,11 @@ def plot_commits_and_vulns_by_date():
         legend=dict(
             x=0.01, y=0.99, bgcolor="rgba(255, 255, 255, 0)", bordercolor="rgba(255, 255, 255, 0)"
         ),
-        font_size=35,
+        font_size=16,
         margin=dict(t=5, l=5, r=5, b=5),
     )
 
-    fig.write_image(Config.paths.plots / "commits_and_vulns_by_date.pdf", width=1920, height=1080)
+    fig.write_image(Config.paths.plots / "commits_and_vulns_by_date.pdf")
 
 
 def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
