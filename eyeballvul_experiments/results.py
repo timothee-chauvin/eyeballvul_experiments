@@ -587,6 +587,18 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
         "CWE-1321": "Prototype Pollution",
         "CWE-89": "SQL Injection",
     }
+    cwe_top_25_ranks = {
+        "CWE-79": "2",
+        "CWE-78": "5",
+        "CWE-22": "8",
+        "CWE-20": "6",
+        "CWE-94": "23",
+        "CWE-798": "18",
+        "CWE-502": "15",
+        "CWE-1321": "> 25",
+        "CWE-77": "16",
+        "CWE-611": "> 25",
+    }
     attempt_filenames = [attempt.name for attempt in Config.paths.attempts.iterdir()]
     for attempt_filename in attempt_filenames:
         with open(Config.paths.attempts / attempt_filename) as f:
@@ -625,6 +637,24 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
             marker_color="rgb(138, 146, 251)",
         )
     )
+    # Add vertical dotted line before the top 25 ranks
+    fig.add_vline(
+        x=0.22,
+        line_dash="dot",
+        line_color="gray",
+        line_width=1,
+    )
+    fig.add_annotation(
+        x=0.93,
+        y=1.05,
+        xref="paper",
+        yref="paper",
+        text="Rank in\nCWE Top 25",
+        showarrow=False,
+        font=dict(size=14),
+        xanchor="left",
+        align="left",
+    )
     # Add textual values to the bars.
     for _, row in df.iterrows():
         fig.add_annotation(
@@ -637,9 +667,20 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
             font=dict(size=14, color="white"),
             align="left",
         )
+        # Add rank in top 25 on the right of the figure
+        fig.add_annotation(
+            x=0.23,
+            y=row["cwe"],
+            text=cwe_top_25_ranks[row["cwe"]],
+            showarrow=False,
+            xanchor="left",
+            yanchor="middle",
+            font=dict(size=14),
+            align="left",
+        )
     fig.update_layout(
         template="plotly_white",
-        margin=dict(t=5, l=5, r=5, b=5),
+        margin=dict(t=20, l=5, r=100, b=5),
         xaxis={"title": "Frequency among true positives", "tickformat": ",.0%"},
         font_size=16,
     )
