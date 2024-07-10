@@ -4,6 +4,7 @@ from typing import Any
 
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 from confidenceinterval import f1_score, precision_score, recall_score
 from cvss import CVSS3
 from eyeballvul import EyeballvulItem, EyeballvulScore, get_vulns
@@ -12,6 +13,9 @@ from tqdm import tqdm
 
 from eyeballvul_experiments.attempt import Attempt
 from eyeballvul_experiments.config.config_loader import Config
+
+# https://github.com/plotly/plotly.py/issues/3469
+pio.kaleido.scope.mathjax = None
 
 
 def get_scores_with_hash(
@@ -217,7 +221,7 @@ def plot_overall_performance(
         font=dict(size=12),
         margin=dict(t=5, l=5, r=5, b=5),
     )
-    fig.write_image(Config.paths.plots / "overall_performance.png")
+    fig.write_image(Config.paths.plots / "overall_performance.pdf")
 
     # Then plot a Pareto efficiency plot.
     traces = []
@@ -272,7 +276,7 @@ def plot_overall_performance(
     fig.update_xaxes(rangemode="tozero")
     fig.update_yaxes(rangemode="tozero")
 
-    fig.write_image(Config.paths.plots / "pareto_efficiency.png")
+    fig.write_image(Config.paths.plots / "pareto_efficiency.pdf")
 
 
 def average_number_of_chunks_by_model(instruction_template_hash: str, scoring_model: str):
@@ -566,7 +570,7 @@ def plot_performance_before_after_training_cutoff(
     fig.update_xaxes(rangemode="tozero")
     fig.update_yaxes(rangemode="tozero")
 
-    fig.write_image(Config.paths.plots / "pareto_efficiency_before_after_training_cutoff.png")
+    fig.write_image(Config.paths.plots / "pareto_efficiency_before_after_training_cutoff.pdf")
 
 
 def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: int):
@@ -639,7 +643,7 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
         margin=dict(t=5, l=5, r=5, b=5),
         xaxis={"title": "Frequency among true positives", "tickformat": ",.0%"},
     )
-    fig.write_image(Config.paths.plots / "cwes_found.png")
+    fig.write_image(Config.paths.plots / "cwes_found.pdf")
 
 
 def get_severity_category(severity):
@@ -805,7 +809,7 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
     fig.update_yaxes(title_text="Rate", row=1, col=1, tickformat=",.0%", range=[0, 0.22])
     fig.update_yaxes(title_text="Rate", row=2, col=1, tickformat=",.0%", range=[0, 0.22])
 
-    fig.write_image(Config.paths.plots / "cve_severities.png")
+    fig.write_image(Config.paths.plots / "cve_severities.pdf")
 
 
 def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: list[str]):
@@ -891,7 +895,7 @@ def plot_costs(instruction_template_hash: str, scoring_model: str, model_order: 
     fig.update_yaxes(row=1, col=1, range=[0, df["inference_cost_per_tp"].max() * 1.4])
     fig.update_yaxes(row=2, col=1, range=[0, df["fp_per_tp"].max() * 1.3])
 
-    fig.write_image(Config.paths.plots / "costs.png")
+    fig.write_image(Config.paths.plots / "costs.pdf")
 
 
 if __name__ == "__main__":

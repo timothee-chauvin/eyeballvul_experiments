@@ -7,10 +7,14 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 from eyeballvul import get_revisions, get_vulns
 from tqdm import tqdm
 
 from eyeballvul_experiments.config.config_loader import Config
+
+# https://github.com/plotly/plotly.py/issues/3469
+pio.kaleido.scope.mathjax = None
 
 
 def plot_repo_size_histogram():
@@ -75,7 +79,7 @@ def plot_repo_size_histogram():
         margin=dict(t=5, l=5, r=5, b=5),
     )
 
-    fig.write_image(Config.paths.plots / "repo_size_histogram.png")
+    fig.write_image(Config.paths.plots / "repo_size_histogram.pdf")
 
 
 def fraction_of_benchmark_covered_by_context_window(
@@ -188,7 +192,7 @@ def plot_commits_and_vulns_by_date():
         margin=dict(t=5, l=5, r=5, b=5),
     )
 
-    fig.write_image(Config.paths.plots / "commits_and_vulns_by_date.png", width=1920, height=1080)
+    fig.write_image(Config.paths.plots / "commits_and_vulns_by_date.pdf", width=1920, height=1080)
 
 
 def fraction_of_benchmark_after_knowledge_cutoffs(dates: list[str]):
