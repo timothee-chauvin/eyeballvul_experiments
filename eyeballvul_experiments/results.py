@@ -205,10 +205,10 @@ def plot_overall_performance(
                 y=0,
                 text=f"{df[metric].iloc[i]:.1%}",
                 showarrow=False,
-                font=dict(color="white", size=12),
+                font=dict(color="white", size=18),
                 xanchor="center",
                 yanchor="bottom",
-                xshift=(-1 + j) * 20,
+                xshift=(-1 + j) * 25,
                 textangle=90,
             )
 
@@ -218,8 +218,11 @@ def plot_overall_performance(
         ),
         template="plotly_white",
         barmode="group",
-        font_size=16,
+        font_size=20,
         margin=dict(t=5, l=5, r=5, b=5),
+        legend=dict(orientation="v", yanchor="bottom", y=0.7, xanchor="center", x=0.7),
+        width=800,
+        height=800,
     )
     fig.write_image(Config.paths.plots / "overall_performance.pdf")
 
@@ -267,8 +270,11 @@ def plot_overall_performance(
             tickformat=",.0%",
             title="Recall",
         ),
-        font_size=16,
+        font_size=20,
         margin=dict(t=5, l=5, r=5, b=5),
+        legend=dict(orientation="h", yanchor="bottom", y=1, xanchor="center", x=0.5),
+        width=800,
+        height=800,
     )
 
     fig.update_xaxes(rangemode="tozero")
