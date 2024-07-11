@@ -39,7 +39,7 @@ def plot_repo_size_histogram():
             x=df["log_sizes"],
             y=df["cumulative_sum"],
             mode="lines",
-            name="Cumulative sum of sizes",
+            name="Cumulative sum of sizes in bytes",
             yaxis="y2",
             marker=dict(color="rgb(255, 0, 0)"),
         )
@@ -47,6 +47,7 @@ def plot_repo_size_histogram():
 
     # Add vertical lines for context windows
     context_windows = {
+        "8k": 8192 * 4,
         "128k": 128000 * 4,
         "200k": 200000 * 4,
         "1M": 1000000 * 4,
@@ -87,7 +88,7 @@ def plot_repo_size_histogram():
             griddash="dash",
         ),
         yaxis2=dict(
-            title="Cumulative sum of sizes",
+            title="Cumulative sum of sizes in bytes",
             overlaying="y",
             side="right",
             range=[0, df["cumulative_sum"].max()],
@@ -322,6 +323,7 @@ if __name__ == "__main__":
     plot_repo_size_histogram()
     fraction_of_benchmark_covered_by_context_window(
         [
+            8192,  # GPT-4 at launch
             128000,  # GPT-4o
             200000,  # Claude 3
             1000000,  # Gemini 1.5 Pro
