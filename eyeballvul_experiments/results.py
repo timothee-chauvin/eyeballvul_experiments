@@ -645,19 +645,19 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
     )
     # Add vertical dotted line before the top 25 ranks
     fig.add_vline(
-        x=0.22,
+        x=0.25,
         line_dash="dot",
         line_color="gray",
         line_width=1,
     )
     fig.add_annotation(
-        x=0.93,
+        x=0.98,
         y=1.05,
         xref="paper",
         yref="paper",
-        text="Rank in\nCWE Top 25",
+        text="Rank in Top 25",
         showarrow=False,
-        font=dict(size=14),
+        font=dict(size=22),
         xanchor="left",
         align="left",
     )
@@ -670,25 +670,28 @@ def plot_cwes_found(instruction_template_hash: str, scoring_model: str, top_n: i
             showarrow=False,
             xanchor="left",
             yanchor="middle",
-            font=dict(size=14, color="white"),
+            font=dict(size=22, color="white"),
             align="left",
         )
         # Add rank in top 25 on the right of the figure
         fig.add_annotation(
-            x=0.23,
+            x=1.1,
+            xref="paper",
             y=row["cwe"],
             text=cwe_top_25_ranks[row["cwe"]],
             showarrow=False,
-            xanchor="left",
+            xanchor="center",
             yanchor="middle",
-            font=dict(size=14),
+            font=dict(size=22),
             align="left",
         )
     fig.update_layout(
         template="plotly_white",
-        margin=dict(t=20, l=5, r=100, b=5),
+        margin=dict(t=30, l=5, r=160, b=5),
         xaxis={"title": "Frequency among true positives", "tickformat": ",.0%"},
-        font_size=16,
+        font_size=22,
+        width=800,
+        height=700,
     )
     fig.write_image(Config.paths.plots / "cwes_found.pdf")
 
