@@ -853,7 +853,21 @@ def plot_cve_severities(instruction_template_hash: str, scoring_model: str):
                 col=1,
             )
     nticks = len(set(tp_cve_severities_05.keys() | set(all_cve_severities_05.keys()))) + 1
-    fig.update_layout(template="plotly_white", margin=dict(t=5, l=5, r=5, b=5), font_size=14)
+    fig.update_layout(
+        template="plotly_white",
+        margin=dict(t=5, l=5, r=5, b=5),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5,
+            title="",
+        ),
+        font_size=22,
+        width=800,
+        height=700,
+    )
 
     fig.update_xaxes(title_text="Base Severity (CVSS v3)", nticks=nticks, row=2, col=1)
     fig.update_yaxes(title_text="Rate", row=1, col=1, tickformat=",.0%", range=[0, 0.22])
