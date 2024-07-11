@@ -917,7 +917,7 @@ def plot_costs(
             marker_color="rgb(69, 126, 172)",
             text=[f"${x:.2f}" for x in df["inference_cost_per_tp"]],
             textposition="outside",
-            textfont=dict(size=14),
+            textfont=dict(size=22),
             name="Inference cost per true positive",
         ),
         row=1,
@@ -931,7 +931,7 @@ def plot_costs(
             marker_color="rgb(194, 175, 240)",
             text=df["fp_per_tp"].round(1),
             textposition="outside",
-            textfont=dict(size=14),
+            textfont=dict(size=22),
             name="False positives per true positive",
         ),
         row=2,
@@ -942,8 +942,10 @@ def plot_costs(
         barmode="group",
         template="plotly_white",
         margin=dict(t=5, l=5, r=5, b=5),
-        font_size=16,
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99),
+        font_size=24,
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.5),
+        width=800,
+        height=800,
     )
     fig.update_yaxes(row=1, col=1, tickprefix="$")
     fig.update_yaxes(row=1, col=1, range=[0, df["inference_cost_per_tp"].max() * 1.4])
