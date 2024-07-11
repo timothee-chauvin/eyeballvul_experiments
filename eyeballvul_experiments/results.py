@@ -482,7 +482,7 @@ def plot_performance_before_after_training_cutoff(
             x=df_before.loc[df_before["model"] == model, "precision"],
             y=df_before.loc[df_before["model"] == model, "recall"],
             mode="markers",
-            marker=dict(color=color_map[model], symbol="circle-open", size=8),
+            marker=dict(color=color_map[model], symbol="circle-open", size=12),
             error_x=dict(
                 type="data",
                 symmetric=False,
@@ -510,7 +510,7 @@ def plot_performance_before_after_training_cutoff(
             y=df_after.loc[df_after["model"] == model, "recall"],
             mode="markers",
             name=model_names[model],
-            marker=dict(color=color_map[model], symbol="circle", size=8),
+            marker=dict(color=color_map[model], symbol="circle", size=12),
             error_x=dict(
                 type="data",
                 symmetric=False,
