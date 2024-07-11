@@ -482,7 +482,6 @@ def plot_performance_before_after_training_cutoff(
             x=df_before.loc[df_before["model"] == model, "precision"],
             y=df_before.loc[df_before["model"] == model, "recall"],
             mode="markers",
-            name=f"{model_names[model]} (before)",
             marker=dict(color=color_map[model], symbol="circle-open", size=8),
             error_x=dict(
                 type="data",
@@ -504,12 +503,13 @@ def plot_performance_before_after_training_cutoff(
                 width=0,
                 thickness=1,
             ),
+            showlegend=False,
         )
         trace_after = go.Scatter(
             x=df_after.loc[df_after["model"] == model, "precision"],
             y=df_after.loc[df_after["model"] == model, "recall"],
             mode="markers",
-            name=f"{model_names[model]} (after)",
+            name=model_names[model],
             marker=dict(color=color_map[model], symbol="circle", size=8),
             error_x=dict(
                 type="data",
@@ -531,6 +531,7 @@ def plot_performance_before_after_training_cutoff(
                 width=0,
                 thickness=1,
             ),
+            showlegend=True,
         )
         traces.extend([trace_before, trace_after])
 
@@ -557,6 +558,29 @@ def plot_performance_before_after_training_cutoff(
             arrowwidth=1,
             arrowcolor=color_map[model],
         )
+    fig.add_annotation(
+        x=0.6,
+        y=0.9,
+        xref="paper",
+        yref="paper",
+        text="○ Before knowledge cutoff",
+        showarrow=False,
+        font=dict(size=20),
+        align="left",
+        xanchor="left",
+    )
+
+    fig.add_annotation(
+        x=0.6,
+        y=0.86,
+        xref="paper",
+        yref="paper",
+        text="● After knowledge cutoff",
+        showarrow=False,
+        font=dict(size=20),
+        align="left",
+        xanchor="left",
+    )
     fig.update_layout(
         template="plotly_white",
         xaxis=dict(
@@ -567,9 +591,11 @@ def plot_performance_before_after_training_cutoff(
             tickformat=",.0%",
             title="Recall",
         ),
-        font_size=14,
-        legend=dict(title="Model (Period)"),
+        font_size=20,
+        legend=dict(title="", orientation="h", yanchor="bottom", y=1, xanchor="center", x=0.5),
         margin=dict(t=5, l=5, r=5, b=5),
+        width=800,
+        height=800,
     )
 
     fig.update_xaxes(rangemode="tozero")
