@@ -1,0 +1,63 @@
+{
+  "commit": "4820ebf4c74a5d97f727ed995759902075571abc",
+  "repo_url": "https://github.com/jberger/galileo",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "1db2fbea9896c5872e1b"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cleartext storage of sensitive information in the database\n    analysis: |\n      The `password` column in the `User` table of the SQLite database uses `Crypt::Eksblowfish::Bcrypt` to encode passwords, but the `encode_args` parameter of `DBIx::Class::EncodedColumn` is set to `{key_nul => 0, cost => 8}`.\n      \n      The `key_nul => 0` setting means that the null bytes in the password are not escaped, which makes the bcrypt hash vulnerable to null byte injection attacks. An attacker could potentially bypass authentication by providing a password with a null byte at the end.\n    cwe: CWE-312\n    function_names: []\n    filenames:\n      - lib/Galileo/DB/Schema/Result/User.pm\n    classification: slightly promising\n  - headline: Cross-Site Scripting (XSS) in Page Titles\n    analysis: |\n      The application allows users to edit page titles without proper sanitization. The edited title is then displayed on the page without escaping. An attacker could inject malicious JavaScript code into the page title, which would execute when a user visits the page.\n\n      For example, an attacker could create a page with a title like:\n\n      ```\n      <script>alert('XSS Attack!');</script>\n      ```\n\n      When a user visits this page, the JavaScript code will execute and display an alert box.\n    cwe: CWE-79\n    function_names:\n      - store\n    filenames:\n      - lib/Galileo/Page.pm\n    classification: slightly promising\n  - headline: Path Traversal in File Uploads\n    analysis: |\n      The `_get_list` function in the `Galileo::File` module uses `File::Spec->abs2rel` to construct file paths relative to the upload directory. However, the `abs2rel` function is vulnerable to path traversal attacks if the attacker provides a file path that includes directory traversal sequences (e.g., \"../\").\n\n      An attacker could potentially upload a file to a location outside the intended upload directory by providing a malicious file path.\n    cwe: CWE-22\n    function_names:\n      - _get_list\n    filenames:\n      - lib/Galileo/File.pm\n    classification: slightly promising\nleads:\n  - headline: Unrestricted File Upload\n    analysis: |\n      The application does not appear to perform any validation or sanitization on user-uploaded files. This could allow an attacker to upload malicious files, such as executable scripts or files with dangerous types, to the server.\n    cwe: CWE-434\n    function_names:\n      - list\n    filenames:\n      - lib/Galileo/File.pm\n    classification: very promising\n```",
+      "date": "2024-06-14T13:58:29.251580",
+      "usage": {
+        "prompt_tokens": 63448,
+        "completion_tokens": 573,
+        "cost": 0.2280845
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cleartext storage of sensitive information in the database",
+      "analysis": "The password column in the User table of the SQLite database uses Crypt::Eksblowfish::Bcrypt to encode passwords, but the encode_args parameter of DBIx::Class::EncodedColumn is set to {key_nul => 0, cost => 8}.\n\nThe key_nul => 0 setting means that the null bytes in the password are not escaped, which makes the bcrypt hash vulnerable to null byte injection attacks. An attacker could potentially bypass authentication by providing a password with a null byte at the end.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-312",
+      "function_names": [],
+      "filenames": [
+        "lib/Galileo/DB/Schema/Result/User.pm"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-7410": "2020-08-14T14:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2019-7410": "2020-08-14T14:15:12"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

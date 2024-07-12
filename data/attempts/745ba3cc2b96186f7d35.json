@@ -1,0 +1,65 @@
+{
+  "commit": "20b19f3dc87b64948d0dfb4cbb917a23aabdd118",
+  "repo_url": "https://github.com/jenkinsci/templating-engine-plugin",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "014edb19c68be0820ace"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Cross-site scripting (XSS) in Template Logger\n    analysis: |\n      The `TemplateLogger` plugin's JavaScript code in `src/main/resources/org/boozallen/plugins/jte/util/TemplateLogger/Annotator/script.js` is vulnerable to a persistent XSS vulnerability. The plugin does not sanitize user-supplied input from log messages before rendering it as HTML, allowing attackers to inject malicious JavaScript that will be executed in the browser of victims viewing the log.\n\n      Specifically, the code uses `element.textContent` to set the content of log messages. However, this does not escape HTML special characters. If an attacker can control a log message that is displayed by the `TemplateLogger` plugin, they can inject arbitrary HTML and JavaScript code.\n    cwe: CWE-79\n    function_names:\n      - process\n    filenames:\n      - src/main/resources/org/boozallen/plugins/jte/util/TemplateLogger/Annotator/script.js\n    classification: very promising\n```\n<><><>codebase<><><>\n<><><>Fraction of the full repository included below: 100.0%<><><>\n<><><>CONTENTS OF src/main/resources/org/boozallen/plugins/jte/util/TemplateLogger/Annotator/script.js:<><><>\n(function() {\n\nfunction onLoad(){\n    process() \n    \n    // Callback function to execute when mutations are observed\n    var callback = function(mutationsList, observer) {\n        for(var mutation of mutationsList) {\n            if (mutation.type == 'childList') {\n                process()\n            }\n        }\n    };\n\n    // Create an observer instance linked to the callback function\n    var observer = new MutationObserver(callback);\n\n    // Options for the observer (which mutations to observe)\n    var config = { childList: true, subtree: true };\n\n    // Start observing the target node for configured mutations\n    observer.observe(document, config);\n}\n\nfunction process(){\n    document.querySelectorAll(\"span[first-line='true']\").forEach( (element) => {\n        if(element.hasAttribute(\"jte-processed\")){\n            return\n        }\n        element.setAttribute(\"jte-processed\", true)\n        element.textContent = element.textContent.replace(/(\\r\\n|\\n|\\r)/gm,\"\")\n        element.innerHTML += \" <span class='jte-collapsible' isHidden='false' onclick='jteCollapse(this)'>(hide)</span><br>\"\n        if(element.hasAttribute(\"initially-hidden\")){\n            jteHide(element.querySelector(\"span\"))\n        }\n    });\n}\n\n// Run on page load\nif (document.readyState === 'complete') {\n    onLoad();\n} else {\n    Behaviour.addLoadEvent(onLoad);\n}\n\n}());\n\nfunction jteCollapse(link){\n    if(link.getAttribute(\"isHidden\") === 'false'){\n        jteHide(link)\n    }else{\n        jteShow(link)\n    }\n}\n\nfunction jteHide(link){\n    link.setAttribute(\"isHidden\",'true');\n    link.textContent = \"(show)\";\n    link.style.visibility = \"visible\"; \n    var id = link.parentNode.getAttribute(\"jte-id\");\n    document.querySelectorAll(`span[jte-id='${id}'][first-line='false']`).forEach( (element) => {\n        element.style.display = 'none';\n    });\n}\nfunction jteShow(link){\n    link.setAttribute(\"isHidden\",'false');\n    link.textContent = \"(hide)\";\n    link.style.visibility = \"\"; \n    var id = link.parentNode.getAttribute(\"jte-id\");\n    document.querySelectorAll(`span[jte-id='${id}'][first-line='false']`).forEach( (element) => {\n        element.style.display = 'inline';\n    });\n}\n<><><>CONTENTS OF src/main/resources/org/boozallen/plugins/jte/job/TemplateBranchProjectFactory/help-filterBranches.html:<><><>\n<div>\n    If checked, the Jenkins Templating Engine will exclude branches that do not have a Pipeline Configuration file (pipeline_config.groovy) at the root of the repository.\n    \n    If unchecked, a pipeline will be created for all branches. \n</div>\n<><><>CONTENTS OF src/main/resources/org/boozallen/plugins/jte/job/AdHocTemplateFlowDefinition/help-pipelineConfig.html:<><><>\n<p>\n    A Pipeline Configuration file that will be used when loading this Pipeline.\n</p>\n<><><>CONTENTS OF src/main/resources/org/boozallen/plugins/jte/job/AdHocTemplateFlowDefinition/help-template.html:<><><>\n<p>\n    Pipeline Template used for this Pipeline.\n</p>\n<><><>CONTENTS OF src/main/resources/org/boozallen/plugins/jte/job/TemplateMultiBranchProjectFactory/help-filterBranches.html:<><><>\n<div>\n    If checked, the Jenkins Templating Engine will exclude branches that do not have a Pipeline Configuration file (pipeline_config.groovy) at the root of the repository.\n    \n    If unchecked, a pipeline will be created for all branches. \n</div>\n<><><>CONTENTS OF src/main/java/org/boozallen/plugins/jte/init/primitives/injectors/StepWrapperScript.java:<><><>\n/*\n    Copyright 2018 Booz Allen Hamilton\n\n    Licensed under the Apache License, Version 2.0 (the \"License\");\n    you may not use this file except in compliance with the License.\n    You may obtain a copy of the License at\n\n        http://www.apache.org/licenses/LICENSE-2.0\n\n    Unless required by applicable law or agreed to in writing, software\n    distributed under the License is distributed on an \"AS IS\" BASIS,\n    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n    See the License for the specific language governing permissions and\n    limitations under the License.\n*/\npackage org.boozallen.plugins.jte.init.primitives.injectors;\n\nimport hudson.AbortException;\nimport hudson.Extension;\nimport hudson.FilePath;\nimport org.boozallen.plugins.jte.init.primitives.ReservedVariableName;\nimport org.boozallen.plugins.jte.init.primitives.hooks.HookContext;\nimport org.boozallen.plugins.jte.init.primitives.injectors.StageInjector.StageContext;\nimport org.jenkinsci.plugins.workflow.cps.CpsScript;\n\nimport java.io.File;\nimport java.io.IOException;\nimport java.util.LinkedHashMap;\n\n/**\n * The base script used during step execution\n */\npublic abstract class StepWrapperScript extends CpsScript {\n\n    /**\n     * The library configuration\n     */\n    LinkedHashMap config = new LinkedHashMap();\n\n    /**\n     * The hook context information\n     */\n    HookContext hookContext = new HookContext();\n\n    /**\n     * The stage context\n     */\n    StageContext stageContext = new StageContext();\n\n    /**\n     * The FilePath within the build directory from which\n     * resources can be fetched\n     */\n    private String resourcesPath;\n    private String buildRootDir;\n\n    public StepWrapperScript() throws IOException { super(); }\n\n    public void setConfig(LinkedHashMap config){\n        this.config = config;\n    }\n    public LinkedHashMap getConfig(){ return config; }\n\n    /**\n     * reserves the config var from being overridden in the binding\n     */\n    @Extension public static class ConfigReservedVariable extends ReservedVariableName {\n        public String getName(){ return \"config\"; }\n        @Override public String getDescription(){\n            return String.format(\"Variable name %s is reserved for steps to access their library configuration\", getName());\n        }\n    }\n  \n    public void setHookContext(HookContext hookContext){\n        this.hookContext = hookContext;\n    }\n    public HookContext getHookContext(){ return hookContext; }\n\n    /**\n     * reserves the config var from being overridden in the binding\n     */\n    @Extension public static class HookContextReservedVariable extends ReservedVariableName {\n        public String getName(){ return \"hookContext\"; }\n        @Override public String getDescription(){\n            return String.format(\"Variable name %s is reserved for steps to access their hook context\", getName());\n        }\n    }\n\n    public void setStageContext(StageContext stageContext){\n        this.stageContext = stageContext;\n    }\n    public StageContext getStageContext(){ return stageContext; }\n\n    /**\n     * reserves the config var from being overridden in the binding\n     */\n    @Extension public static class StageContextReservedVariable extends ReservedVariableName {\n        public String getName(){ return \"stageContext\"; }\n        @Override public String getDescription(){\n            return String.format(\"Variable name %s is reserved for steps to access their stage context\", getName());\n        }\n    }\n\n    public void setBuildRootDir(File rootDir){\n        this.buildRootDir = rootDir.getPath();\n    }\n\n    public void setResourcesPath(String resourcesPath){\n        this.resourcesPath = resourcesPath;\n    }\n\n\n    /**\n     * Used within steps to access library resources\n     *\n     * @param path relative path within the resources directory to fetch\n     * @return the resource file contents\n     * @throws java.io.IOException throws this\n     * @throws java.lang.InterruptedException throws this\n     */\n    public String resource(String path) throws IOException, InterruptedException {\n        if (path.startsWith(\"/\")){\n            throw new AbortException(\"JTE: library step requested a resource that is not a relative path.\");\n        }\n        File f = new File(buildRootDir);\n        FilePath runRoot = new FilePath(f);\n        FilePath resourcesBaseDir = runRoot.child(resourcesPath);\n        FilePath resourceFile = resourcesBaseDir.child(path);\n        if(!resourceFile.exists()){\n            String oopsMsg = String.format(\"JTE: library step requested a resource '%s' that does not exist\", path);\n            throw new AbortException(oopsMsg);\n        } else if(resourceFile.isDirectory()){\n            String oopsMsg = String.format(\"JTE: library step requested a resource '%s' that is not a file.\", path);\n            throw new AbortException(oopsMsg);\n        }\n        return resourceFile.readToString();\n    }\n\n    /**\n     * reserves the config var from being overridden in the binding\n     */\n    @Extension public static class ResourceReservedVariable extends ReservedVariableName {\n        public String getName(){ return \"resource\"; }\n        @Override public String getDescription(){\n            return String.format(\"Variable name %s is reserved for steps to access library resources\", getName());\n        }\n    }\n}\n\n\n\n\n```",
+      "date": "2024-06-12T19:23:16.511163",
+      "usage": {
+        "prompt_tokens": 4243,
+        "completion_tokens": 2108,
+        "cost": 0.0369845
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Cross-site scripting (XSS) in Template Logger",
+      "analysis": "The TemplateLogger plugin's JavaScript code in src/main/resources/org/boozallen/plugins/jte/util/TemplateLogger/Annotator/script.js is vulnerable to a persistent XSS vulnerability. The plugin does not sanitize user-supplied input from log messages before rendering it as HTML, allowing attackers to inject malicious JavaScript that will be executed in the browser of victims viewing the log.\n\nSpecifically, the code uses element.textContent to set the content of log messages. However, this does not escape HTML special characters. If an attacker can control a log message that is displayed by the TemplateLogger plugin, they can inject arbitrary HTML and JavaScript code.\n",
+      "classification": "very promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "process"
+      ],
+      "filenames": [
+        "src/main/resources/org/boozallen/plugins/jte/util/TemplateLogger/Annotator/script.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-21646": "2021-04-21T15:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2021-21646": "2021-04-21T15:15:08"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

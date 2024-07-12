@@ -1,0 +1,104 @@
+{
+  "commit": "0a383e8e1d6758a85a76b03742ce9785003089c2",
+  "repo_url": "https://github.com/kornelski/jpeg-compressor",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "c7019827c10be85b3d58"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Unbounded memcpy in jpeg_decoder_mem_stream::read()\n    analysis: |\n      The function `jpeg_decoder_mem_stream::read()` copies up to `max_bytes_to_read` bytes from `m_pSrc_data + m_ofs` into the destination buffer `pBuf`. However, it does not check if `m_ofs + max_bytes_to_read` would exceed the bounds of the allocated memory pointed to by `m_pSrc_data`. This could lead to an out-of-bounds read if the caller provides a larger `max_bytes_to_read` value than the available data in `m_pSrc_data`.\n    cwe: CWE-125\n    function_names:\n      - jpeg_decoder_mem_stream::read\n    filenames:\n      - jpgd.cpp\n    classification: slightly promising\n  - headline: Out-of-bounds Read in stbi_load_from_memory\n    analysis: |\n      The `stbi_load_from_memory` function in stb_image.c does not adequately validate the length of the input buffer before attempting to decode it. This can lead to an out-of-bounds read vulnerability. For instance, if the input buffer is smaller than expected, the decoder might attempt to access memory beyond the allocated buffer, causing a crash or potentially leaking sensitive information.\n    cwe: CWE-125\n    function_names:\n      - stbi_load_from_memory\n    filenames:\n      - stb_image.c\n    classification: slightly promising\n  - headline: Out-of-Bounds Read in stbi_zlib_decode_malloc_guesssize\n    analysis: |\n      The function `stbi_zlib_decode_malloc_guesssize` in `stb_image.c` allocates a buffer of `initial_size` bytes and passes it to the `do_zlib` function. The `do_zlib` function then uses this buffer to store the decompressed data. However, `stbi_zlib_decode_malloc_guesssize` doesn't verify if the actual decompressed data size returned by `do_zlib` (`a.zout - a.zout_start`) exceeds the `initial_size`. If the decompressed data is larger than the allocated buffer, it leads to an out-of-bounds write.\n    cwe: CWE-787\n    function_names:\n      - stbi_zlib_decode_malloc_guesssize\n    filenames:\n      - stb_image.c\n    classification: slightly promising\n  - headline: Uncontrolled Resource Consumption in stbi_zlib_decode_malloc_guesssize\n    analysis: |\n      The `stbi_zlib_decode_malloc_guesssize` function uses `realloc` to expand the output buffer dynamically within the `expand` function. It doubles the buffer size (`limit *= 2`) until it can accommodate the decompressed data. However, it doesn't have any mechanism to control the maximum number of times the buffer can be expanded or the maximum size of the buffer. An attacker could provide a malicious compressed data input that keeps expanding the buffer indefinitely, leading to excessive memory consumption, potentially causing a Denial of Service (DoS).\n    cwe: CWE-770\n    function_names:\n      - stbi_zlib_decode_malloc_guesssize\n      - expand\n    filenames:\n      - stb_image.c\n    classification: slightly promising\n```",
+      "date": "2024-06-13T09:21:43.870372",
+      "usage": {
+        "prompt_tokens": 105571,
+        "completion_tokens": 666,
+        "cost": 0.3764915
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Unbounded memcpy in jpeg_decoder_mem_stream::read()",
+      "analysis": "The function jpeg_decoder_mem_stream::read() copies up to max_bytes_to_read bytes from m_pSrc_data + m_ofs into the destination buffer pBuf. However, it does not check if m_ofs + max_bytes_to_read would exceed the bounds of the allocated memory pointed to by m_pSrc_data. This could lead to an out-of-bounds read if the caller provides a larger max_bytes_to_read value than the available data in m_pSrc_data.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-125",
+      "function_names": [
+        "jpeg_decoder_mem_stream::read"
+      ],
+      "filenames": [
+        "jpgd.cpp"
+      ]
+    },
+    {
+      "headline": "Out-of-bounds Read in stbi_load_from_memory",
+      "analysis": "The stbi_load_from_memory function in stb_image.c does not adequately validate the length of the input buffer before attempting to decode it. This can lead to an out-of-bounds read vulnerability. For instance, if the input buffer is smaller than expected, the decoder might attempt to access memory beyond the allocated buffer, causing a crash or potentially leaking sensitive information.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-125",
+      "function_names": [
+        "stbi_load_from_memory"
+      ],
+      "filenames": [
+        "stb_image.c"
+      ]
+    },
+    {
+      "headline": "Out-of-Bounds Read in stbi_zlib_decode_malloc_guesssize",
+      "analysis": "The function stbi_zlib_decode_malloc_guesssize in stb_image.c allocates a buffer of initial_size bytes and passes it to the do_zlib function. The do_zlib function then uses this buffer to store the decompressed data. However, stbi_zlib_decode_malloc_guesssize doesn't verify if the actual decompressed data size returned by do_zlib (a.zout - a.zout_start) exceeds the initial_size. If the decompressed data is larger than the allocated buffer, it leads to an out-of-bounds write.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-787",
+      "function_names": [
+        "stbi_zlib_decode_malloc_guesssize"
+      ],
+      "filenames": [
+        "stb_image.c"
+      ]
+    },
+    {
+      "headline": "Uncontrolled Resource Consumption in stbi_zlib_decode_malloc_guesssize",
+      "analysis": "The stbi_zlib_decode_malloc_guesssize function uses realloc to expand the output buffer dynamically within the expand function. It doubles the buffer size (limit *= 2) until it can accommodate the decompressed data. However, it doesn't have any mechanism to control the maximum number of times the buffer can be expanded or the maximum size of the buffer. An attacker could provide a malicious compressed data input that keeps expanding the buffer indefinitely, leading to excessive memory consumption, potentially causing a Denial of Service (DoS).\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-770",
+      "function_names": [
+        "stbi_zlib_decode_malloc_guesssize",
+        "expand"
+      ],
+      "filenames": [
+        "stb_image.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-13037": "2018-07-01T18:29:00",
+        "CVE-2018-13030": "2018-06-30T12:29:00"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2018-13037": "2018-07-01T18:29:00",
+        "CVE-2018-13030": "2018-06-30T12:29:00"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

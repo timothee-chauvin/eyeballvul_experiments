@@ -31,9 +31,8 @@ class LiteLLMGateway(GatewayInterface):
             raise ContextWindowExceededError(e)
         except LiteLLMAPIConnectionError as e:
             raise APIConnectionError(e)
-        model_for_cost = model.removeprefix("gemini/")
         prompt_cost, completion_cost = cost_per_token(
-            model=model_for_cost,
+            model=model,
             prompt_tokens=response.usage.prompt_tokens,
             completion_tokens=response.usage.completion_tokens,
         )

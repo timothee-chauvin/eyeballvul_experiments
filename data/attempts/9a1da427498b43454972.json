@@ -1,0 +1,52 @@
+{
+  "commit": "3f5082e6319faaafc1ee60aa8b115be90696d6be",
+  "repo_url": "https://github.com/curiosity-org/gipsy",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "7760f4ccec12c2c8c1b6"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Command injection in RSS plugin.\n    analysis: |\n      The `Rss.test_rss` command in `plugins/rss/bot/main.py` allows bot admins to test arbitrary RSS feeds. It calls `eval()` on user-provided input using the following code snippet:\n      ```python\n      if args is not None and 'feeds' in args and 'ctx' not in args:\n                txt += \"\\n{}\\n```py\\n{}\\n```\".format(args,eval(args))\n      ```\n      If `args` contains the string \"feeds\", the code adds a new line to `txt`, followed by the user-provided `args` itself in a Markdown code block, then attempts to evaluate `args` with `eval()`. The result of that evaluation is also added to `txt`.\n      If `ctx` is not part of the user-provided input string, an attacker with bot admin privileges can provide malicious code in `args` which will be executed by `eval()`.\n    cwe: CWE-94\n    function_names:\n      - test_rss\n    filenames:\n      - plugins/rss/bot/main.py\n    classification: very promising\n  - headline: Privilege escalation in RSS plugin.\n    analysis: |\n      The `Rss.reload_guild_flows` command in `plugins/rss/bot/main.py` allows members with the `manage_webhooks` permission to force reload every RSS feed in their server.\n      This function calls `Rss.main_loop`, which in turn can call functions such as `rss_tw`. That function calls `twitter.api.GetUserTimeline`.\n      That `twitter` API object is initialized with the bot's own Twitter tokens, as such members with `manage_webhooks` permissions can directly use the bot's Twitter API credentials using `reload_guild_flows`.\n    cwe: CWE-269\n    function_names:\n      - reload_guild_flows\n      - main_loop\n      - rss_tw\n    filenames:\n      - plugins/rss/bot/main.py\n    classification: very promising\n  - headline: Privilege escalation in Wormhole plugin.\n    analysis: |\n      The `Wormholes.link` function in `plugins/wormhole/bot/main.py` checks if the user has admin access to the wormhole they're trying to link with.\n      However, it doesn't check for the `manage_webhooks` permission which is required to create webhooks and link a channel to a wormhole.\n      As a result, a malicious user with admin access to a wormhole can force link a channel they do not have `manage_webhooks` permissions on to that wormhole.\n    cwe: CWE-269\n    function_names:\n      - link\n    filenames:\n      - plugins/wormhole/bot/main.py\n    classification: slightly promising\n  - headline: Hardcoded credentials.\n    analysis: |\n      The `QuiPyQuizz.py` file in `plugins/quizz/bot/` appears to call an external API, QuipoQuiz, without any kind of authentication.\n      If that API provides paying services, a malicious user can create a bot and use that `QuiPyQuizz` class to leverage QuipoQuiz's services without authentication.\n      For example, QuipoQuiz's image storage may not require authentication and allow users to upload any image, as such a malicious user can leverage this to bypass image upload restrictions they would have on other websites.\n    cwe: CWE-798\n    function_names: []\n    filenames:\n      - plugins/quizz/bot/QuiPyQuizz.py\n    classification: slightly promising\n  - headline: Missing origin validation.\n    analysis: |\n      The `Rss` plugin in `plugins/rss/bot/main.py` parses RSS feeds using the `feedparser` library.\n      `feedparser` doesn't perform origin validation by default and blindly follows redirects, as such a malicious actor can craft an RSS feed redirecting to an attacker-controlled website to exfiltrate a user's IP address.\n      While the bot only fetches data and doesn't display it directly to the user, an attacker can get an estimation of the bot's uptime by abusing this vulnerability and noticing when their server no longer receives requests from the bot.\n    cwe: CWE-346\n    function_names:\n      - main_loop\n      - check_flow\n      - rss_yt\n      - rss_twitch\n      - rss_web\n      - rss_deviant\n    filenames:\n      - plugins/rss/bot/main.py\n    classification: not promising\n```",
+      "date": "2024-06-14T13:09:56.691978",
+      "usage": {
+        "prompt_tokens": 100277,
+        "completion_tokens": 935,
+        "cost": 0.36078699999999997
+      }
+    }
+  ],
+  "leads": [],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-30621": "2023-04-21T21:15:08"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-30621": "2023-04-21T21:15:08"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,79 @@
+{
+  "commit": "3016df0730fb7daa85d73e29ec9d02851db831ae",
+  "repo_url": "https://github.com/ziparchive/ziparchive",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "e82f9ac4082d31e649d4"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: 'SSZipArchive: Possible out-of-bounds read in unzGoToNextFile()'\n    analysis: |\n      The function `unzGoToNextFile()` in `mz_compat.c` increments the `entry_index` member of the `mz_compat` object unconditionally when `mz_zip_goto_next_entry()` returns a status other than `MZ_END_OF_LIST`.\n      However, `mz_zip_goto_next_entry()` could return other error codes indicating that the operation failed, for example due to a corrupted zip file. In these cases, the `entry_index` would still be incremented. \n      Subsequently, when the caller of `unzGoToNextFile()` calls `unzGetFilePos64()` or `unzGetCurrentFileInfo64()`, they will pass this erroneous `entry_index` to `mz_zip_goto_entry()` in the compat object. This could potentially lead to an out-of-bounds read in the zip file.\n    cwe: CWE-125\n    function_names:\n      - unzGoToNextFile\n    filenames:\n      - SSZipArchive/minizip/mz_compat.c\n    classification: slightly promising\n  - headline: 'SSZipArchive: Possible denial of service via crafted zip file in mz_zip_entry_read_header'\n    analysis: |\n      The function `mz_zip_entry_read_header` in `mz_zip.c` parses the extra field of a zip entry. It reads the field type and length, and then seeks forward by the field length.\n      However, if an attacker crafts a zip file with a very large field length, this could cause the seek operation to overflow the buffer allocated for the extra field, potentially leading to a crash or denial of service.\n      The overflow occurs because `field_length` is a `uint16_t`, which can be as large as 65535 bytes. The `mz_stream_seek` function in this case is backed by a `mz_stream_mem`, which only allows a maximum buffer size of `INT32_MAX`.\n    cwe: CWE-120\n    function_names:\n      - mz_zip_entry_read_header\n    filenames:\n      - SSZipArchive/minizip/mz_zip.c\n    classification: slightly promising\n```",
+      "date": "2024-06-14T11:07:01.138226",
+      "usage": {
+        "prompt_tokens": 115304,
+        "completion_tokens": 468,
+        "cost": 0.40847799999999995
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "SSZipArchive: Possible out-of-bounds read in unzGoToNextFile()",
+      "analysis": "The function unzGoToNextFile() in mz_compat.c increments the entry_index member of the mz_compat object unconditionally when mz_zip_goto_next_entry() returns a status other than MZ_END_OF_LIST.\nHowever, mz_zip_goto_next_entry() could return other error codes indicating that the operation failed, for example due to a corrupted zip file. In these cases, the entry_index would still be incremented. \nSubsequently, when the caller of unzGoToNextFile() calls unzGetFilePos64() or unzGetCurrentFileInfo64(), they will pass this erroneous entry_index to mz_zip_goto_entry() in the compat object. This could potentially lead to an out-of-bounds read in the zip file.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-125",
+      "function_names": [
+        "unzGoToNextFile"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_compat.c"
+      ]
+    },
+    {
+      "headline": "SSZipArchive: Possible denial of service via crafted zip file in mz_zip_entry_read_header",
+      "analysis": "The function mz_zip_entry_read_header in mz_zip.c parses the extra field of a zip entry. It reads the field type and length, and then seeks forward by the field length.\nHowever, if an attacker crafts a zip file with a very large field length, this could cause the seek operation to overflow the buffer allocated for the extra field, potentially leading to a crash or denial of service.\nThe overflow occurs because field_length is a uint16_t, which can be as large as 65535 bytes. The mz_stream_seek function in this case is backed by a mz_stream_mem, which only allows a maximum buffer size of INT32_MAX.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-120",
+      "function_names": [
+        "mz_zip_entry_read_header"
+      ],
+      "filenames": [
+        "SSZipArchive/minizip/mz_zip.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-39136": "2023-08-30T22:15:08",
+        "CVE-2022-36943": "2023-01-03T21:15:12"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 2,
+        "tp": 0,
+        "fp": 0
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-39136": "2023-08-30T22:15:08",
+        "CVE-2022-36943": "2023-01-03T21:15:12"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

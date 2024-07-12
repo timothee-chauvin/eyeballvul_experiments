@@ -1,0 +1,149 @@
+{
+  "commit": "26852ff123b07ebde3cc78ee0e3f0b399bffd293",
+  "repo_url": "https://github.com/jenkinsci/gradle-plugin",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "d1cb3bc34e3ecd7706c6"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: 'Gradle Enterprise access key is sent as plain text in environment variable'\n    analysis: |\n      The access key for authentication with the Gradle Enterprise server is injected into a password-type build parameter but then propagated into the plain-text environment variable `GRADLE_ENTERPRISE_ACCESS_KEY`, which may be visible to malicious actors with sufficient permissions in Jenkins.\n    cwe: CWE-522\n    function_names:\n      - buildEnvironmentFor\n    filenames:\n      - src/main/java/hudson/plugins/gradle/injection/BuildScanEnvironmentContributor.java\n    classification: slightly promising\n  - headline: 'Maven build scan injection relies on old environment variables'\n    analysis: |\n      The Maven build scan injection still relies on setting some old environment variables, such as `JENKINSGRADLEPLUGIN_MAVEN_PLUGIN_CONFIG_EXT_CLASSPATH` and `JENKINSGRADLEPLUGIN_MAVEN_PLUGIN_CONFIG_ALLOW_UNTRUSTED_SERVER`, which may be visible to malicious actors with sufficient permissions in Jenkins. Those variables should be removed in favor of only setting the `MAVEN_OPTS` variable.\n    cwe: CWE-200\n    function_names:\n      - inject\n    filenames:\n      - src/main/java/hudson/plugins/gradle/injection/MavenBuildScanInjection.java\n    classification: not promising\n  - headline: 'Remote code execution via crafted Gradle version'\n    analysis: |\n      When the Gradle plugin is configured to use a Gradle installation, the Gradle home directory is obtained from the `GradleInstallation` instance without any sanitization, directly from user input. A malicious actor with permissions to configure Gradle installations could define an installation with a crafted Gradle home directory containing a malicious init script. Since the init script is evaluated on the agent, this could lead to remote code execution.\n    cwe: CWE-427\n    function_names:\n      - perform\n      - getExecutable\n    filenames:\n      - src/main/java/hudson/plugins/gradle/Gradle.java\n      - src/main/java/hudson/plugins/gradle/GradleInstallation.java\n    classification: very promising\n  - headline: 'Remote code execution via crafted Gradle wrapper location'\n    analysis: |\n      When the Gradle plugin is configured to use the Gradle wrapper, the path to the wrapper is obtained from the `wrapperLocation` parameter without any sanitization. A malicious actor with permissions to configure a job could define a path to a malicious Gradle wrapper script. Since the wrapper script is executed on the agent, this could lead to remote code execution.\n    cwe: CWE-427\n    function_names:\n      - perform\n      - findGradleWrapper\n    filenames:\n      - src/main/java/hudson/plugins/gradle/Gradle.java\n    classification: very promising\n  - headline: 'Remote code execution via crafted root build script directory'\n    analysis: |\n      When the Gradle plugin is configured to use a custom root build script directory, the directory is obtained from the `rootBuildScriptDir` parameter without any sanitization. A malicious actor with permissions to configure a job could define a path to a directory containing a malicious Gradle init script. Since the init script is evaluated on the agent, this could lead to remote code execution.\n    cwe: CWE-427\n    function_names:\n      - perform\n      - getNormalizedRootBuildScriptDir\n    filenames:\n      - src/main/java/hudson/plugins/gradle/Gradle.java\n    classification: very promising\n  - headline: 'Potential XSS vulnerability in Gradle console annotator'\n    analysis: |\n      The Gradle console annotator directly injects HTML markup into the console output based on the content of log lines, without any escaping. A malicious build script could potentially emit log lines containing crafted HTML markup, leading to cross-site scripting vulnerabilities when viewing the console output. \n    cwe: CWE-79\n    function_names:\n      - processLogLine\n    filenames:\n      - src/main/java/hudson/plugins/gradle/GradleConsoleAnnotator.java\n    classification: slightly promising\n  - headline: 'Potential XSS vulnerability in Gradle outline generation'\n    analysis: |\n      The Gradle Task Note feature uses client-side JavaScript to generate an outline of Gradle tasks from the console output. It parses HTML directly from the console output, which could potentially contain crafted HTML markup injected by a malicious build script, leading to cross-site scripting vulnerabilities when viewing the outline.\n    cwe: CWE-79\n    function_names: []\n    filenames:\n      - src/main/resources/hudson/plugins/gradle/GradleTaskNote/script.js\n    classification: slightly promising\n  - headline: 'Cross-site request forgery vulnerability in outline generation'\n    analysis: |\n      The Gradle Task Note feature uses a JavaScript `fetch` call to request the outline from the server. The request uses the `crumb.wrap({})` method for CSRF protection, but this is not sufficient because the request is made from client-side JavaScript and a malicious website could bypass this protection. An attacker could craft a malicious website that makes a request to the vulnerable endpoint on behalf of a logged-in Jenkins user, potentially leading to unauthorized actions being performed.\n    cwe: CWE-352\n    function_names: []\n    filenames:\n      - src/main/resources/hudson/plugins/gradle/GradleTaskNote/script.js\n    classification: slightly promising\n```",
+      "date": "2024-06-12T18:34:42.147870",
+      "usage": {
+        "prompt_tokens": 49525,
+        "completion_tokens": 1125,
+        "cost": 0.18515
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Gradle Enterprise access key is sent as plain text in environment variable",
+      "analysis": "The access key for authentication with the Gradle Enterprise server is injected into a password-type build parameter but then propagated into the plain-text environment variable GRADLE_ENTERPRISE_ACCESS_KEY, which may be visible to malicious actors with sufficient permissions in Jenkins.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-522",
+      "function_names": [
+        "buildEnvironmentFor"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/gradle/injection/BuildScanEnvironmentContributor.java"
+      ]
+    },
+    {
+      "headline": "Maven build scan injection relies on old environment variables",
+      "analysis": "The Maven build scan injection still relies on setting some old environment variables, such as JENKINSGRADLEPLUGIN_MAVEN_PLUGIN_CONFIG_EXT_CLASSPATH and JENKINSGRADLEPLUGIN_MAVEN_PLUGIN_CONFIG_ALLOW_UNTRUSTED_SERVER, which may be visible to malicious actors with sufficient permissions in Jenkins. Those variables should be removed in favor of only setting the MAVEN_OPTS variable.\n",
+      "classification": "not promising",
+      "cwe": "CWE-200",
+      "function_names": [
+        "inject"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/gradle/injection/MavenBuildScanInjection.java"
+      ]
+    },
+    {
+      "headline": "Remote code execution via crafted Gradle version",
+      "analysis": "When the Gradle plugin is configured to use a Gradle installation, the Gradle home directory is obtained from the GradleInstallation instance without any sanitization, directly from user input. A malicious actor with permissions to configure Gradle installations could define an installation with a crafted Gradle home directory containing a malicious init script. Since the init script is evaluated on the agent, this could lead to remote code execution.\n",
+      "classification": "very promising",
+      "cwe": "CWE-427",
+      "function_names": [
+        "perform",
+        "getExecutable"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/gradle/Gradle.java",
+        "src/main/java/hudson/plugins/gradle/GradleInstallation.java"
+      ]
+    },
+    {
+      "headline": "Remote code execution via crafted Gradle wrapper location",
+      "analysis": "When the Gradle plugin is configured to use the Gradle wrapper, the path to the wrapper is obtained from the wrapperLocation parameter without any sanitization. A malicious actor with permissions to configure a job could define a path to a malicious Gradle wrapper script. Since the wrapper script is executed on the agent, this could lead to remote code execution.\n",
+      "classification": "very promising",
+      "cwe": "CWE-427",
+      "function_names": [
+        "perform",
+        "findGradleWrapper"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/gradle/Gradle.java"
+      ]
+    },
+    {
+      "headline": "Remote code execution via crafted root build script directory",
+      "analysis": "When the Gradle plugin is configured to use a custom root build script directory, the directory is obtained from the rootBuildScriptDir parameter without any sanitization. A malicious actor with permissions to configure a job could define a path to a directory containing a malicious Gradle init script. Since the init script is evaluated on the agent, this could lead to remote code execution.\n",
+      "classification": "very promising",
+      "cwe": "CWE-427",
+      "function_names": [
+        "perform",
+        "getNormalizedRootBuildScriptDir"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/gradle/Gradle.java"
+      ]
+    },
+    {
+      "headline": "Potential XSS vulnerability in Gradle console annotator",
+      "analysis": "The Gradle console annotator directly injects HTML markup into the console output based on the content of log lines, without any escaping. A malicious build script could potentially emit log lines containing crafted HTML markup, leading to cross-site scripting vulnerabilities when viewing the console output. \n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [
+        "processLogLine"
+      ],
+      "filenames": [
+        "src/main/java/hudson/plugins/gradle/GradleConsoleAnnotator.java"
+      ]
+    },
+    {
+      "headline": "Potential XSS vulnerability in Gradle outline generation",
+      "analysis": "The Gradle Task Note feature uses client-side JavaScript to generate an outline of Gradle tasks from the console output. It parses HTML directly from the console output, which could potentially contain crafted HTML markup injected by a malicious build script, leading to cross-site scripting vulnerabilities when viewing the outline.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-79",
+      "function_names": [],
+      "filenames": [
+        "src/main/resources/hudson/plugins/gradle/GradleTaskNote/script.js"
+      ]
+    },
+    {
+      "headline": "Cross-site request forgery vulnerability in outline generation",
+      "analysis": "The Gradle Task Note feature uses a JavaScript fetch call to request the outline from the server. The request uses the crumb.wrap({}) method for CSRF protection, but this is not sufficient because the request is made from client-side JavaScript and a malicious website could bypass this protection. An attacker could craft a malicious website that makes a request to the vulnerable endpoint on behalf of a logged-in Jenkins user, potentially leading to unauthorized actions being performed.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-352",
+      "function_names": [],
+      "filenames": [
+        "src/main/resources/hudson/plugins/gradle/GradleTaskNote/script.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-39152": "2023-07-26T14:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 3
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2023-39152": "2023-07-26T14:15:10"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

@@ -1,0 +1,70 @@
+{
+  "commit": "049ce24dbb4302811b9247444347da6561605a8a",
+  "repo_url": "https://github.com/turistforeningen/node-im-metadata",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "bf09777764afb42b204c"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Command Injection in metadata module\n    analysis: |\n      The `metadata` module is vulnerable to command injection. The module uses the `exec` function from the `child_process` module to execute a command. The command is constructed using user-supplied input, specifically the `path` argument passed to the `metadata` function. \n      \n      If an attacker can control the value of the `path` argument, they can inject arbitrary commands that will be executed with the privileges of the Node.js process. For instance, an attacker could provide a path like `; malicious_command`, which would result in the execution of `malicious_command`.\n\n      This vulnerability highlights the risks of using unsanitized user input when constructing shell commands.\n    cwe: CWE-77\n    function_names:\n      - metadata\n      - cmd\n    filenames:\n      - index.js\n    classification: very promising\n```\n<><><>codebase<><><>\n<><><>Fraction of the full repository included below: 100.0%<><><>\n<><><>CONTENTS OF test.js:<><><>\n/*jshint laxbreak:true */\n\nvar assert = require('assert');\nvar metadata = require('./index');\n\ndescribe('metadata.cmd()', function() {\n  it('returns command without exif data', function() {\n    var cmd = 'identify -format \"name=\\nsize=%[size]\\nformat=%m\\n'\n            + 'colorspace=%[colorspace]\\nheight=%[height]\\nwidth=%[width]\\n'\n            + 'orientation=%[orientation]\\n\" /foo/bar/baz';\n\n    assert.equal(metadata.cmd('/foo/bar/baz'), cmd);\n  });\n\n  it('returns command with exif data', function() {\n    var cmd = 'identify -format \"name=\\nsize=%[size]\\nformat=%m\\n'\n            + 'colorspace=%[colorspace]\\nheight=%[height]\\nwidth=%[width]\\n'\n            + 'orientation=%[orientation]\\n%[exif:*]\" /foo/bar/baz';\n\n    assert.equal(metadata.cmd('/foo/bar/baz', {exif: true}), cmd);\n  });\n});\n\ndescribe('metadata.parse()', function() {\n  var path = '/foo/bar/baz.jpg';\n\n  it('returns object for single value', function() {\n    assert.deepEqual(metadata.parse(path, 'foo=bar'), {\n      path: path,\n      foo: 'bar'\n    });\n  });\n\n  it('returns object for metadata string', function() {\n    assert.deepEqual(metadata.parse(path, 'foo=bar\\nbar=foo'), {\n      path: path,\n      foo: 'bar',\n      bar: 'foo'\n    });\n  });\n\n  it('skips empty lines', function() {\n    assert.deepEqual(metadata.parse(path, 'foo=bar\\n\\nbar=foo\\n\\n'), {\n      path: path,\n      foo: 'bar',\n      bar: 'foo'\n    });\n  });\n\n  it('returns correct size for bogus value', function() {\n    assert.deepEqual(metadata.parse(path, 'size=4.296MBB'), {\n      path: path,\n      size: 4504682\n    });\n  });\n\n  it('returns size in bytes', function() {\n    assert.deepEqual(metadata.parse(path, 'size=20MB'), {\n      path: path,\n      size: 20 * 1024 * 1024\n    });\n  });\n\n  it('returns RGB for sRGB colorspace', function() {\n    assert.deepEqual(metadata.parse(path, 'colorspace=sRGB'), {\n      path: path,\n      colorspace: 'RGB'\n    });\n  });\n\n  it('returns \"\" for Undefined orientation', function() {\n    assert.deepEqual(metadata.parse(path, 'orientation=Undefined'), {\n      path: path,\n      orientation: ''\n    });\n  });\n\n  it('returns height and widt for auto-orient', function() {\n    var meta = 'width=100\\nheight=150\\norientation=';\n    var opts = {autoOrient: true};\n\n    var orientation = [\n      'TopLeft', 'TopRight', 'BottomRight', 'BottomLeft',\n      'LeftTop', 'RightTop', 'RightBottom', 'LeftBottom'\n    ];\n\n    for (var i = 0; i < 4; i++) {\n      assert.deepEqual(metadata.parse(path, meta + orientation[i], opts), {\n        height: 150,\n        width: 100,\n        path: path,\n        orientation: orientation[i]\n      });\n    }\n\n    for (var j = 4; j < 8; j++) {\n      assert.deepEqual(metadata.parse(path, meta + orientation[j], opts), {\n        height: 100,\n        width: 150,\n        path: path,\n        orientation: orientation[j]\n      });\n    }\n  });\n});\n\ndescribe('metadata()', function() {\n  it('returns metadata for image', function(done) {\n    metadata('./assets/image.jpg', { exif: false }, function(err, data) {\n      assert.ifError(err);\n\n      assert.equal(data.path, './assets/image.jpg');\n      assert.equal(data.name, '');\n      assert.equal(data.size, 4504682);\n      assert.equal(data.format, 'JPEG');\n      assert.equal(data.colorspace, 'RGB');\n      assert.equal(data.height, 3456);\n      assert.equal(data.width, 5184);\n      assert.equal(data.orientation, 'TopLeft');\n\n      assert.equal(typeof data.exif, 'undefined');\n\n      done();\n    });\n  });\n\n  it('returns metadata for image with exif data', function(done) {\n    metadata('./assets/image.jpg', { exif: true }, function(err, data) {\n      assert.ifError(err);\n\n      assert.equal(data.path, './assets/image.jpg');\n      assert.equal(data.name, '');\n      assert.equal(data.size, 4504682);\n      assert.equal(data.format, 'JPEG');\n      assert.equal(data.colorspace, 'RGB');\n      assert.equal(data.height, 3456);\n      assert.equal(data.width, 5184);\n      assert.equal(data.orientation, 'TopLeft');\n\n      assert.equal(typeof data.exif, 'object');\n      assert.equal(Object.keys(data.exif).length, 36);\n      assert.equal(data.exif.ApertureValue, '37/8');\n\n      done();\n    });\n  });\n\n  it('returns correct height and width for auto-orient', function(done) {\n    metadata('./assets/orient.jpg', { autoOrient: true }, function(err, data) {\n      assert.ifError(err);\n\n      assert.equal(data.height, 3264);\n      assert.equal(data.width, 2448);\n\n      done();\n    });\n  });\n});\n\n<><><>CONTENTS OF index.js:<><><>\n/*jshint laxbreak:true */\n\nvar sizeParser = require('filesize-parser');\nvar exec = require('child_process').exec, child;\n\nmodule.exports = function(path, opts, cb) {\n  if (!cb) {\n    cb = opts;\n    opts = {};\n  }\n\n  var cmd = module.exports.cmd(path, opts);\n  opts.timeout = opts.timeout || 5000;\n\n  exec(cmd, opts, function(e, stdout, stderr) {\n    if (e) { return cb(e); }\n    if (stderr) { return cb(new Error(stderr)); }\n\n    return cb(null, module.exports.parse(path, stdout, opts));\n  });\n};\n\nmodule.exports.cmd = function(path, opts) {\n  opts = opts || {};\n  var format = [\n    'name=',\n    'size=%[size]',\n    'format=%m',\n    'colorspace=%[colorspace]',\n    'height=%[height]',\n    'width=%[width]',\n    'orientation=%[orientation]',\n    (opts.exif ? '%[exif:*]' : '')\n  ].join(\"\\n\");\n\n  return 'identify -format \"' + format + '\" ' + path;\n};\n\nmodule.exports.parse = function(path, stdout, opts) {\n  var lines = stdout.split('\\n');\n  var ret = {path: path};\n  var i;\n\n  for (i = 0; i < lines.length; i++) {\n    if (lines[i]) {\n      lines[i] = lines[i].split('=');\n\n      // Parse exif metadata keys\n      if (lines[i][0].substr(0, 5) === 'exif:') {\n        if (!ret.exif) {\n          ret.exif = {};\n        }\n\n        ret.exif[lines[i][0].substr(5)] = lines[i][1];\n\n      // Parse normal metadata keys\n      } else {\n        ret[lines[i][0]] = lines[i][1];\n      }\n    }\n  }\n\n  if (ret.width) { ret.width = parseInt(ret.width, 10); }\n  if (ret.height) { ret.height = parseInt(ret.height, 10); }\n\n  if (ret.size) {\n    if (ret.size.substr(ret.size.length - 2) === 'BB') {\n      ret.size = ret.size.substr(0, ret.size.length - 1);\n    }\n\n    ret.size = parseInt(sizeParser(ret.size));\n  }\n\n  if (ret.colorspace && ret.colorspace === 'sRGB') {\n    ret.colorspace = 'RGB';\n  }\n\n  if (ret.orientation === 'Undefined') {\n    ret.orientation = '';\n  }\n\n  if (opts && opts.autoOrient\n      && ( ret.orientation === 'LeftTop'\n        ||\u00a0ret.orientation === 'RightTop'\n        ||\u00a0ret.orientation === 'LeftBottom'\n        ||\u00a0ret.orientation === 'RightBottom')) {\n\n    ret.width  = ret.width + ret.height;\n    ret.height = ret.width - ret.height;\n    ret.width  = ret.width - ret.height;\n  }\n\n  return ret;\n};\n\n\n\n\n```",
+      "date": "2024-06-13T17:22:16.467476",
+      "usage": {
+        "prompt_tokens": 4174,
+        "completion_tokens": 2021,
+        "cost": 0.0358295
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Command Injection in metadata module",
+      "analysis": "The metadata module is vulnerable to command injection. The module uses the exec function from the child_process module to execute a command. The command is constructed using user-supplied input, specifically the path argument passed to the metadata function. \n\nIf an attacker can control the value of the path argument, they can inject arbitrary commands that will be executed with the privileges of the Node.js process. For instance, an attacker could provide a path like ; malicious_command, which would result in the execution of malicious_command.\n\nThis vulnerability highlights the risks of using unsanitized user input when constructing shell commands.\n",
+      "classification": "very promising",
+      "cwe": "CWE-77",
+      "function_names": [
+        "metadata",
+        "cmd"
+      ],
+      "filenames": [
+        "index.js"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2019-10788"
+      },
+      "vuln_dates": {
+        "CVE-2019-10788": "2020-02-04T21:15:10"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2019-10788"
+      },
+      "vuln_dates": {
+        "CVE-2019-10788": "2020-02-04T21:15:10"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}

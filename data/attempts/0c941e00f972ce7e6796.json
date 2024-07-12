@@ -1,0 +1,94 @@
+{
+  "commit": "f31dff18b8f851e58bf589ba742a3c79a6f33e20",
+  "repo_url": "https://github.com/agronholm/cbor2",
+  "model": "gemini/gemini-1.5-pro",
+  "chunk_hashes": [
+    "ca18b991fefb73982232"
+  ],
+  "responses": [
+    {
+      "content": "```yaml\nleads:\n  - headline: Integer overflow in decode_length function during indefinite length byte/text string decoding\n    analysis: |\n      The `decode_length` function in `decoder.c` is responsible for determining the length of data items being decoded.\n      When handling indefinite length strings, the length of the chunks is read and validated to be within the bounds of a `Py_ssize_t`.\n      However, this check does not prevent an attacker from providing a chunk length that, while valid as a `uint64_t`, would overflow when cast to `Py_ssize_t`, potentially leading to a heap overflow when the chunk is read.\n\n      This issue can be triggered by sending a crafted CBOR payload with an indefinite length string containing a chunk that would cause an overflow.\n    cwe: CWE-190\n    function_names:\n      - decode_length\n      - decode_bytestring\n      - decode_string\n    filenames:\n      - source/decoder.c\n    classification: very promising\n  - headline: Potential memory leak when calling find_deferred.\n    analysis: |\n      The function `replace_deferred` in `encoder.c` attempts to locate a deferred type within the encoders dictionary.\n      If the type is located, it's replaced in the dictionary with the discovered type. This replacement process decrements the reference count of the discovered type (`enc_type`).\n      However, if `PyObject_SetItem` fails, the reference count of `enc_type` is not incremented back, resulting in a potential memory leak.\n\n      Exploiting this would require a specific sequence of events, potentially involving manipulation of sys.modules and type loading to induce the failure of `PyObject_SetItem`.\n    cwe: CWE-401\n    function_names:\n      - replace_deferred\n      - CBOREncoder_find_encoder\n    filenames:\n      - source/encoder.c\n    classification: slightly promising\n  - headline: Potential excessive memory consumption due to unbounded shared container tracking in CBOREncoder.\n    analysis: |\n      The CBOREncoder maintains a dictionary `_shared_containers` to track shared container objects for efficient encoding.\n      The size of this dictionary grows linearly with the number of unique container objects encountered during encoding.\n      If an attacker can provide a large input with many unique container objects (e.g. lists, dicts), this dictionary could consume a significant amount of memory, potentially leading to denial of service.\n\n      Exploitation would require providing a CBOR payload with a large number of unique container objects. This issue is exacerbated when value sharing is enabled, as each unique container adds an entry to the dictionary.\n    cwe: CWE-770\n    function_names:\n      - encode_shared\n    filenames:\n      - source/encoder.c\n    classification: slightly promising\n```",
+      "date": "2024-06-12T11:35:50.934529",
+      "usage": {
+        "prompt_tokens": 109533,
+        "completion_tokens": 569,
+        "cost": 0.38933999999999996
+      }
+    }
+  ],
+  "leads": [
+    {
+      "headline": "Integer overflow in decode_length function during indefinite length byte/text string decoding",
+      "analysis": "The decode_length function in decoder.c is responsible for determining the length of data items being decoded.\nWhen handling indefinite length strings, the length of the chunks is read and validated to be within the bounds of a Py_ssize_t.\nHowever, this check does not prevent an attacker from providing a chunk length that, while valid as a uint64_t, would overflow when cast to Py_ssize_t, potentially leading to a heap overflow when the chunk is read.\n\nThis issue can be triggered by sending a crafted CBOR payload with an indefinite length string containing a chunk that would cause an overflow.\n",
+      "classification": "very promising",
+      "cwe": "CWE-190",
+      "function_names": [
+        "decode_length",
+        "decode_bytestring",
+        "decode_string"
+      ],
+      "filenames": [
+        "source/decoder.c"
+      ]
+    },
+    {
+      "headline": "Potential memory leak when calling find_deferred.",
+      "analysis": "The function replace_deferred in encoder.c attempts to locate a deferred type within the encoders dictionary.\nIf the type is located, it's replaced in the dictionary with the discovered type. This replacement process decrements the reference count of the discovered type (enc_type).\nHowever, if PyObject_SetItem fails, the reference count of enc_type is not incremented back, resulting in a potential memory leak.\n\nExploiting this would require a specific sequence of events, potentially involving manipulation of sys.modules and type loading to induce the failure of PyObject_SetItem.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-401",
+      "function_names": [
+        "replace_deferred",
+        "CBOREncoder_find_encoder"
+      ],
+      "filenames": [
+        "source/encoder.c"
+      ]
+    },
+    {
+      "headline": "Potential excessive memory consumption due to unbounded shared container tracking in CBOREncoder.",
+      "analysis": "The CBOREncoder maintains a dictionary _shared_containers to track shared container objects for efficient encoding.\nThe size of this dictionary grows linearly with the number of unique container objects encountered during encoding.\nIf an attacker can provide a large input with many unique container objects (e.g. lists, dicts), this dictionary could consume a significant amount of memory, potentially leading to denial of service.\n\nExploitation would require providing a CBOR payload with a large number of unique container objects. This issue is exacerbated when value sharing is enabled, as each unique container adds an entry to the dictionary.\n",
+      "classification": "slightly promising",
+      "cwe": "CWE-770",
+      "function_names": [
+        "encode_shared"
+      ],
+      "filenames": [
+        "source/encoder.c"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "stats": {
+        "fn": 0,
+        "tp": 1,
+        "fp": 0
+      },
+      "mapping": {
+        "0": "CVE-2024-26134"
+      },
+      "vuln_dates": {
+        "CVE-2024-26134": "2024-02-19T23:15:07"
+      },
+      "scoring_model": "claude-3-opus-20240229",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    },
+    {
+      "stats": {
+        "fn": 1,
+        "tp": 0,
+        "fp": 1
+      },
+      "mapping": {},
+      "vuln_dates": {
+        "CVE-2024-26134": "2024-02-19T23:15:07"
+      },
+      "scoring_model": "claude-3-5-sonnet-20240620",
+      "type": "llm",
+      "instruction_template_hash": "245ace12b6361954d0a2"
+    }
+  ],
+  "instruction_template_hash": "10c0163db4740318a544",
+  "version": "0.1.0"
+}
